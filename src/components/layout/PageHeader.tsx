@@ -36,9 +36,9 @@ export function PageHeader({
         type="button"
         onClick={handleBack}
         aria-label="Wróć"
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       >
-        <ArrowLeft size={20} />
+        <ArrowLeft size={22} />
       </button>
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-base font-semibold leading-tight">{title}</h1>

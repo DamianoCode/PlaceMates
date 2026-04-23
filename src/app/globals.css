@@ -148,6 +148,14 @@
   }
 }
 
+/* Turn the warm light basemap into a legible dark variant by inverting
+ * and re-rotating the hue. Applied to the map canvas only so overlays,
+ * controls, and markers keep their real colours. */
+.dark .maplibregl-canvas {
+  filter: invert(0.92) hue-rotate(180deg) saturate(0.75) brightness(0.95)
+    contrast(0.95);
+}
+
 /* Subtle paper grain over the background — adds warmth without noise. */
 @utility paper-grain {
   position: relative;

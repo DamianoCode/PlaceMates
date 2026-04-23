@@ -86,7 +86,7 @@ export function PlacePreviewSheet({
                 type="button"
                 onClick={onClose}
                 aria-label="Zamknij"
-                className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X size={18} />
               </button>
@@ -112,7 +112,7 @@ export function PlacePreviewSheet({
               {preview && (
                 <Link
                   href={`/places/${preview.id}`}
-                  className="inline-flex h-8 items-center rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted"
+                  className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 >
                   Szczegóły
                 </Link>

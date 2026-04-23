@@ -43,7 +43,7 @@ export function WishlistHeartButton({
         aria-label={optimistic ? "Usuń z listy do odwiedzenia" : "Dodaj do listy do odwiedzenia"}
         title={optimistic ? "Do odwiedzenia" : "Dodaj do odwiedzenia"}
         className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-full transition-all",
+          "flex h-11 w-11 items-center justify-center rounded-full transition-all",
           "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           optimistic
             ? "text-primary"

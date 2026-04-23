@@ -38,7 +38,7 @@ export function MapScreen({
   }
 
   return (
-    <div className="relative h-[calc(100dvh-56px-env(safe-area-inset-bottom))] w-full">
+    <div className="relative h-[calc(100dvh-60px-env(safe-area-inset-bottom))] w-full">
       <MapViewClient
         categoryFilter={categoryFilter}
         restrictToIds={activeIdSet ?? undefined}
@@ -129,7 +129,7 @@ function FilterPill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors";
+    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors";
   return (
     <button
       type="button"

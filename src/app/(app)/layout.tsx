@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (!user) redirect("/login");
 
   return (
-    <div className="flex min-h-dvh flex-col pb-[calc(56px+env(safe-area-inset-bottom))]">
+    <div className="flex min-h-dvh flex-col pb-[calc(60px+env(safe-area-inset-bottom))]">
       <div className="flex-1">{children}</div>
       <BottomNav />
     </div>

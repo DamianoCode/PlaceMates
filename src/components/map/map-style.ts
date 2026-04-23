@@ -1,23 +1,39 @@
+import type { StyleSpecification } from "maplibre-gl";
+
 /**
  * MapLibre style selector.
  *
  * Priority:
- *   1. MapTiler if NEXT_PUBLIC_MAPTILER_KEY is set (nicest labels + vector).
- *   2. OpenFreeMap vector tiles — free, no key, proper balanced dark.
- *
- * MapLibre accepts a style URL string directly, which is simpler than
- * inlining a StyleSpecification.
+ *   1. MapTiler when NEXT_PUBLIC_MAPTILER_KEY is present (nicest rendering).
+ *   2. Carto "voyager" raster tiles — free, no key, warm colourful look.
+ *      Dark mode inverts the canvas via CSS (see globals.css) rather than
+ *      using a second basemap; this keeps the light/dark style cohesive
+ *      (same landmarks, same density) and stays readable where Carto's
+ *      dark tiles are too muddy.
  */
-export function getMapStyle(dark = false): string {
+export function getMapStyle(dark = false): StyleSpecification | string {
   const key = process.env.NEXT_PUBLIC_MAPTILER_KEY;
   if (key) {
     const variant = dark ? "streets-v2-dark" : "streets-v2";
     return `https://api.maptiler.com/maps/${variant}/style.json?key=${key}`;
   }
-  // OpenFreeMap (https://openfreemap.org) — vector tiles mirroring OSM.
-  // "positron" (light) and "dark" give a clean, legible basemap without
-  // drowning the UI. Attribution is baked into the style.
-  return dark
-    ? "https://tiles.openfreemap.org/styles/dark"
-    : "https://tiles.openfreemap.org/styles/positron";
+
+  return {
+    version: 8,
+    sources: {
+      carto: {
+        type: "raster",
+        tiles: [
+          "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+          "https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+          "https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+        ],
+        tileSize: 256,
+        attribution:
+          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
+        maxzoom: 19,
+      },
+    },
+    layers: [{ id: "carto", type: "raster", source: "carto" }],
+  };
 }

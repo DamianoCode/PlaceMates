@@ -1,15 +1,17 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, {
   GeolocateControl,
   Marker,
   NavigationControl,
   type ViewState,
+  type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
 import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
+import { loadCamera, saveCamera } from "./camera-storage";
 
 type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
 
@@ -38,10 +40,46 @@ export function MapView({
   restrictToIds?: Set<string>;
 }) {
   const [places, setPlaces] = useState<PlacePin[]>([]);
-  const [view, setView] = useState<Partial<ViewState>>({ ...DEFAULT_VIEW, ...initial });
+  // Restore last camera on mount (pick mode always starts fresh so users
+  // aren't silently dropped at some old position mid-creation).
+  const [view, setView] = useState<Partial<ViewState>>(() => {
+    if (onPick) return { ...DEFAULT_VIEW, ...initial };
+    return { ...DEFAULT_VIEW, ...(loadCamera() ?? {}), ...initial };
+  });
   const [pick, setPick] = useState<{ lng: number; lat: number } | null>(null);
   const { resolvedTheme } = useTheme();
   const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
+
+  // Persist on idle rather than every onMove tick to keep localStorage quiet.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const schedulePersist = useCallback(
+    (v: ViewState) => {
+      if (onPick) return;
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        saveCamera({
+          longitude: v.longitude,
+          latitude: v.latitude,
+          zoom: v.zoom,
+        });
+      }, 300);
+    },
+    [onPick],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
+  }, []);
+
+  const handleMove = useCallback(
+    (e: ViewStateChangeEvent) => {
+      setView(e.viewState);
+      schedulePersist(e.viewState);
+    },
+    [schedulePersist],
+  );
 
   useEffect(() => {
     if (onPick) return;
@@ -67,7 +105,7 @@ export function MapView({
   return (
     <Map
       {...view}
-      onMove={(e) => setView(e.viewState)}
+      onMove={handleMove}
       onClick={(e) => {
         if (onPick) {
           const { lng, lat } = e.lngLat;
