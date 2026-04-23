@@ -1,4 +1,4 @@
-import { and, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import {
   categories,
@@ -77,12 +77,17 @@ export async function listPlacesWithStats(
       .where(inArray(ratings.placeId, ids))
       .groupBy(ratings.placeId),
 
-    db.execute<{ place_id: string; storage_path: string }>(sql`
-      SELECT DISTINCT ON (place_id) place_id, storage_path
-        FROM ${photos}
-       WHERE place_id = ANY(${ids})
-       ORDER BY place_id, created_at DESC
-    `),
+    // Fetch every photo for these places ordered newest-first; we dedupe
+    // to "first photo per place" in TS below. Using the query builder
+    // sidesteps array-param serialisation issues with raw ANY($1).
+    db
+      .select({
+        placeId: photos.placeId,
+        storagePath: photos.storagePath,
+      })
+      .from(photos)
+      .where(inArray(photos.placeId, ids))
+      .orderBy(desc(photos.createdAt)),
 
     db
       .select({ id: wishlist.placeId })
@@ -98,7 +103,11 @@ export async function listPlacesWithStats(
   const statsBy = new Map(
     statRows.map((s) => [s.placeId, { avg: Number(s.avg), cnt: Number(s.cnt) }]),
   );
-  const photoBy = new Map(photoRows.map((p) => [p.place_id, p.storage_path]));
+  const photoBy = new Map<string, string>();
+  for (const p of photoRows) {
+    // photoRows is ordered DESC by createdAt, so the first hit per place wins.
+    if (!photoBy.has(p.placeId)) photoBy.set(p.placeId, p.storagePath);
+  }
   const wishSet = new Set(wishRows.map((r) => r.id));
   const favSet = new Set(favRows.map((r) => r.id));
 

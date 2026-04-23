@@ -25,15 +25,18 @@ type Mode = "search" | "pin";
 export function NewPlaceForm({
   categories,
   groups,
+  initialPick,
 }: {
   categories: Category[];
   groups: Group[];
+  /** Pre-selected lat/lng — forces the form to open in "pin" mode. */
+  initialPick?: { lat: number; lng: number };
 }) {
   const [state, action, pending] = useActionState<CreatePlaceState, FormData>(
     createPlaceAction,
     null,
   );
-  const [mode, setMode] = useState<Mode>("search");
+  const [mode, setMode] = useState<Mode>(initialPick ? "pin" : "search");
   const [query, setQuery] = useState("");
   const [hits, setHits] = useState<PoiHit[]>([]);
   const [searching, setSearching] = useState(false);
@@ -43,7 +46,9 @@ export function NewPlaceForm({
     lat: number;
     lng: number;
     osmId?: string;
-  } | null>(null);
+  } | null>(
+    initialPick ? { name: "", address: "", lat: initialPick.lat, lng: initialPick.lng } : null,
+  );
 
   // Debounced POI search. All setState calls happen inside the debounce
   // timer (async) to avoid cascading-render warnings.

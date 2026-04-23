@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Bookmark, Heart, LayoutGrid, Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { Bookmark, Heart, LayoutGrid, Locate, MapPin, UserPlus } from "lucide-react";
 import { MapViewClient } from "./MapViewClient";
 import { PlacePreviewSheet } from "./PlacePreviewSheet";
+import { SpeedDial, type SpeedDialAction } from "./SpeedDial";
 
 type Category = { id: string; name: string; icon?: string };
 
@@ -31,11 +33,55 @@ export function MapScreen({
         : null;
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const router = useRouter();
 
   function resetFilters() {
     setCategoryFilter(null);
     setSetFilter("none");
   }
+
+  function addHere() {
+    if (!("geolocation" in navigator)) {
+      router.push("/places/new");
+      return;
+    }
+    const toastId = toast.loading("Odczytuję lokalizację…");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        toast.dismiss(toastId);
+        const { latitude, longitude } = pos.coords;
+        router.push(
+          `/places/new?lat=${latitude.toFixed(6)}&lng=${longitude.toFixed(6)}`,
+        );
+      },
+      () => {
+        toast.dismiss(toastId);
+        toast.error("Nie udało się odczytać lokalizacji.");
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }
+
+  const speedDialActions: SpeedDialAction[] = [
+    {
+      id: "add-search",
+      label: "Dodaj miejsce",
+      icon: <MapPin size={20} />,
+      onClick: () => router.push("/places/new"),
+    },
+    {
+      id: "add-here",
+      label: "Dodaj tutaj",
+      icon: <Locate size={20} />,
+      onClick: addHere,
+    },
+    {
+      id: "invite",
+      label: "Zaproś znajomego",
+      icon: <UserPlus size={20} />,
+      onClick: () => router.push("/me#invite"),
+    },
+  ];
 
   return (
     <div className="relative h-[calc(100dvh-60px-env(safe-area-inset-bottom))] w-full">
@@ -106,13 +152,7 @@ export function MapScreen({
         onClose={() => setSelectedPlaceId(null)}
       />
 
-      <Link
-        href="/places/new"
-        aria-label="Dodaj miejsce"
-        className="absolute right-4 bottom-4 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <Plus size={24} />
-      </Link>
+      <SpeedDial actions={speedDialActions} ariaLabel="Dodaj do mapy" />
     </div>
   );
 }
