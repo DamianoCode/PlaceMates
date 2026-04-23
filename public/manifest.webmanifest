@@ -1,0 +1,20 @@
+{
+  "name": "PlaceMates",
+  "short_name": "PlaceMates",
+  "description": "Prywatne oceny miejsc z bliskimi.",
+  "start_url": "/map",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "pl",
+  "background_color": "#ffffff",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

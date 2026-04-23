@@ -16,6 +16,16 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PlaceMates",
   description: "Prywatne oceny miejsc z bliskimi.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    title: "PlaceMates",
+    capable: true,
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: "/icons/icon.svg",
+    apple: "/icons/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {

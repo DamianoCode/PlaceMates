@@ -9,11 +9,13 @@ import {
 import { listVisitsForPlace } from "@/domain/visits/service";
 import { listPhotosForPlace } from "@/domain/photos/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
+import { getExistingShareSlug } from "@/domain/sharing/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RatingForm } from "@/components/places/RatingForm";
 import { VisitForm } from "@/components/places/VisitForm";
 import { PhotoUploadForm } from "@/components/places/PhotoUploadForm";
 import { WishlistToggle } from "@/components/places/WishlistToggle";
+import { ShareRating } from "@/components/places/ShareRating";
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("pl-PL", {
@@ -42,6 +44,8 @@ export default async function PlaceDetailPage({
     getUserRating(id, user.id),
     isOnWishlist(id, user.id),
   ]);
+  const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   return (
     <section className="p-4 space-y-4">
@@ -68,7 +72,7 @@ export default async function PlaceDetailPage({
           <CardHeader>
             <CardTitle>Twoja ocena</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <RatingForm
               placeId={id}
               schema={category.ratingSchema}
@@ -78,6 +82,14 @@ export default async function PlaceDetailPage({
                   : null
               }
             />
+            <div className="border-t pt-4">
+              <ShareRating
+                placeId={id}
+                initialSlug={shareSlug}
+                baseUrl={baseUrl}
+                hasRating={!!myRating}
+              />
+            </div>
           </CardContent>
         </Card>
       )}

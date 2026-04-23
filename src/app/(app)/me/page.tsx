@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { signOutAction } from "@/app/(auth)/actions";
@@ -22,6 +23,23 @@ export default async function MePage() {
           <form action={signOutAction}>
             <Button type="submit" variant="outline">Wyloguj</Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Publiczne opinie</CardTitle>
+          <CardDescription>
+            Przeglądaj oceny udostępnione przez wszystkich użytkowników.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link
+            href="/discover"
+            className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+          >
+            Otwórz
+          </Link>
         </CardContent>
       </Card>
 
