@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Heart, LayoutGrid, Plus } from "lucide-react";
 import { MapViewClient } from "./MapViewClient";
+import { PlacePreviewSheet } from "./PlacePreviewSheet";
 
-type Category = { id: string; name: string };
+type Category = { id: string; name: string; icon?: string };
 
 export function MapScreen({
   categories,
@@ -16,6 +17,7 @@ export function MapScreen({
 }) {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [wishlistOnly, setWishlistOnly] = useState(false);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const wishSet = new Set(wishlistedIds);
 
   return (
@@ -24,45 +26,52 @@ export function MapScreen({
         categoryFilter={categoryFilter}
         wishlistOnly={wishlistOnly}
         wishlistedIds={wishSet}
+        selectedPlaceId={selectedPlaceId}
+        onSelectPlace={setSelectedPlaceId}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-2 z-10 flex justify-center px-2">
-        <div className="pointer-events-auto flex max-w-full items-center gap-2 overflow-x-auto rounded-full bg-background/90 p-1 shadow-md backdrop-blur">
-          <button
-            type="button"
+      <div className="pointer-events-none absolute inset-x-0 top-2 z-10 px-2">
+        <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/90 p-1 shadow-md backdrop-blur no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
+          <FilterPill
+            active={!categoryFilter && !wishlistOnly}
             onClick={() => {
               setCategoryFilter(null);
               setWishlistOnly(false);
             }}
-            className={pillClass(!categoryFilter && !wishlistOnly)}
+            icon={<LayoutGrid size={14} />}
           >
             Wszystkie
-          </button>
-          <button
-            type="button"
+          </FilterPill>
+          <FilterPill
+            active={wishlistOnly}
             onClick={() => {
               setCategoryFilter(null);
-              setWishlistOnly(true);
+              setWishlistOnly(!wishlistOnly);
             }}
-            className={pillClass(wishlistOnly)}
+            icon={<Heart size={14} fill={wishlistOnly ? "currentColor" : "none"} />}
           >
             Wishlist
-          </button>
+          </FilterPill>
+          <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-border" aria-hidden />
           {categories.map((c) => (
-            <button
+            <FilterPill
               key={c.id}
-              type="button"
+              active={categoryFilter === c.id}
               onClick={() => {
                 setCategoryFilter(categoryFilter === c.id ? null : c.id);
                 setWishlistOnly(false);
               }}
-              className={pillClass(categoryFilter === c.id)}
             >
               {c.name}
-            </button>
+            </FilterPill>
           ))}
         </div>
       </div>
+
+      <PlacePreviewSheet
+        placeId={selectedPlaceId}
+        onClose={() => setSelectedPlaceId(null)}
+      />
 
       <Link
         href="/places/new"
@@ -75,10 +84,32 @@ export function MapScreen({
   );
 }
 
-function pillClass(active: boolean) {
+function FilterPill({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   const base =
-    "whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors";
-  return active
-    ? `${base} bg-primary text-primary-foreground`
-    : `${base} text-muted-foreground hover:bg-muted hover:text-foreground`;
+    "inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={
+        active
+          ? `${base} bg-primary text-primary-foreground`
+          : `${base} text-muted-foreground hover:bg-muted hover:text-foreground`
+      }
+    >
+      {icon}
+      {children}
+    </button>
+  );
 }
