@@ -210,6 +210,20 @@ export const wishlist = pgTable(
   (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
 );
 
+export const favorites = pgTable(
+  "favorites",
+  {
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
+);
+
 export const publicShares = pgTable("public_shares", {
   slug: text("slug").primaryKey(),
   ratingId: uuid("rating_id")

@@ -1,48 +1,33 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
-import { listUserGroups } from "@/domain/groups/service";
-import { listCategoriesForGroup } from "@/domain/categories/service";
-import { listWishlistForUser } from "@/domain/wishlist/service";
+import { listPlacesWithStats } from "@/domain/places/list-with-stats";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PlaceCard } from "@/components/places/PlaceCard";
 
 export default async function WishlistPage() {
   const user = await (await getAuth()).getUser();
   if (!user) redirect("/login");
 
-  const [items, groups] = await Promise.all([
-    listWishlistForUser(user.id),
-    listUserGroups(user.id),
-  ]);
-  const cats = groups.length > 0 ? await listCategoriesForGroup(groups[0].id) : [];
-  const catById = new Map(cats.map((c) => [c.id, c]));
+  const cards = (await listPlacesWithStats(user.id)).filter((c) => c.isWishlisted);
 
   return (
     <>
-      <PageHeader title="Wishlist" fallbackHref="/map" />
-      <section className="p-4 space-y-3">
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Nic tu jeszcze nie ma. Wejdź w dowolne miejsce i kliknij „Dodaj do wishlist”.
-        </p>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((it) => {
-            const cat = catById.get(it.categoryId);
-            return (
-              <li key={it.placeId}>
-                <Link
-                  href={`/places/${it.placeId}`}
-                  className="flex items-baseline justify-between rounded-md border p-3 hover:bg-accent hover:text-accent-foreground"
-                >
-                  <span className="font-medium">{it.name}</span>
-                  {cat && <span className="text-xs text-muted-foreground">{cat.name}</span>}
-                </Link>
+      <PageHeader title="Do odwiedzenia" fallbackHref="/map" />
+      <section className="space-y-4 p-4">
+        {cards.length === 0 ? (
+          <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
+            Nic tu jeszcze nie ma. Zaznacz miejsce zakładką „Do odwiedzenia”
+            w nagłówku jego widoku.
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {cards.map((c) => (
+              <li key={c.id}>
+                <PlaceCard place={c} />
               </li>
-            );
-          })}
-        </ul>
-      )}
+            ))}
+          </ul>
+        )}
       </section>
     </>
   );

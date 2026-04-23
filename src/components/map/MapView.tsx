@@ -25,8 +25,7 @@ export function MapView({
   onSelectPlace,
   selectedPlaceId,
   categoryFilter,
-  wishlistOnly,
-  wishlistedIds,
+  restrictToIds,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
@@ -35,8 +34,8 @@ export function MapView({
   onSelectPlace?: (placeId: string | null) => void;
   selectedPlaceId?: string | null;
   categoryFilter?: string | null;
-  wishlistOnly?: boolean;
-  wishlistedIds?: Set<string>;
+  /** If present, only places with these ids render. */
+  restrictToIds?: Set<string>;
 }) {
   const [places, setPlaces] = useState<PlacePin[]>([]);
   const [view, setView] = useState<Partial<ViewState>>({ ...DEFAULT_VIEW, ...initial });
@@ -61,9 +60,9 @@ export function MapView({
   const visible = useMemo(() => {
     let out = places;
     if (categoryFilter) out = out.filter((p) => p.categoryId === categoryFilter);
-    if (wishlistOnly && wishlistedIds) out = out.filter((p) => wishlistedIds.has(p.id));
+    if (restrictToIds) out = out.filter((p) => restrictToIds.has(p.id));
     return out;
-  }, [places, categoryFilter, wishlistOnly, wishlistedIds]);
+  }, [places, categoryFilter, restrictToIds]);
 
   return (
     <Map

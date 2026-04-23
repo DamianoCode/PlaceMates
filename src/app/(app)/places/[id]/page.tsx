@@ -10,6 +10,7 @@ import {
 import { listVisitsForPlace } from "@/domain/visits/service";
 import { listPhotosForPlace } from "@/domain/photos/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
+import { isFavorite } from "@/domain/favorites/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { RatingForm } from "@/components/places/RatingForm";
 import { VisitForm } from "@/components/places/VisitForm";
 import { PhotoUploadForm } from "@/components/places/PhotoUploadForm";
 import { WishlistHeartButton } from "@/components/places/WishlistHeartButton";
+import { FavoriteHeartButton } from "@/components/places/FavoriteHeartButton";
 import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { StatPill } from "@/components/places/StatPill";
@@ -40,13 +42,14 @@ export default async function PlaceDetailPage({
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
 
-  const [category, ratings, visits, photos, myRating, wish] = await Promise.all([
+  const [category, ratings, visits, photos, myRating, wish, fav] = await Promise.all([
     getCategory(place.categoryId),
     listRatingsForPlace(id, user.id),
     listVisitsForPlace(id, user.id),
     listPhotosForPlace(id, user.id),
     getUserRating(id, user.id),
     isOnWishlist(id, user.id),
+    isFavorite(id, user.id),
   ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -63,7 +66,12 @@ export default async function PlaceDetailPage({
         title={place.name}
         subtitle={category?.name}
         fallbackHref="/map"
-        trailing={<WishlistHeartButton placeId={id} initial={wish} />}
+        trailing={
+          <div className="flex items-center gap-0.5">
+            <FavoriteHeartButton placeId={id} initial={fav} />
+            <WishlistHeartButton placeId={id} initial={wish} />
+          </div>
+        }
       />
 
       <section className="space-y-6 p-4">

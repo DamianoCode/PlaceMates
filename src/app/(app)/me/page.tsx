@@ -41,7 +41,24 @@ export default async function MePage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Publiczne opinie</CardTitle>
+            <CardTitle className="font-display text-xl">Ulubione</CardTitle>
+            <CardDescription>
+              Miejsca, które kochasz — oznaczone serduszkiem.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href="/favorites"
+              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+            >
+              Otwórz
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display text-xl">Publiczne opinie</CardTitle>
             <CardDescription>
               Przeglądaj oceny udostępnione przez wszystkich użytkowników.
             </CardDescription>

@@ -3,30 +3,21 @@ import { getAuth } from "@/infra/auth";
 import { listPlacesWithStats } from "@/domain/places/list-with-stats";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PlaceCard } from "@/components/places/PlaceCard";
-import { PlaceSearchInput } from "@/components/places/PlaceSearchInput";
 
-export default async function PlacesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ q?: string }>;
-}) {
+export default async function FavoritesPage() {
   const user = await (await getAuth()).getUser();
   if (!user) redirect("/login");
 
-  const { q } = await searchParams;
-  const cards = await listPlacesWithStats(user.id, q);
+  const cards = (await listPlacesWithStats(user.id)).filter((c) => c.isFavorite);
 
   return (
     <>
-      <PageHeader title="Miejsca" fallbackHref="/map" />
+      <PageHeader title="Ulubione" fallbackHref="/map" />
       <section className="space-y-4 p-4">
-        <PlaceSearchInput />
-
         {cards.length === 0 ? (
           <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-            {q
-              ? `Brak wyników dla „${q}”.`
-              : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
+            Nic tu jeszcze nie ma. Zaznacz miejsce serduszkiem w nagłówku
+            jego widoku.
           </p>
         ) : (
           <ul className="space-y-2">
