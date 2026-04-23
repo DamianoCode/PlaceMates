@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RatingForm } from "@/components/places/RatingForm";
 import { VisitForm } from "@/components/places/VisitForm";
 import { PhotoUploadForm } from "@/components/places/PhotoUploadForm";
-import { WishlistToggle } from "@/components/places/WishlistToggle";
+import { WishlistHeartButton } from "@/components/places/WishlistHeartButton";
 import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { StatPill } from "@/components/places/StatPill";
@@ -63,13 +63,23 @@ export default async function PlaceDetailPage({
         title={place.name}
         subtitle={category?.name}
         fallbackHref="/map"
+        trailing={<WishlistHeartButton placeId={id} initial={wish} />}
       />
 
-      <section className="space-y-5 p-4">
+      <section className="space-y-6 p-4">
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}
         />
+
+        <div className="-mt-2">
+          <h2 className="font-display text-3xl leading-tight tracking-tight">
+            {place.name}
+          </h2>
+          {category && (
+            <p className="text-sm italic text-muted-foreground">{category.name}</p>
+          )}
+        </div>
 
         <div className="grid grid-cols-4 gap-2">
           <StatPill
@@ -94,10 +104,6 @@ export default async function PlaceDetailPage({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <WishlistToggle placeId={id} initial={wish} />
-        </div>
-
         {place.address && (
           <div className="flex items-start gap-2 rounded-xl border bg-muted/30 p-3 text-sm">
             <MapPin size={16} className="mt-0.5 flex-shrink-0 text-muted-foreground" />
@@ -113,8 +119,8 @@ export default async function PlaceDetailPage({
         {category && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star size={18} className="text-amber-500" /> Twoja ocena
+              <CardTitle className="flex items-center gap-2 font-display text-xl">
+                <Star size={18} className="text-primary" /> Twoja ocena
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -142,7 +148,7 @@ export default async function PlaceDetailPage({
         {othersRatings.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 font-display text-xl">
                 <Users size={18} /> Oceny grupy
               </CardTitle>
             </CardHeader>
@@ -151,13 +157,13 @@ export default async function PlaceDetailPage({
                 <div key={r.id} className="rounded-xl border bg-muted/20 p-3 text-sm">
                   <div className="flex items-baseline justify-between">
                     <span className="font-medium">{r.userDisplayName}</span>
-                    <span className="flex items-center gap-1 text-amber-500 tabular-nums">
+                    <span className="flex items-center gap-1 tabular-nums text-primary">
                       <Star size={14} className="fill-current" />
                       {r.overall.toFixed(2)}
                     </span>
                   </div>
                   {r.note && (
-                    <p className="mt-1 text-muted-foreground">{r.note}</p>
+                    <p className="mt-1 italic text-muted-foreground">“{r.note}”</p>
                   )}
                 </div>
               ))}
@@ -167,7 +173,7 @@ export default async function PlaceDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display text-xl">
               <Footprints size={18} /> Wizyty
             </CardTitle>
           </CardHeader>
@@ -186,7 +192,7 @@ export default async function PlaceDetailPage({
                       </span>
                     </div>
                     {v.note && (
-                      <p className="mt-1 text-muted-foreground">{v.note}</p>
+                      <p className="mt-1 italic text-muted-foreground">“{v.note}”</p>
                     )}
                   </li>
                 ))}
@@ -197,7 +203,7 @@ export default async function PlaceDetailPage({
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-display text-xl">
               <Camera size={18} /> Zdjęcia
             </CardTitle>
           </CardHeader>

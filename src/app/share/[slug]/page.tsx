@@ -28,11 +28,16 @@ export default async function PublicSharePage({ params }: { params: Params }) {
   return (
     <main className="mx-auto min-h-dvh max-w-xl p-4 space-y-4">
       <header className="space-y-1">
-        <Link href="/" className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+        <Link
+          href="/"
+          className="font-display text-xs italic tracking-wide text-muted-foreground underline-offset-4 hover:underline"
+        >
           PlaceMates
         </Link>
-        <h1 className="text-2xl font-semibold">{view.placeName}</h1>
-        <p className="text-sm text-muted-foreground">{view.categoryName}</p>
+        <h1 className="font-display text-3xl leading-tight tracking-tight">
+          {view.placeName}
+        </h1>
+        <p className="text-sm italic text-muted-foreground">{view.categoryName}</p>
       </header>
 
       <Card>

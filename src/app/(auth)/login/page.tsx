@@ -8,8 +8,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Zaloguj się do PlaceMates</CardTitle>
-        <CardDescription>Oceniajcie miejsca razem — prywatnie.</CardDescription>
+        <CardTitle className="font-display text-2xl">Zaloguj się do PlaceMates</CardTitle>
+        <CardDescription className="italic">Oceniajcie miejsca razem — prywatnie.</CardDescription>
       </CardHeader>
       <CardContent>
         <LoginForm next={next} />
