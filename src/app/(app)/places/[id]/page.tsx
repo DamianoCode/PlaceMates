@@ -8,10 +8,12 @@ import {
 } from "@/domain/ratings/service";
 import { listVisitsForPlace } from "@/domain/visits/service";
 import { listPhotosForPlace } from "@/domain/photos/service";
+import { isOnWishlist } from "@/domain/wishlist/service";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RatingForm } from "@/components/places/RatingForm";
 import { VisitForm } from "@/components/places/VisitForm";
 import { PhotoUploadForm } from "@/components/places/PhotoUploadForm";
+import { WishlistToggle } from "@/components/places/WishlistToggle";
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("pl-PL", {
@@ -32,19 +34,21 @@ export default async function PlaceDetailPage({
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
 
-  const [category, ratings, visits, photos, myRating] = await Promise.all([
+  const [category, ratings, visits, photos, myRating, wish] = await Promise.all([
     getCategory(place.categoryId),
     listRatingsForPlace(id, user.id),
     listVisitsForPlace(id, user.id),
     listPhotosForPlace(id, user.id),
     getUserRating(id, user.id),
+    isOnWishlist(id, user.id),
   ]);
 
   return (
     <section className="p-4 space-y-4">
-      <header>
+      <header className="space-y-2">
         <h1 className="text-2xl font-semibold">{place.name}</h1>
         {category && <p className="text-sm text-muted-foreground">{category.name}</p>}
+        <WishlistToggle placeId={id} initial={wish} />
       </header>
 
       <Card>

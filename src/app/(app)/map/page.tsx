@@ -1,18 +1,22 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { MapViewClient } from "@/components/map/MapViewClient";
+import { redirect } from "next/navigation";
+import { getAuth } from "@/infra/auth";
+import { listUserGroups } from "@/domain/groups/service";
+import { listCategoriesForGroup } from "@/domain/categories/service";
+import { wishlistedIds } from "@/domain/wishlist/service";
+import { MapScreen } from "@/components/map/MapScreen";
 
-export default function MapPage() {
+export default async function MapPage() {
+  const user = await (await getAuth()).getUser();
+  if (!user) redirect("/login");
+
+  const groups = await listUserGroups(user.id);
+  const cats = groups.length > 0 ? await listCategoriesForGroup(groups[0].id) : [];
+  const wishIds = await wishlistedIds(user.id);
+
   return (
-    <div className="relative h-[calc(100dvh-56px-env(safe-area-inset-bottom))] w-full">
-      <MapViewClient />
-      <Link
-        href="/places/new"
-        aria-label="Dodaj miejsce"
-        className="absolute right-4 bottom-4 z-10 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        <Plus size={24} />
-      </Link>
-    </div>
+    <MapScreen
+      categories={cats.map((c) => ({ id: c.id, name: c.name }))}
+      wishlistedIds={Array.from(wishIds)}
+    />
   );
 }

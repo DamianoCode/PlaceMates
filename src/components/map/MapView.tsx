@@ -17,10 +17,16 @@ const DEFAULT_VIEW: Partial<ViewState> = {
 export function MapView({
   initial,
   onPick,
+  categoryFilter,
+  wishlistOnly,
+  wishlistedIds,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
   onPick?: (lnglat: { lng: number; lat: number }) => void;
+  categoryFilter?: string | null;
+  wishlistOnly?: boolean;
+  wishlistedIds?: Set<string>;
 }) {
   const router = useRouter();
   const [places, setPlaces] = useState<PlacePin[]>([]);
@@ -28,10 +34,8 @@ export function MapView({
   const [pick, setPick] = useState<{ lng: number; lat: number } | null>(null);
   const style = useMemo(() => getMapStyle(false), []);
 
-  // Fetch all user places once on mount. Good enough for MVP; bbox paging
-  // kicks in once datasets grow past a few thousand.
   useEffect(() => {
-    if (onPick) return; // pick mode: no markers needed
+    if (onPick) return;
     let abort = false;
     fetch("/api/places")
       .then((r) => (r.ok ? r.json() : { places: [] }))
@@ -43,6 +47,13 @@ export function MapView({
       abort = true;
     };
   }, [onPick]);
+
+  const visible = useMemo(() => {
+    let out = places;
+    if (categoryFilter) out = out.filter((p) => p.categoryId === categoryFilter);
+    if (wishlistOnly && wishlistedIds) out = out.filter((p) => wishlistedIds.has(p.id));
+    return out;
+  }, [places, categoryFilter, wishlistOnly, wishlistedIds]);
 
   return (
     <Map
@@ -61,7 +72,7 @@ export function MapView({
       <NavigationControl position="top-right" />
 
       {!onPick &&
-        places.map((p) => (
+        visible.map((p) => (
           <Marker
             key={p.id}
             longitude={p.lng}
