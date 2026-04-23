@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
 import { listPublicShares } from "@/domain/sharing/service";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium" }).format(d);
@@ -14,13 +15,13 @@ export default async function DiscoverPage() {
   const items = await listPublicShares(100);
 
   return (
-    <section className="p-4 space-y-3">
-      <header>
-        <h1 className="text-2xl font-semibold">Publiczne opinie</h1>
-        <p className="text-sm text-muted-foreground">
-          Oceny udostępnione przez innych użytkowników PlaceMates.
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Publiczne opinie"
+        subtitle="Oceny udostępnione przez wszystkich użytkowników"
+        fallbackHref="/me"
+      />
+      <section className="p-4 space-y-3">
 
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
@@ -53,6 +54,7 @@ export default async function DiscoverPage() {
           ))}
         </ul>
       )}
-    </section>
+      </section>
+    </>
   );
 }

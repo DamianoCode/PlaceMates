@@ -8,6 +8,7 @@ import Map, {
   NavigationControl,
   type ViewState,
 } from "react-map-gl/maplibre";
+import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 
 type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
@@ -40,7 +41,8 @@ export function MapView({
   const [places, setPlaces] = useState<PlacePin[]>([]);
   const [view, setView] = useState<Partial<ViewState>>({ ...DEFAULT_VIEW, ...initial });
   const [pick, setPick] = useState<{ lng: number; lat: number } | null>(null);
-  const style = useMemo(() => getMapStyle(false), []);
+  const { resolvedTheme } = useTheme();
+  const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
 
   useEffect(() => {
     if (onPick) return;

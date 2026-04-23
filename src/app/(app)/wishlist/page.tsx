@@ -4,6 +4,7 @@ import { getAuth } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { listWishlistForUser } from "@/domain/wishlist/service";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default async function WishlistPage() {
   const user = await (await getAuth()).getUser();
@@ -17,8 +18,9 @@ export default async function WishlistPage() {
   const catById = new Map(cats.map((c) => [c.id, c]));
 
   return (
-    <section className="p-4 space-y-3">
-      <h1 className="text-2xl font-semibold">Wishlist</h1>
+    <>
+      <PageHeader title="Wishlist" fallbackHref="/map" />
+      <section className="p-4 space-y-3">
       {items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Nic tu jeszcze nie ma. Wejdź w dowolne miejsce i kliknij „Dodaj do wishlist”.
@@ -41,6 +43,7 @@ export default async function WishlistPage() {
           })}
         </ul>
       )}
-    </section>
+      </section>
+    </>
   );
 }

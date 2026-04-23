@@ -4,6 +4,7 @@ import { getAuth } from "@/infra/auth";
 import { listPlacesForUser } from "@/domain/places/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
+import { PageHeader } from "@/components/layout/PageHeader";
 
 export default async function PlacesPage() {
   const user = await (await getAuth()).getUser();
@@ -18,8 +19,9 @@ export default async function PlacesPage() {
   const catById = new Map(cats.map((c) => [c.id, c]));
 
   return (
-    <section className="p-4 space-y-3">
-      <h1 className="text-2xl font-semibold">Miejsca</h1>
+    <>
+      <PageHeader title="Miejsca" fallbackHref="/map" />
+      <section className="p-4 space-y-3">
       {places.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Brak miejsc. Dodaj pierwsze z poziomu mapy.
@@ -42,6 +44,7 @@ export default async function PlacesPage() {
           })}
         </ul>
       )}
-    </section>
+      </section>
+    </>
   );
 }
