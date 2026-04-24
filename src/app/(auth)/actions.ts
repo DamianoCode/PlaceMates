@@ -72,7 +72,10 @@ export async function registerAction(_: FormState, formData: FormData): Promise<
     });
   }
 
-  redirect("/map");
+  // Honour `next` so users landing on the register page from a group
+  // invite end up back at /join/<token> right after signup.
+  const next = (formData.get("next") as string | null)?.trim();
+  redirect(next && next.startsWith("/") ? next : "/map");
 }
 
 export async function signOutAction() {

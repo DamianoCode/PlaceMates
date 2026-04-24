@@ -35,7 +35,10 @@ export function LoginForm({ next }: { next?: string }) {
       </Button>
       <p className="text-center text-sm text-muted-foreground">
         Nie masz konta?{" "}
-        <Link href="/register" className="font-medium text-foreground underline-offset-4 hover:underline">
+        <Link
+          href={next ? `/register?next=${encodeURIComponent(next)}` : "/register"}
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+        >
           Zarejestruj się
         </Link>
       </p>

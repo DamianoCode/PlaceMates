@@ -1,99 +1,122 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { signOutAction } from "@/app/(auth)/actions";
+import {
+  ChevronRight,
+  Globe,
+  Heart,
+  Palette,
+  Users as UsersIcon,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { getAuth } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
-import { InviteForm } from "@/components/groups/InviteForm";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AccountHeader } from "@/components/layout/AccountHeader";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { CreateGroupForm } from "@/components/groups/CreateGroupForm";
+import { GroupListItem } from "@/components/groups/GroupListItem";
 
 export default async function MePage() {
   const user = await (await getAuth()).getUser();
   const groups = user ? await listUserGroups(user.id) : [];
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   return (
     <>
       <PageHeader title="Twoje konto" fallbackHref="/map" />
-      <section className="p-4 space-y-4">
+      <section className="space-y-5 p-4">
+        {user && (
+          <AccountHeader
+            displayName={user.displayName}
+            email={user.email}
+            avatarUrl={user.avatarUrl}
+          />
+        )}
+
         <Card>
           <CardHeader>
-            <CardTitle>{user?.displayName ?? "—"}</CardTitle>
-            <CardDescription>{user?.email ?? ""}</CardDescription>
+            <CardTitle className="flex items-center gap-2 font-display text-xl">
+              <UsersIcon size={18} /> Twoje grupy
+            </CardTitle>
+            <CardDescription>
+              Każda grupa to osobny świat miejsc i opinii. Zaproś bliskich lub
+              trzymaj wszystko dla siebie.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form action={signOutAction}>
-              <Button type="submit" variant="outline">Wyloguj</Button>
-            </form>
+          <CardContent className="space-y-2">
+            {groups.map((g) => (
+              <GroupListItem key={g.id} group={g} />
+            ))}
+            <CreateGroupForm />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Motyw</CardTitle>
-            <CardDescription>Jasny, ciemny, albo zgodnie z systemem.</CardDescription>
+            <CardTitle className="font-display text-xl">Odkrywaj</CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y">
+            <NavRow
+              href="/favorites"
+              icon={<Heart size={18} className="text-rose-500" />}
+              title="Ulubione"
+              subtitle="Miejsca oznaczone serduszkiem"
+            />
+            <NavRow
+              href="/discover"
+              icon={<Globe size={18} className="text-primary" />}
+              title="Publiczne opinie"
+              subtitle="Oceny udostępnione przez innych"
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-xl">
+              <Palette size={18} /> Wygląd
+            </CardTitle>
+            <CardDescription>
+              Jasny, ciemny, albo zgodnie z systemem.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ThemeToggle />
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-xl">Ulubione</CardTitle>
-            <CardDescription>
-              Miejsca, które kochasz — oznaczone serduszkiem.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/favorites"
-              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-            >
-              Otwórz
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-xl">Publiczne opinie</CardTitle>
-            <CardDescription>
-              Przeglądaj oceny udostępnione przez wszystkich użytkowników.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href="/discover"
-              className="inline-flex items-center rounded-md border px-3 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-            >
-              Otwórz
-            </Link>
-          </CardContent>
-        </Card>
-
-        {groups.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Zaproś do grupy</CardTitle>
-              <CardDescription>
-                Link działa 14 dni. Każde zaproszenie można wykorzystać raz.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {groups.map((g) => (
-                <InviteForm
-                  key={g.id}
-                  groupId={g.id}
-                  groupName={g.name}
-                  baseUrl={baseUrl}
-                />
-              ))}
-            </CardContent>
-          </Card>
-        )}
       </section>
     </>
+  );
+}
+
+function NavRow({
+  href,
+  icon,
+  title,
+  subtitle,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 transition-colors hover:text-foreground"
+    >
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-medium leading-tight">{title}</p>
+        <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
+      </div>
+      <ChevronRight size={18} className="flex-shrink-0 text-muted-foreground" />
+    </Link>
   );
 }

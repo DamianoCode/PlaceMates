@@ -114,10 +114,10 @@ export function MapScreen({
       },
     },
     {
-      id: "invite",
-      label: "Zaproś znajomego",
+      id: "groups",
+      label: "Twoje grupy",
       icon: <UserPlus size={20} />,
-      onClick: () => router.push("/me#invite"),
+      onClick: () => router.push("/me"),
     },
   ];
 
