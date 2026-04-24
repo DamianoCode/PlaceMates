@@ -229,7 +229,7 @@ function FilterPill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors";
+    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.97]";
   return (
     <button
       type="button"
@@ -237,7 +237,7 @@ function FilterPill({
       aria-pressed={active}
       className={
         active
-          ? `${base} bg-primary text-primary-foreground`
+          ? `${base} bg-primary text-primary-foreground shadow-sm shadow-primary/30`
           : `${base} text-muted-foreground hover:bg-muted hover:text-foreground`
       }
     >

@@ -148,6 +148,58 @@
   }
 }
 
+/* Shared motion primitives. CSS-only, opt-in via class, so we don't
+ * animate on every render — only on the first mount of an element.
+ * animation-fill-mode: both keeps the pre-state visible for SSR. */
+
+@keyframes pm-marker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-1px) scale(0.6);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-1px) scale(1);
+  }
+}
+
+@keyframes pm-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pm-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 oklch(from var(--color-primary) l c h / 0.45);
+  }
+  60% {
+    box-shadow: 0 0 0 12px oklch(from var(--color-primary) l c h / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 oklch(from var(--color-primary) l c h / 0);
+  }
+}
+
+/* Respect a user's reduced-motion preference system-wide. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Shared styling for native <select> and <textarea> so they match our
  * Input component. Apply via className="field-base" + extra sizing. */
 @utility field-base {

@@ -205,10 +205,14 @@ export function MapView({
       />
 
       {!onPick &&
-        visible.map((p) => {
+        visible.map((p, i) => {
           const active = selectedPlaceId === p.id;
           const slug = categoriesById?.get(p.categoryId)?.slug ?? null;
           const Icon = iconForCategorySlug(slug);
+          // Tiny stagger so a filter change cascades a wave across the
+          // viewport instead of all pins popping in at once. Capped at
+          // 240 ms total so it never feels slow.
+          const delay = Math.min(i * 8, 240);
           return (
             <Marker
               key={p.id}
@@ -223,11 +227,14 @@ export function MapView({
               <span
                 aria-label={p.name}
                 className={
-                  "flex -translate-y-1 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md transition-all " +
+                  "flex -translate-y-1 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md transition-[width,height,box-shadow] duration-200 ease-out " +
                   (active
                     ? "h-11 w-11 bg-primary text-primary-foreground ring-4 ring-primary/30"
                     : "h-9 w-9 bg-primary text-primary-foreground")
                 }
+                style={{
+                  animation: `pm-marker-in 320ms ${delay}ms cubic-bezier(0.2, 0.9, 0.25, 1.05) both`,
+                }}
               >
                 <Icon size={active ? 20 : 18} strokeWidth={2.25} aria-hidden />
               </span>

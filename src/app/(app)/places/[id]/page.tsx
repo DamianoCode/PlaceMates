@@ -102,21 +102,25 @@ export default async function PlaceDetailPage({
 
         <div className="grid grid-cols-4 gap-2">
           <StatPill
+            index={0}
             icon={Star}
             value={groupAvg !== null ? groupAvg.toFixed(2) : "—"}
             label={`Ocena · ${ratings.length}`}
           />
           <StatPill
+            index={1}
             icon={Footprints}
             value={String(visits.length)}
             label="Wizyt"
           />
           <StatPill
+            index={2}
             icon={Camera}
             value={String(photos.length)}
             label="Zdjęć"
           />
           <StatPill
+            index={3}
             icon={Users}
             value={String(othersRatings.length)}
             label="Od innych"
