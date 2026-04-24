@@ -148,6 +148,28 @@
   }
 }
 
+/* Shared styling for native <select> and <textarea> so they match our
+ * Input component. Apply via className="field-base" + extra sizing. */
+@utility field-base {
+  width: 100%;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-input);
+  background: transparent;
+  padding-inline: 0.875rem;
+  padding-block: 0.5rem;
+  font-size: 1rem;
+  color: var(--color-foreground);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+  outline: none;
+  &::placeholder {
+    color: var(--color-muted-foreground);
+  }
+  &:focus-visible {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 3px oklch(from var(--color-ring) l c h / 0.25);
+  }
+}
+
 /* Turn the warm light basemap into a legible dark variant by inverting
  * and re-rotating the hue. Applied to the map canvas only so overlays,
  * controls, and markers keep their real colours. */

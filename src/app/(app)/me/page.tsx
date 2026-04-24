@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { getAuth } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
+import { getProfile } from "@/domain/profile/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AccountHeader } from "@/components/layout/AccountHeader";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
@@ -23,7 +24,9 @@ import { GroupListItem } from "@/components/groups/GroupListItem";
 
 export default async function MePage() {
   const user = await (await getAuth()).getUser();
-  const groups = user ? await listUserGroups(user.id) : [];
+  const [groups, profile] = user
+    ? await Promise.all([listUserGroups(user.id), getProfile(user.id)])
+    : [[], null];
 
   return (
     <>
@@ -31,9 +34,9 @@ export default async function MePage() {
       <section className="space-y-5 p-4">
         {user && (
           <AccountHeader
-            displayName={user.displayName}
+            displayName={profile?.displayName ?? user.displayName}
             email={user.email}
-            avatarUrl={user.avatarUrl}
+            avatarUrl={profile?.avatarUrl ?? user.avatarUrl}
           />
         )}
 

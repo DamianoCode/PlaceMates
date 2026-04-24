@@ -1,8 +1,10 @@
 export type UploadInput = {
   bucket: string;
   path: string;
-  body: Blob | ArrayBuffer | Uint8Array;
+  body: Blob | ArrayBuffer | Uint8Array | File;
   contentType: string;
+  /** Overwrite any existing object at the same path. Defaults to false. */
+  upsert?: boolean;
 };
 
 export type UploadResult =

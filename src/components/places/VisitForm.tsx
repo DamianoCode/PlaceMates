@@ -19,7 +19,7 @@ export function VisitForm({ placeId }: { placeId: string }) {
         rows={2}
         placeholder="Notatka z wizyty (opcjonalnie)"
         maxLength={2000}
-        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        className="field-base"
       />
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
       {saved ? <p className="text-sm text-emerald-600">Dodano wizytę.</p> : null}

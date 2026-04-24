@@ -69,7 +69,7 @@ export function RatingForm({
           rows={3}
           maxLength={2000}
           defaultValue={initial?.note ?? ""}
-          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          className="field-base"
         />
       </div>
 

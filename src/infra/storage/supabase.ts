@@ -3,10 +3,10 @@ import type { FileStorage, UploadInput, UploadResult } from "./provider";
 
 export function createSupabaseStorage(client: SupabaseClient): FileStorage {
   return {
-    async upload({ bucket, path, body, contentType }: UploadInput): Promise<UploadResult> {
+    async upload({ bucket, path, body, contentType, upsert }: UploadInput): Promise<UploadResult> {
       const { error } = await client.storage.from(bucket).upload(path, body, {
         contentType,
-        upsert: false,
+        upsert: upsert ?? false,
       });
       if (error) return { ok: false, error: error.message };
       return { ok: true, path };
