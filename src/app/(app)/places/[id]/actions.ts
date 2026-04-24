@@ -6,7 +6,7 @@ import { getCategory } from "@/domain/categories/service";
 import { getPlaceForUser } from "@/domain/places/service";
 import { upsertRating } from "@/domain/ratings/service";
 import { addVisit } from "@/domain/visits/service";
-import { addPhoto, setCoverPhoto } from "@/domain/photos/service";
+import { addPhoto, deletePhoto, setCoverPhoto } from "@/domain/photos/service";
 
 type ActionState = { error: string } | { ok: true } | null;
 
@@ -112,6 +112,27 @@ export async function setCoverPhotoAction(
   if (!photoId) return { error: "Brak zdjęcia." };
 
   const result = await setCoverPhoto(photoId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${result.data.placeId}`);
+  revalidatePath("/map");
+  revalidatePath("/places");
+  return { ok: true };
+}
+
+export type DeletePhotoState = { error: string } | { ok: true } | null;
+
+export async function deletePhotoAction(
+  _: DeletePhotoState,
+  formData: FormData,
+): Promise<DeletePhotoState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const photoId = formData.get("photoId") as string | null;
+  if (!photoId) return { error: "Brak zdjęcia." };
+
+  const result = await deletePhoto(photoId, user.id);
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/places/${result.data.placeId}`);

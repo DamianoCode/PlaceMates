@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera, Image as ImageIcon, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { addPhotoAction } from "@/app/(app)/places/[id]/actions";
 
@@ -11,51 +12,74 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
   const [state, action, pending] = useActionState<State, FormData>(addPhotoAction, null);
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Hold the active object URL in a ref so we revoke it exactly once
+  // — at selection change or on unmount. Revoking *before* the <img>
+  // paints is what caused the broken-icon preview.
+  const urlRef = useRef<string | null>(null);
+
   const [dims, setDims] = useState<{ width: number; height: number } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
   const error = state && "error" in state ? state.error : null;
-  const saved = state && "ok" in state && state.ok;
+  const saved = !!(state && "ok" in state && state.ok === true);
 
-  function onFileChange(file: File | null) {
+  // Clear selection after a successful upload so the picker returns to
+  // its empty state and toast the success instead of leaving it inline.
+  const prevSaved = useRef(false);
+  useEffect(() => {
+    if (saved && !prevSaved.current) {
+      clearSelection();
+      toast.success("Zdjęcie dodane.");
+    }
+    prevSaved.current = saved;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
+
+  // Revoke the current blob URL on unmount.
+  useEffect(() => {
+    return () => {
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    };
+  }, []);
+
+  function setFile(file: File | null) {
+    // Revoke the previous blob before creating a new one.
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = null;
+
     if (!file) {
       setPreview(null);
       setDims(null);
       setFileName(null);
       return;
     }
-    setFileName(file.name);
     const url = URL.createObjectURL(file);
+    urlRef.current = url;
     setPreview(url);
-    const img = new Image();
-    img.onload = () => {
-      setDims({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
+    setFileName(file.name);
+
+    // Read natural dimensions for server-side storage. The image stays
+    // alive in the <img> tag; we do NOT revoke the URL here.
+    const probe = new Image();
+    probe.onload = () => {
+      setDims({ width: probe.naturalWidth, height: probe.naturalHeight });
     };
-    img.src = url;
+    probe.src = url;
   }
 
   function openPicker(source: "camera" | "gallery") {
     const input = fileInputRef.current;
     if (!input) return;
-    // Flip the `capture` hint before opening:
-    //  - "environment" asks the OS to default to the rear camera
-    //  - removing it shows the full picker (photo library / files)
-    // The browser still falls back gracefully when capture isn't
-    // supported (desktop: opens webcam or regular file dialog).
-    if (source === "camera") {
-      input.setAttribute("capture", "environment");
-    } else {
-      input.removeAttribute("capture");
-    }
-    input.value = ""; // let the same file be picked twice in a row
+    if (source === "camera") input.setAttribute("capture", "environment");
+    else input.removeAttribute("capture");
+    input.value = "";
     input.click();
   }
 
   function clearSelection() {
     if (fileInputRef.current) fileInputRef.current.value = "";
-    onFileChange(null);
+    setFile(null);
   }
 
   const hasSelection = !!preview && !!dims;
@@ -72,7 +96,7 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
         accept="image/*"
         required
         className="sr-only"
-        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
 
       {!hasSelection && (
@@ -121,7 +145,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
       )}
 
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-      {saved ? <p className="text-sm text-emerald-600">Zdjęcie dodane.</p> : null}
 
       <Button type="submit" disabled={pending || !hasSelection} className="w-full">
         {pending ? "Wysyłam…" : "Dodaj zdjęcie"}

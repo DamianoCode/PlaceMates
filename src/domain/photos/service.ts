@@ -100,6 +100,53 @@ export async function addPhoto(
 }
 
 /**
+ * Delete a photo. Only the uploader may do this — other group members
+ * shouldn't be able to remove someone else's contribution. Storage
+ * object is removed first, then the row; if storage removal fails we
+ * bail before touching the DB so we don't orphan DB rows.
+ *
+ * Side effect: if the deleted photo was the cover, we promote the
+ * newest remaining photo to keep the place's wizytówka populated.
+ */
+export async function deletePhoto(
+  photoId: string,
+  userId: string,
+): Promise<Result<{ placeId: string }>> {
+  const [row] = await db
+    .select({
+      id: photos.id,
+      placeId: photos.placeId,
+      storagePath: photos.storagePath,
+      isCover: photos.isCover,
+    })
+    .from(photos)
+    .where(and(eq(photos.id, photoId), eq(photos.userId, userId)))
+    .limit(1);
+  if (!row) return err("Tylko autor zdjęcia może je usunąć.");
+
+  const storage = await getStorage();
+  await storage.remove(PHOTO_BUCKET, row.storagePath);
+  await db.delete(photos).where(eq(photos.id, photoId));
+
+  if (row.isCover) {
+    const [successor] = await db
+      .select({ id: photos.id })
+      .from(photos)
+      .where(eq(photos.placeId, row.placeId))
+      .orderBy(desc(photos.createdAt))
+      .limit(1);
+    if (successor) {
+      await db
+        .update(photos)
+        .set({ isCover: true })
+        .where(eq(photos.id, successor.id));
+    }
+  }
+
+  return ok({ placeId: row.placeId });
+}
+
+/**
  * Promote a photo to be the cover for its place. Clears the previous
  * cover first so the place never has two covers. Any group member
  * with access to the place can change the cover — it's a shared

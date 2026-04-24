@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Camera, Image as ImageIcon, X } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   addItemPhotoAction,
@@ -16,26 +17,46 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
   );
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const urlRef = useRef<string | null>(null);
+
   const [dims, setDims] = useState<{ width: number; height: number } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
   const error = state && "error" in state ? state.error : null;
-  const saved = state && "ok" in state && state.ok;
+  const saved = !!(state && "ok" in state && state.ok === true);
 
-  function onFileChange(file: File | null) {
+  const prevSaved = useRef(false);
+  useEffect(() => {
+    if (saved && !prevSaved.current) {
+      clear();
+      toast.success("Zdjęcie dodane.");
+    }
+    prevSaved.current = saved;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [saved]);
+
+  useEffect(() => {
+    return () => {
+      if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    };
+  }, []);
+
+  function setFile(file: File | null) {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = null;
     if (!file) {
       setPreview(null);
       setDims(null);
       return;
     }
     const url = URL.createObjectURL(file);
+    urlRef.current = url;
     setPreview(url);
-    const img = new Image();
-    img.onload = () => {
-      setDims({ width: img.naturalWidth, height: img.naturalHeight });
-      URL.revokeObjectURL(url);
+    const probe = new Image();
+    probe.onload = () => {
+      setDims({ width: probe.naturalWidth, height: probe.naturalHeight });
     };
-    img.src = url;
+    probe.src = url;
   }
 
   function openPicker(source: "camera" | "gallery") {
@@ -49,7 +70,7 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
 
   function clear() {
     if (fileInputRef.current) fileInputRef.current.value = "";
-    onFileChange(null);
+    setFile(null);
   }
 
   const hasSelection = !!preview && !!dims;
@@ -66,7 +87,7 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
         accept="image/*"
         required
         className="sr-only"
-        onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
 
       {!hasSelection ? (
@@ -104,7 +125,6 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
       )}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
-      {saved ? <p className="text-sm text-emerald-600">Zdjęcie dodane.</p> : null}
 
       <Button type="submit" disabled={pending || !hasSelection} className="w-full">
         {pending ? "Wysyłam…" : "Dodaj zdjęcie"}

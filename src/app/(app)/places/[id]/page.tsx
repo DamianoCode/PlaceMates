@@ -31,7 +31,7 @@ import { WishlistHeartButton } from "@/components/places/WishlistHeartButton";
 import { FavoriteHeartButton } from "@/components/places/FavoriteHeartButton";
 import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
-import { CoverToggle } from "@/components/places/CoverToggle";
+import { PhotoTile } from "@/components/places/PhotoTile";
 import { StatPill } from "@/components/places/StatPill";
 import { NavigateButton } from "@/components/places/NavigateButton";
 import { ItemCard } from "@/components/items/ItemCard";
@@ -274,18 +274,13 @@ export default async function PlaceDetailPage({
             {photos.length > 0 && (
               <ul className="grid grid-cols-3 gap-2">
                 {photos.map((p) => (
-                  <li
-                    key={p.id}
-                    className="relative aspect-square overflow-hidden rounded-lg"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.url}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
+                  <li key={p.id}>
+                    <PhotoTile
+                      photoId={p.id}
+                      url={p.url}
+                      isCover={p.isCover}
+                      canDelete={p.userId === user.id}
                     />
-                    <CoverToggle photoId={p.id} isCover={p.isCover} />
                   </li>
                 ))}
               </ul>
