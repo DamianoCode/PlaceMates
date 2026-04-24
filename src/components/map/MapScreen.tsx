@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -52,6 +52,11 @@ export function MapScreen({
   const handleBoundsChange = useCallback((b: Bbox) => {
     bboxRef.current = b;
   }, []);
+
+  const categoriesById = useMemo(
+    () => new Map(categories.map((c) => [c.id, { slug: c.slug }])),
+    [categories],
+  );
 
   function resetFilters() {
     setCategoryFilter(null);
@@ -121,6 +126,7 @@ export function MapScreen({
         selectedPlaceId={selectedPlaceId}
         onSelectPlace={setSelectedPlaceId}
         onBoundsChange={handleBoundsChange}
+        categoriesById={categoriesById}
         onContextMenu={({ lng, lat }) => {
           router.push(
             `/places/new?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`,
@@ -188,7 +194,11 @@ export function MapScreen({
         onClose={() => setSelectedPlaceId(null)}
       />
 
-      <SpeedDial actions={speedDialActions} ariaLabel="Dodaj do mapy" />
+      {/* Hide while the preview sheet is open so its Szczegóły CTA
+       *  isn't overlapped by the FAB. */}
+      {!selectedPlaceId && (
+        <SpeedDial actions={speedDialActions} ariaLabel="Dodaj do mapy" />
+      )}
 
       {primaryGroupId && (
         <NearbyImportSheet

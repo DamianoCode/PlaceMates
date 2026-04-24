@@ -13,6 +13,7 @@ import type { GeolocateControl as MLGeolocate, Map as MLMap } from "maplibre-gl"
 import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
+import { iconForCategorySlug } from "./category-icons";
 
 type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
 
@@ -31,6 +32,7 @@ export function MapView({
   restrictToIds,
   onBoundsChange,
   onContextMenu,
+  categoriesById,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
@@ -45,6 +47,8 @@ export function MapView({
   onBoundsChange?: (bbox: { west: number; south: number; east: number; north: number }) => void;
   /** Right-click / long-press at lng,lat. Ignored in pick mode. */
   onContextMenu?: (lnglat: { lng: number; lat: number }) => void;
+  /** Category lookup used to pick the per-marker icon. */
+  categoriesById?: Map<string, { slug: string }>;
 }) {
   const [places, setPlaces] = useState<PlacePin[]>([]);
   // Restore the last camera for both the main map and the pick-mode
@@ -191,6 +195,8 @@ export function MapView({
       {!onPick &&
         visible.map((p) => {
           const active = selectedPlaceId === p.id;
+          const slug = categoriesById?.get(p.categoryId)?.slug ?? null;
+          const Icon = iconForCategorySlug(slug);
           return (
             <Marker
               key={p.id}
@@ -207,13 +213,11 @@ export function MapView({
                 className={
                   "flex -translate-y-1 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md transition-all " +
                   (active
-                    ? "h-10 w-10 bg-primary text-primary-foreground ring-4 ring-primary/30"
-                    : "h-8 w-8 bg-primary text-primary-foreground")
+                    ? "h-11 w-11 bg-primary text-primary-foreground ring-4 ring-primary/30"
+                    : "h-9 w-9 bg-primary text-primary-foreground")
                 }
               >
-                <svg viewBox="0 0 24 24" width={active ? 20 : 16} height={active ? 20 : 16} aria-hidden fill="currentColor">
-                  <path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
-                </svg>
+                <Icon size={active ? 20 : 18} strokeWidth={2.25} aria-hidden />
               </span>
             </Marker>
           );
