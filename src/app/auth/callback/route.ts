@@ -17,11 +17,23 @@ export const runtime = "nodejs";
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const code = url.searchParams.get("code");
+  const oauthError = url.searchParams.get("error");
+  const oauthErrorDesc = url.searchParams.get("error_description");
   const rawNext = url.searchParams.get("next") ?? "/map";
   // Prevent open-redirect abuse — only same-origin paths allowed.
   const next = rawNext.startsWith("/") ? rawNext : "/map";
 
+  // Google / Supabase can redirect back with ?error=... (e.g. access_denied).
+  // Surface it verbatim so the login page can render a human message.
+  if (oauthError) {
+    console.error("[auth/callback] provider error:", oauthError, oauthErrorDesc);
+    return NextResponse.redirect(
+      new URL(`/login?error=${encodeURIComponent(oauthError)}`, url.origin),
+    );
+  }
+
   if (!code) {
+    console.error("[auth/callback] missing code; query:", url.search);
     return NextResponse.redirect(
       new URL(`/login?error=${encodeURIComponent("oauth_missing_code")}`, url.origin),
     );
@@ -30,6 +42,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const { data, error } = await supabase.auth.exchangeCodeForSession(code);
   if (error || !data.user) {
+    console.error("[auth/callback] exchange failed:", error);
     return NextResponse.redirect(
       new URL(
         `/login?error=${encodeURIComponent(error?.message ?? "oauth_failed")}`,
