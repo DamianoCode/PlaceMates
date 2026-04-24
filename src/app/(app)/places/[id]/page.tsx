@@ -22,6 +22,7 @@ import { FavoriteHeartButton } from "@/components/places/FavoriteHeartButton";
 import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { StatPill } from "@/components/places/StatPill";
+import { NavigateButton } from "@/components/places/NavigateButton";
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("pl-PL", {
@@ -112,17 +113,20 @@ export default async function PlaceDetailPage({
           />
         </div>
 
-        {place.address && (
-          <div className="flex items-start gap-2 rounded-xl border bg-muted/30 p-3 text-sm">
-            <MapPin size={16} className="mt-0.5 flex-shrink-0 text-muted-foreground" />
-            <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3 text-sm">
+          <MapPin size={16} className="flex-shrink-0 text-muted-foreground" />
+          <div className="min-w-0 flex-1">
+            {place.address ? (
               <p className="break-words">{place.address}</p>
-              <p className="text-xs tabular-nums text-muted-foreground">
-                {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
-              </p>
-            </div>
+            ) : (
+              <p className="text-muted-foreground">Bez adresu</p>
+            )}
+            <p className="text-xs tabular-nums text-muted-foreground">
+              {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
+            </p>
           </div>
-        )}
+          <NavigateButton lat={place.lat} lng={place.lng} label={place.name} />
+        </div>
 
         {category && (
           <Card>

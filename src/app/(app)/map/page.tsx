@@ -11,7 +11,8 @@ export default async function MapPage() {
   if (!user) redirect("/login");
 
   const groups = await listUserGroups(user.id);
-  const cats = groups.length > 0 ? await listCategoriesForGroup(groups[0].id) : [];
+  const primaryGroupId = groups[0]?.id ?? null;
+  const cats = primaryGroupId ? await listCategoriesForGroup(primaryGroupId) : [];
   const [wishIds, favIds] = await Promise.all([
     wishlistedIds(user.id),
     favoriteIds(user.id),
@@ -19,7 +20,8 @@ export default async function MapPage() {
 
   return (
     <MapScreen
-      categories={cats.map((c) => ({ id: c.id, name: c.name }))}
+      primaryGroupId={primaryGroupId}
+      categories={cats.map((c) => ({ id: c.id, slug: c.slug, name: c.name }))}
       wishlistedIds={Array.from(wishIds)}
       favoriteIds={Array.from(favIds)}
     />

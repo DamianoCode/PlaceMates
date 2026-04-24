@@ -28,6 +28,7 @@ export function MapView({
   selectedPlaceId,
   categoryFilter,
   restrictToIds,
+  onBoundsChange,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
@@ -38,6 +39,8 @@ export function MapView({
   categoryFilter?: string | null;
   /** If present, only places with these ids render. */
   restrictToIds?: Set<string>;
+  /** Fires on moveend with the current visible bounds. */
+  onBoundsChange?: (bbox: { west: number; south: number; east: number; north: number }) => void;
 }) {
   const [places, setPlaces] = useState<PlacePin[]>([]);
   // Restore last camera on mount (pick mode always starts fresh so users
@@ -106,6 +109,26 @@ export function MapView({
     <Map
       {...view}
       onMove={handleMove}
+      onMoveEnd={(e) => {
+        if (!onBoundsChange) return;
+        const b = e.target.getBounds();
+        onBoundsChange({
+          west: b.getWest(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          north: b.getNorth(),
+        });
+      }}
+      onLoad={(e) => {
+        if (!onBoundsChange) return;
+        const b = e.target.getBounds();
+        onBoundsChange({
+          west: b.getWest(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          north: b.getNorth(),
+        });
+      }}
       onClick={(e) => {
         if (onPick) {
           const { lng, lat } = e.lngLat;

@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Bookmark, Heart, LayoutGrid, Locate, MapPin, UserPlus } from "lucide-react";
+import {
+  Bookmark,
+  Heart,
+  LayoutGrid,
+  Locate,
+  MapPin,
+  Sparkles,
+  UserPlus,
+} from "lucide-react";
 import { MapViewClient } from "./MapViewClient";
 import { PlacePreviewSheet } from "./PlacePreviewSheet";
 import { SpeedDial, type SpeedDialAction } from "./SpeedDial";
+import { NearbyImportSheet } from "./NearbyImportSheet";
 
-type Category = { id: string; name: string; icon?: string };
+type Category = { id: string; slug: string; name: string };
+type Bbox = { west: number; south: number; east: number; north: number };
 
 export function MapScreen({
+  primaryGroupId,
   categories,
   wishlistedIds,
   favoriteIds,
 }: {
+  primaryGroupId: string | null;
   categories: Category[];
   wishlistedIds: string[];
   favoriteIds: string[];
@@ -33,7 +45,13 @@ export function MapScreen({
         : null;
 
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const bboxRef = useRef<Bbox | null>(null);
   const router = useRouter();
+
+  const handleBoundsChange = useCallback((b: Bbox) => {
+    bboxRef.current = b;
+  }, []);
 
   function resetFilters() {
     setCategoryFilter(null);
@@ -76,6 +94,18 @@ export function MapScreen({
       onClick: addHere,
     },
     {
+      id: "import-nearby",
+      label: "Znajdź w okolicy",
+      icon: <Sparkles size={20} />,
+      onClick: () => {
+        if (!primaryGroupId) {
+          toast.error("Najpierw dołącz do grupy.");
+          return;
+        }
+        setImportOpen(true);
+      },
+    },
+    {
       id: "invite",
       label: "Zaproś znajomego",
       icon: <UserPlus size={20} />,
@@ -90,6 +120,7 @@ export function MapScreen({
         restrictToIds={activeIdSet ?? undefined}
         selectedPlaceId={selectedPlaceId}
         onSelectPlace={setSelectedPlaceId}
+        onBoundsChange={handleBoundsChange}
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-2 z-10 px-2">
@@ -153,6 +184,16 @@ export function MapScreen({
       />
 
       <SpeedDial actions={speedDialActions} ariaLabel="Dodaj do mapy" />
+
+      {primaryGroupId && (
+        <NearbyImportSheet
+          open={importOpen}
+          onClose={() => setImportOpen(false)}
+          groupId={primaryGroupId}
+          categories={categories}
+          getBbox={() => bboxRef.current}
+        />
+      )}
     </div>
   );
 }
