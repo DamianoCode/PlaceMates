@@ -46,11 +46,13 @@ export async function getPlacePreview(
       ? allRatings.reduce((sum, r) => sum + Number(r.overall), 0) / allRatings.length
       : null;
 
+  // Cover first, then newest — matches listPhotosForPlace ordering so
+  // the pin preview always shows the same hero image as the place detail.
   const [firstPhoto] = await db
     .select({ storagePath: photos.storagePath })
     .from(photos)
     .where(eq(photos.placeId, placeId))
-    .orderBy(desc(photos.createdAt))
+    .orderBy(desc(photos.isCover), desc(photos.createdAt))
     .limit(1);
 
   const photoUrl = firstPhoto

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   customType,
   index,
   integer,
@@ -191,6 +192,9 @@ export const photos = pgTable(
     storagePath: text("storage_path").notNull(),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
+    // Cover / wizytówka — at most one true per place, enforced in the
+    // service layer (clear others before setting).
+    isCover: boolean("is_cover").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("photos_place_idx").on(t.placeId)],

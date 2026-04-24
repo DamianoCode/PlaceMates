@@ -6,7 +6,7 @@ import { getCategory } from "@/domain/categories/service";
 import { getPlaceForUser } from "@/domain/places/service";
 import { upsertRating } from "@/domain/ratings/service";
 import { addVisit } from "@/domain/visits/service";
-import { addPhoto } from "@/domain/photos/service";
+import { addPhoto, setCoverPhoto } from "@/domain/photos/service";
 
 type ActionState = { error: string } | { ok: true } | null;
 
@@ -96,5 +96,26 @@ export async function addPhotoAction(
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/places/${placeId}`);
+  return { ok: true };
+}
+
+export type SetCoverState = { error: string } | { ok: true } | null;
+
+export async function setCoverPhotoAction(
+  _: SetCoverState,
+  formData: FormData,
+): Promise<SetCoverState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const photoId = formData.get("photoId") as string | null;
+  if (!photoId) return { error: "Brak zdjęcia." };
+
+  const result = await setCoverPhoto(photoId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${result.data.placeId}`);
+  revalidatePath("/map");
+  revalidatePath("/places");
   return { ok: true };
 }

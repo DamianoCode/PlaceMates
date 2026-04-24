@@ -77,9 +77,9 @@ export async function listPlacesWithStats(
       .where(inArray(ratings.placeId, ids))
       .groupBy(ratings.placeId),
 
-    // Fetch every photo for these places ordered newest-first; we dedupe
-    // to "first photo per place" in TS below. Using the query builder
-    // sidesteps array-param serialisation issues with raw ANY($1).
+    // Fetch photos ordered cover-first, newest-next. We dedupe to "one
+    // photo per place" in TS below so the winner is the cover when it
+    // exists, otherwise the latest upload.
     db
       .select({
         placeId: photos.placeId,
@@ -87,7 +87,7 @@ export async function listPlacesWithStats(
       })
       .from(photos)
       .where(inArray(photos.placeId, ids))
-      .orderBy(desc(photos.createdAt)),
+      .orderBy(desc(photos.isCover), desc(photos.createdAt)),
 
     db
       .select({ id: wishlist.placeId })
