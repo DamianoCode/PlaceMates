@@ -1,24 +1,9 @@
 import Link from "next/link";
 import { Bookmark, Heart, Star } from "lucide-react";
 import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats";
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  restaurant: "🍽️",
-  cafe: "☕",
-  "ice-cream": "🍨",
-  bakery: "🥐",
-  viewpoint: "🏔️",
-  attraction: "✨",
-  park: "🌳",
-  beach: "🏖️",
-  bar: "🍻",
-  accommodation: "🛏️",
-  shop: "🛍️",
-  other: "📍",
-};
+import { CategoryIcon } from "@/components/map/category-icons";
 
 export function PlaceCard({ place }: { place: PlaceCardData }) {
-  const emoji = CATEGORY_EMOJI[place.categorySlug] ?? "📍";
   return (
     <Link
       href={`/places/${place.id}`}
@@ -35,9 +20,14 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
       ) : (
         <div
           aria-hidden
-          className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted text-3xl"
+          className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
         >
-          {emoji}
+          <CategoryIcon
+            slug={place.categorySlug}
+            size={28}
+            strokeWidth={1.5}
+            className="text-primary/70"
+          />
         </div>
       )}
 

@@ -1,3 +1,4 @@
+import { createElement } from "react";
 import {
   BedDouble,
   Beer,
@@ -12,6 +13,7 @@ import {
   UtensilsCrossed,
   Waves,
   type LucideIcon,
+  type LucideProps,
 } from "lucide-react";
 
 /**
@@ -37,4 +39,16 @@ const BY_SLUG: Record<string, LucideIcon> = {
 export function iconForCategorySlug(slug: string | null | undefined): LucideIcon {
   if (!slug) return MapPin;
   return BY_SLUG[slug] ?? MapPin;
+}
+
+/**
+ * Render-safe wrapper around iconForCategorySlug. React 19's
+ * static-components rule rejects PascalCase aliases created in
+ * render, so we go through createElement directly instead.
+ */
+export function CategoryIcon({
+  slug,
+  ...rest
+}: { slug: string | null | undefined } & LucideProps) {
+  return createElement(iconForCategorySlug(slug), rest);
 }

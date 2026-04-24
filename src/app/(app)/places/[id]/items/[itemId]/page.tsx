@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Camera, Star, Trash2, Users } from "lucide-react";
+import { Camera, Star, Trash2, UtensilsCrossed, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import {
   getItemForUser,
@@ -73,9 +73,13 @@ export default async function ItemPage({
         ) : (
           <div
             aria-hidden
-            className="flex h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted text-5xl"
+            className="flex h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
           >
-            🍽️
+            <UtensilsCrossed
+              size={56}
+              strokeWidth={1.25}
+              className="text-primary/60"
+            />
           </div>
         )}
 
