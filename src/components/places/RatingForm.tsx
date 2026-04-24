@@ -25,7 +25,10 @@ export function RatingForm({
   const [values, setValues] = useState<Record<string, number>>(() => {
     const v: Record<string, number> = {};
     for (const d of schema) {
-      v[d.key] = initial?.dimensions?.[d.key] ?? Math.ceil((d.min + d.max) / 2);
+      // Midpoint snapped to the nearest half so the slider starts on a
+      // valid step regardless of min/max.
+      const mid = (d.min + d.max) / 2;
+      v[d.key] = initial?.dimensions?.[d.key] ?? Math.round(mid * 2) / 2;
     }
     return v;
   });
@@ -41,8 +44,8 @@ export function RatingForm({
         <div key={dim.key} className="space-y-1.5">
           <div className="flex items-baseline justify-between">
             <Label htmlFor={`dim_${dim.key}`}>{dim.label}</Label>
-            <span className="tabular-nums text-sm text-muted-foreground">
-              {values[dim.key]} / {dim.max}
+            <span className="tabular-nums text-sm font-medium text-primary">
+              {values[dim.key].toFixed(1)} / {dim.max}
             </span>
           </div>
           <input
@@ -51,7 +54,7 @@ export function RatingForm({
             type="range"
             min={dim.min}
             max={dim.max}
-            step={1}
+            step={0.5}
             value={values[dim.key]}
             onChange={(e) =>
               setValues((prev) => ({ ...prev, [dim.key]: Number(e.target.value) }))

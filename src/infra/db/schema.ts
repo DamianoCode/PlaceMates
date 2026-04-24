@@ -224,6 +224,63 @@ export const favorites = pgTable(
   (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
 );
 
+// Menu-like items (dishes, products, services) tied to a place. Every
+// group member can add them; each user can give each item one score +
+// note and attach photos.
+export const placeItems = pgTable(
+  "place_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("place_items_place_idx").on(t.placeId)],
+);
+
+export const itemRatings = pgTable(
+  "item_ratings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => placeItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    // 1.0 – 5.0 with half-point resolution; numeric(2,1) covers that
+    // without float rounding surprises.
+    score: numeric("score", { precision: 2, scale: 1 }).notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex("item_ratings_item_user_uk").on(t.itemId, t.userId)],
+);
+
+export const itemPhotos = pgTable(
+  "item_photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    itemId: uuid("item_id")
+      .notNull()
+      .references(() => placeItems.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    storagePath: text("storage_path").notNull(),
+    width: integer("width").notNull(),
+    height: integer("height").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("item_photos_item_idx").on(t.itemId)],
+);
+
 export const publicShares = pgTable("public_shares", {
   slug: text("slug").primaryKey(),
   ratingId: uuid("rating_id")

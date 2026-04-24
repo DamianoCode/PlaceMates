@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Camera, Footprints, MapPin, PencilLine, Star, Users } from "lucide-react";
+import {
+  Camera,
+  Footprints,
+  MapPin,
+  PencilLine,
+  Star,
+  UtensilsCrossed,
+  Users,
+} from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { getCategory } from "@/domain/categories/service";
@@ -10,6 +18,7 @@ import {
 } from "@/domain/ratings/service";
 import { listVisitsForPlace } from "@/domain/visits/service";
 import { listPhotosForPlace } from "@/domain/photos/service";
+import { listItemsForPlace } from "@/domain/items/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
 import { isFavorite } from "@/domain/favorites/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
@@ -24,6 +33,8 @@ import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { StatPill } from "@/components/places/StatPill";
 import { NavigateButton } from "@/components/places/NavigateButton";
+import { ItemCard } from "@/components/items/ItemCard";
+import { CreateItemForm } from "@/components/items/CreateItemForm";
 
 function fmtDate(d: Date) {
   return new Intl.DateTimeFormat("pl-PL", {
@@ -44,7 +55,7 @@ export default async function PlaceDetailPage({
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
 
-  const [category, ratings, visits, photos, myRating, wish, fav, canEdit] =
+  const [category, ratings, visits, photos, myRating, wish, fav, canEdit, items] =
     await Promise.all([
       getCategory(place.categoryId),
       listRatingsForPlace(id, user.id),
@@ -54,6 +65,7 @@ export default async function PlaceDetailPage({
       isOnWishlist(id, user.id),
       isFavorite(id, user.id),
       canUserEditPlace(id, user.id),
+      listItemsForPlace(id, user.id),
     ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -169,6 +181,30 @@ export default async function PlaceDetailPage({
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-xl">
+              <UtensilsCrossed size={18} /> Produkty i usługi
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {items.length === 0 ? (
+              <p className="text-sm italic text-muted-foreground">
+                Brak produktów. Dodaj np. {"„lody waniliowe”"} albo {"„masaż karku”"} i oceń osobno.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {items.map((item) => (
+                  <li key={item.id}>
+                    <ItemCard placeId={id} item={item} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <CreateItemForm placeId={id} />
+          </CardContent>
+        </Card>
 
         {othersRatings.length > 0 && (
           <Card>
