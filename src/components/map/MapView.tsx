@@ -9,6 +9,7 @@ import Map, {
   type ViewState,
   type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
+import type { GeolocateControl as MLGeolocate, Map as MLMap } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
@@ -84,6 +85,34 @@ export function MapView({
     [schedulePersist],
   );
 
+  const geolocateRef = useRef<MLGeolocate>(null);
+
+  // If the browser already has geolocation permission granted, show the
+  // user's blue dot immediately on load. If permission is "prompt" we
+  // stay quiet — auto-prompting without a user gesture is both bad UX
+  // and, on stricter browsers, outright blocked.
+  const handleLoad = useCallback(
+    (e: { target: MLMap }) => {
+      if (onBoundsChange) {
+        const b = e.target.getBounds();
+        onBoundsChange({
+          west: b.getWest(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          north: b.getNorth(),
+        });
+      }
+      if (!("permissions" in navigator) || !("geolocation" in navigator)) return;
+      navigator.permissions
+        .query({ name: "geolocation" as PermissionName })
+        .then((status) => {
+          if (status.state === "granted") geolocateRef.current?.trigger();
+        })
+        .catch(() => {});
+    },
+    [onBoundsChange],
+  );
+
   useEffect(() => {
     if (onPick) return;
     let abort = false;
@@ -119,16 +148,7 @@ export function MapView({
           north: b.getNorth(),
         });
       }}
-      onLoad={(e) => {
-        if (!onBoundsChange) return;
-        const b = e.target.getBounds();
-        onBoundsChange({
-          west: b.getWest(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          north: b.getNorth(),
-        });
-      }}
+      onLoad={handleLoad}
       onClick={(e) => {
         if (onPick) {
           const { lng, lat } = e.lngLat;
@@ -144,13 +164,17 @@ export function MapView({
       attributionControl={{ compact: true }}
     >
       <NavigationControl position="top-right" />
-      {!onPick && (
-        <GeolocateControl
-          position="top-right"
-          trackUserLocation
-          positionOptions={{ enableHighAccuracy: true }}
-        />
-      )}
+      {/* Available in every mode — including /places/new pin-drop — so
+       *  users can always centre on themselves and drop a pin nearby. */}
+      <GeolocateControl
+        ref={geolocateRef}
+        position="top-right"
+        trackUserLocation
+        showUserLocation
+        showAccuracyCircle
+        positionOptions={{ enableHighAccuracy: true, timeout: 10_000 }}
+        fitBoundsOptions={{ maxZoom: 15 }}
+      />
 
       {!onPick &&
         visible.map((p) => {
