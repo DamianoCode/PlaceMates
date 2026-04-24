@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
-import { createPlace, updatePlace } from "@/domain/places/service";
+import { createPlace, deletePlace, updatePlace } from "@/domain/places/service";
 import { CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 
 export type CreatePlaceState =
@@ -69,4 +69,26 @@ export async function updatePlaceAction(
   revalidatePath("/places");
   revalidatePath(`/places/${parsed.data.placeId}`);
   redirect(`/places/${parsed.data.placeId}`);
+}
+
+export type DeletePlaceState = { error: string } | { ok: true } | null;
+
+export async function deletePlaceAction(
+  _: DeletePlaceState,
+  formData: FormData,
+): Promise<DeletePlaceState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const placeId = formData.get("placeId") as string | null;
+  if (!placeId) return { error: "Brak identyfikatora miejsca." };
+
+  const result = await deletePlace(placeId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath("/map");
+  revalidatePath("/places");
+  revalidatePath("/wishlist");
+  revalidatePath("/favorites");
+  redirect("/map");
 }

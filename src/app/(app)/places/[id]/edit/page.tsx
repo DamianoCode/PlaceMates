@@ -3,7 +3,15 @@ import { getAuth } from "@/infra/auth";
 import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { PageHeader } from "@/components/layout/PageHeader";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { EditPlaceForm } from "@/components/places/EditPlaceForm";
+import { DeletePlaceButton } from "@/components/places/DeletePlaceButton";
 
 export default async function EditPlacePage({
   params,
@@ -31,7 +39,7 @@ export default async function EditPlacePage({
         subtitle={place.name}
         fallbackHref={`/places/${id}`}
       />
-      <section className="mx-auto max-w-2xl p-4">
+      <section className="mx-auto max-w-2xl space-y-6 p-4">
         <EditPlaceForm
           placeId={place.id}
           initialName={place.name}
@@ -41,6 +49,21 @@ export default async function EditPlacePage({
           initialAddress={place.address}
           categories={cats.map((c) => ({ id: c.id, name: c.name }))}
         />
+
+        <Card className="border-destructive/30">
+          <CardHeader>
+            <CardTitle className="font-display text-xl text-destructive">
+              Strefa niebezpieczna
+            </CardTitle>
+            <CardDescription>
+              Usunięcie miejsca jest nieodwracalne — przepadają też oceny,
+              wizyty, zdjęcia i produkty członków grupy.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DeletePlaceButton placeId={place.id} placeName={place.name} />
+          </CardContent>
+        </Card>
       </section>
     </>
   );
