@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef } from "react";
 import { Camera, LogOut, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { CompassMark } from "@/components/brand/CompassMark";
 import { signOutAction } from "@/app/(auth)/actions";
 import {
   removeAvatarAction,
@@ -48,7 +49,13 @@ export function AccountHeader({
   }, [removeState]);
 
   return (
-    <header className="flex items-center gap-4 rounded-2xl border bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+    <header className="relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -top-6 -right-6 text-primary/20"
+      >
+        <CompassMark size={120} />
+      </span>
       <form
         ref={formRef}
         action={uploadAction}

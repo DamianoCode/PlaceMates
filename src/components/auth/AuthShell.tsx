@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CompassMark } from "@/components/brand/CompassMark";
 import { FloatingStickers } from "./FloatingStickers";
 import { TopoLines } from "./TopoLines";
 
@@ -47,9 +48,9 @@ export function AuthShell({
 
       {/* Top bar: signature wordmark + vertical coords on the right. */}
       <div className="relative z-10 flex items-start justify-between p-5 md:p-8">
-        <div className="flex items-center gap-2">
-          <CompassGlyph />
-          <span className="font-display text-sm tracking-[0.22em] uppercase">
+        <div className="flex items-center gap-2 text-primary">
+          <CompassMark size={22} />
+          <span className="font-display text-sm tracking-[0.22em] uppercase text-foreground">
             PlaceMates
           </span>
         </div>
@@ -107,34 +108,3 @@ export function AuthShell({
   );
 }
 
-function CompassGlyph() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="22"
-      height="22"
-      aria-hidden
-      className="text-primary"
-    >
-      <circle
-        cx="12"
-        cy="12"
-        r="10"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.3"
-      />
-      <path
-        d="M12 3 L14 12 L12 21 L10 12 Z"
-        fill="currentColor"
-        opacity="0.85"
-      />
-      <path
-        d="M3 12 L12 10 L21 12 L12 14 Z"
-        fill="currentColor"
-        opacity="0.35"
-      />
-      <circle cx="12" cy="12" r="1.6" fill="var(--color-background)" />
-    </svg>
-  );
-}

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0a0a0a"/>
-  <path d="M256 96c-68 0-124 54-124 121 0 90 124 199 124 199s124-109 124-199c0-67-56-121-124-121zm0 165a44 44 0 1 1 0-88 44 44 0 0 1 0 88z" fill="#ffffff"/>
+  <!-- Warm sienna background tile so the favicon reads on any tab colour. -->
+  <rect width="512" height="512" rx="112" fill="#b8613a"/>
+  <!-- Compass ring -->
+  <circle cx="256" cy="256" r="176" fill="none" stroke="#faf5ec" stroke-width="16"/>
+  <!-- North/south vertical needle -->
+  <path d="M256 80 L300 256 L256 432 L212 256 Z" fill="#faf5ec"/>
+  <!-- East/west horizontal indicator -->
+  <path d="M80 256 L256 220 L432 256 L256 292 Z" fill="#faf5ec" opacity="0.55"/>
+  <!-- Centre dot -->
+  <circle cx="256" cy="256" r="24" fill="#b8613a"/>
+  <circle cx="256" cy="256" r="10" fill="#faf5ec"/>
 </svg>
