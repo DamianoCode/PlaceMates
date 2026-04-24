@@ -1,4 +1,6 @@
 import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 type Search = Promise<{ next?: string }>;
@@ -51,6 +53,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             : "Konto istnieje od pierwszej pinezki."
         }
       >
+        <GoogleButton next={next} label="Zaloguj przez Google" />
+        <AuthDivider />
         <LoginForm next={next} />
       </FormCard>
     </AuthShell>

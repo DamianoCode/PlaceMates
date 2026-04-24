@@ -1,10 +1,8 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
-import { db } from "@/infra/db/client";
-import { groupMembers, groups, profiles } from "@/infra/db/schema";
+import { bootstrapProfileAndGroup } from "@/domain/auth/bootstrap";
 import { LoginInput, RegisterInput } from "@/lib/validation/auth";
 
 export type FormState = { error: string } | { ok: true } | null;
@@ -26,7 +24,16 @@ export async function loginAction(_: FormState, formData: FormData): Promise<For
   redirect(next);
 }
 
-export async function registerAction(_: FormState, formData: FormData): Promise<FormState> {
+export async function registerAction(
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  // Honeypot: hidden field bots blindly fill. Humans leave it empty.
+  // Returns a generic error so we don't help the bot tune its form-filler.
+  if ((formData.get("company_website") as string | null)?.trim()) {
+    return { error: "Niepoprawne dane rejestracji." };
+  }
+
   const parsed = RegisterInput.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -44,33 +51,11 @@ export async function registerAction(_: FormState, formData: FormData): Promise<
   );
   if (!result.ok) return { error: result.error };
 
-  // Bootstrap: ensure profile row exists, then create a default personal
-  // group and add the user as owner. The auth.users -> profiles trigger
-  // normally handles the profile row, but we upsert here to be safe on
-  // setups without the trigger (local dev without Supabase auth schema).
-  const user = result.user;
-  await db
-    .insert(profiles)
-    .values({ id: user.id, displayName: user.displayName, avatarUrl: user.avatarUrl })
-    .onConflictDoNothing();
-
-  const existing = await db
-    .select({ id: groups.id })
-    .from(groups)
-    .where(eq(groups.ownerId, user.id))
-    .limit(1);
-
-  if (existing.length === 0) {
-    const [g] = await db
-      .insert(groups)
-      .values({ name: "Moja", ownerId: user.id })
-      .returning({ id: groups.id });
-    await db.insert(groupMembers).values({
-      groupId: g.id,
-      userId: user.id,
-      role: "owner",
-    });
-  }
+  await bootstrapProfileAndGroup({
+    id: result.user.id,
+    displayName: result.user.displayName,
+    avatarUrl: result.user.avatarUrl,
+  });
 
   // Honour `next` so users landing on the register page from a group
   // invite end up back at /join/<token> right after signup.

@@ -14,6 +14,22 @@ export function RegisterForm({ next }: { next?: string }) {
   return (
     <form action={action} className="space-y-4">
       {next ? <input type="hidden" name="next" value={next} /> : null}
+      {/* Honeypot: hidden off-screen input. Real users don't touch it;
+        * bots that blindly fill every field get bounced server-side. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-[-9999px] h-0 w-0 overflow-hidden opacity-0"
+      >
+        <label>
+          Nie wypełniaj
+          <input
+            type="text"
+            name="company_website"
+            tabIndex={-1}
+            autoComplete="off"
+          />
+        </label>
+      </div>
       <div className="space-y-2">
         <Label htmlFor="displayName">Nazwa wyświetlana</Label>
         <Input id="displayName" name="displayName" type="text" autoComplete="name" required maxLength={80} />

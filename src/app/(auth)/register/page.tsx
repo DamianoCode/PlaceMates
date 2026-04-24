@@ -1,4 +1,6 @@
 import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthDivider } from "@/components/auth/AuthDivider";
+import { GoogleButton } from "@/components/auth/GoogleButton";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 
 type Search = Promise<{ next?: string }>;
@@ -53,6 +55,8 @@ export default async function RegisterPage({
             : "Darmowe. Bez reklam. Twoje."
         }
       >
+        <GoogleButton next={next} label="Załóż przez Google" />
+        <AuthDivider />
         <RegisterForm next={next} />
       </FormCard>
     </AuthShell>
