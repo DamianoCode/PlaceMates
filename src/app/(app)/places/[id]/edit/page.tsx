@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
-import { getPlaceForUser } from "@/domain/places/service";
+import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditPlaceForm } from "@/components/places/EditPlaceForm";
@@ -16,6 +16,12 @@ export default async function EditPlacePage({
   const { id } = await params;
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
+
+  // Guard server-side — never render the edit form for unauthorized users
+  // even if they typed the URL directly.
+  const allowed = await canUserEditPlace(id, user.id);
+  if (!allowed) redirect(`/places/${id}`);
+
   const cats = await listCategoriesForGroup(place.groupId);
 
   return (

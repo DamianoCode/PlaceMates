@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Camera, Footprints, MapPin, PencilLine, Star, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
-import { getPlaceForUser } from "@/domain/places/service";
+import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { getCategory } from "@/domain/categories/service";
 import {
   getUserRating,
@@ -44,15 +44,17 @@ export default async function PlaceDetailPage({
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
 
-  const [category, ratings, visits, photos, myRating, wish, fav] = await Promise.all([
-    getCategory(place.categoryId),
-    listRatingsForPlace(id, user.id),
-    listVisitsForPlace(id, user.id),
-    listPhotosForPlace(id, user.id),
-    getUserRating(id, user.id),
-    isOnWishlist(id, user.id),
-    isFavorite(id, user.id),
-  ]);
+  const [category, ratings, visits, photos, myRating, wish, fav, canEdit] =
+    await Promise.all([
+      getCategory(place.categoryId),
+      listRatingsForPlace(id, user.id),
+      listVisitsForPlace(id, user.id),
+      listPhotosForPlace(id, user.id),
+      getUserRating(id, user.id),
+      isOnWishlist(id, user.id),
+      isFavorite(id, user.id),
+      canUserEditPlace(id, user.id),
+    ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -127,14 +129,16 @@ export default async function PlaceDetailPage({
             </p>
           </div>
           <NavigateButton lat={place.lat} lng={place.lng} label={place.name} />
-          <Link
-            href={`/places/${id}/edit`}
-            aria-label="Edytuj miejsce"
-            className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
-          >
-            <PencilLine size={16} />
-            Edytuj
-          </Link>
+          {canEdit && (
+            <Link
+              href={`/places/${id}/edit`}
+              aria-label="Edytuj miejsce"
+              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
+            >
+              <PencilLine size={16} />
+              Edytuj
+            </Link>
+          )}
         </div>
 
         {category && (

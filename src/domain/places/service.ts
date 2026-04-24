@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import { groupMembers, places } from "@/infra/db/schema";
 import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
@@ -195,17 +195,49 @@ export async function bulkCreatePlaces(
 }
 
 /**
- * Edit an existing place. The caller must belong to the place's group.
- * We keep the place's group membership untouched — places can't move
- * between groups through this path. If the location moves, we drop
- * osm_id because the OSM-entity association no longer holds.
+ * Permission check: a place can be edited by its creator, or by any
+ * owner of the group it belongs to. Member-level users see other
+ * people's pins as read-only.
+ *
+ * Both branches are enforced server-side; the same predicate is used
+ * by the UI to conditionally render the Edit affordance (purely for
+ * UX — the server is the source of truth).
+ */
+export async function canUserEditPlace(
+  placeId: string,
+  userId: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: places.id })
+    .from(places)
+    .innerJoin(
+      groupMembers,
+      and(
+        eq(groupMembers.groupId, places.groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        eq(places.id, placeId),
+        or(eq(places.createdBy, userId), eq(groupMembers.role, "owner")),
+      ),
+    )
+    .limit(1);
+  return !!row;
+}
+
+/**
+ * Edit an existing place. Only the creator or a group owner may do this.
+ * Group membership is not moved — places don't hop between groups through
+ * this path. If the location moves, we drop osm_id because the OSM-entity
+ * association no longer holds.
  */
 export async function updatePlace(
   input: UpdatePlaceInput,
   userId: string,
 ): Promise<Result<null>> {
-  // Verify both that the place exists AND that the caller is a member
-  // of its group in a single query.
+  // Verify existence + permission in a single authoritative query.
   const [row] = await db
     .select({
       id: places.id,
@@ -214,10 +246,23 @@ export async function updatePlace(
       lng: sql<number>`ST_X(${places.location}::geometry)`,
     })
     .from(places)
-    .innerJoin(groupMembers, eq(groupMembers.groupId, places.groupId))
-    .where(and(eq(places.id, input.placeId), eq(groupMembers.userId, userId)))
+    .innerJoin(
+      groupMembers,
+      and(
+        eq(groupMembers.groupId, places.groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        eq(places.id, input.placeId),
+        or(eq(places.createdBy, userId), eq(groupMembers.role, "owner")),
+      ),
+    )
     .limit(1);
-  if (!row) return err("Nie znaleziono miejsca lub brak dostępu.");
+  if (!row) {
+    return err("Tylko autor miejsca lub właściciel grupy może edytować.");
+  }
 
   const locationMoved =
     Number(row.lat).toFixed(6) !== input.location.lat.toFixed(6) ||
