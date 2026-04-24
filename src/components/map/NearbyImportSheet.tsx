@@ -124,12 +124,14 @@ export function NearbyImportSheet({
     <div
       role="dialog"
       aria-label="Znajdź w okolicy"
-      className="fixed inset-0 z-40 flex items-end justify-center bg-foreground/40 backdrop-blur-sm"
+      // z-50 sits above the z-40 BottomNav. On mobile we dock the sheet
+      // above the tab bar; on ≥sm we centre a full card instead.
+      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm pb-[calc(60px+env(safe-area-inset-bottom))] sm:items-center sm:p-4 sm:pb-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl overflow-hidden rounded-t-3xl border-t border-x bg-background shadow-2xl animate-in slide-in-from-bottom-6 duration-200"
+        className="flex w-full max-w-2xl max-h-[80dvh] flex-col overflow-hidden rounded-t-3xl border bg-background shadow-2xl animate-in slide-in-from-bottom-6 duration-200 sm:rounded-3xl sm:max-h-[80vh]"
       >
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="min-w-0">
@@ -151,7 +153,7 @@ export function NearbyImportSheet({
         </div>
 
         {!selectedCat && (
-          <ul className="grid max-h-[60vh] grid-cols-2 gap-2 overflow-auto p-4 sm:grid-cols-3">
+          <ul className="grid min-h-0 flex-1 grid-cols-2 gap-2 overflow-auto p-4 sm:grid-cols-3">
             {categories.map((c) => (
               <li key={c.id}>
                 <button
@@ -191,7 +193,7 @@ export function NearbyImportSheet({
               )}
             </div>
 
-            <ul className="max-h-[55vh] divide-y overflow-auto">
+            <ul className="min-h-0 flex-1 divide-y overflow-auto">
               {loading && (
                 <li className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
                   <Loader2 size={16} className="animate-spin" />
