@@ -1,10 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { RatingDimension } from "@/infra/db/schema";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import {
   deleteRatingAction,
@@ -31,6 +32,8 @@ export function RatingForm({
     DeleteRatingState,
     FormData
   >(deleteRatingAction, null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const delFormRef = useRef<HTMLFormElement>(null);
 
   const [values, setValues] = useState<Record<string, number>>(() => {
     const v: Record<string, number> = {};
@@ -100,26 +103,31 @@ export function RatingForm({
       </form>
 
       {initial && (
-        <form
-          action={(fd) => {
-            if (typeof window !== "undefined" && !window.confirm("Cofnąć ocenę?")) {
-              return;
-            }
-            delAction(fd);
-          }}
-        >
-          <input type="hidden" name="placeId" value={placeId} />
-          <Button
-            type="submit"
-            variant="ghost"
-            size="sm"
-            disabled={delPending}
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <RotateCcw size={14} className="mr-1.5" />
-            {delPending ? "Cofam…" : "Cofnij ocenę"}
-          </Button>
-        </form>
+        <>
+          <form ref={delFormRef} action={delAction}>
+            <input type="hidden" name="placeId" value={placeId} />
+            <Button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              variant="ghost"
+              size="sm"
+              disabled={delPending}
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <RotateCcw size={14} className="mr-1.5" />
+              {delPending ? "Cofam…" : "Cofnij ocenę"}
+            </Button>
+          </form>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title="Cofnąć ocenę?"
+            description="Twoja ocena i notatka zostaną usunięte. Możesz ocenić ponownie w dowolnej chwili."
+            confirmLabel="Cofnij ocenę"
+            destructive
+            onConfirm={() => delFormRef.current?.requestSubmit()}
+          />
+        </>
       )}
     </div>
   );

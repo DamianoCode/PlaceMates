@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { Crown, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   removeMemberAction,
   type RemoveMemberState,
@@ -71,34 +72,61 @@ export function MemberRow({
       </div>
 
       {canManage && !isSelf && member.role !== "owner" && (
-        <RemoveButton groupId={groupId} userId={member.userId} />
+        <RemoveButton
+          groupId={groupId}
+          userId={member.userId}
+          memberName={member.displayName}
+        />
       )}
     </li>
   );
 }
 
-function RemoveButton({ groupId, userId }: { groupId: string; userId: string }) {
+function RemoveButton({
+  groupId,
+  userId,
+  memberName,
+}: {
+  groupId: string;
+  userId: string;
+  memberName: string;
+}) {
   const [state, action, pending] = useActionState<RemoveMemberState, FormData>(
     removeMemberAction,
     null,
   );
+  const [open, setOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const error = state && "error" in state ? state.error : null;
+
   return (
-    <form action={action} className="flex flex-col items-end gap-1">
-      <input type="hidden" name="groupId" value={groupId} />
-      <input type="hidden" name="targetUserId" value={userId} />
-      <button
-        type="submit"
-        disabled={pending}
-        aria-label="Usuń z grupy"
-        className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors",
-          "hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
-        )}
-      >
-        <UserMinus size={16} />
-      </button>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </form>
+    <>
+      <form ref={formRef} action={action} className="flex flex-col items-end gap-1">
+        <input type="hidden" name="groupId" value={groupId} />
+        <input type="hidden" name="targetUserId" value={userId} />
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          disabled={pending}
+          aria-label="Usuń z grupy"
+          className={cn(
+            "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors",
+            "hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+          )}
+        >
+          <UserMinus size={16} />
+        </button>
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      </form>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title={`Usunąć ${memberName} z grupy?`}
+        description="Ta osoba straci dostęp do miejsc i ocen tej grupy. Jej wpisy pozostaną, ale zniknie z listy członków."
+        confirmLabel="Usuń z grupy"
+        destructive
+        onConfirm={() => formRef.current?.requestSubmit()}
+      />
+    </>
   );
 }

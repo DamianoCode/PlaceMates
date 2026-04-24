@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   deleteVisitAction,
   type DeleteVisitState,
@@ -33,6 +34,9 @@ export function VisitRow({
     deleteVisitAction,
     null,
   );
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
   useEffect(() => {
     if (state && "error" in state) toast.error(state.error);
   }, [state]);
@@ -51,26 +55,31 @@ export function VisitRow({
         )}
       </div>
       {canDelete && (
-        <form
-          action={(fd) => {
-            if (typeof window !== "undefined" && !window.confirm("Usunąć tę wizytę?")) {
-              return;
-            }
-            action(fd);
-          }}
-        >
-          <input type="hidden" name="visitId" value={visit.id} />
-          <input type="hidden" name="placeId" value={placeId} />
-          <button
-            type="submit"
-            disabled={pending}
-            aria-label="Usuń wizytę"
-            title="Usuń wizytę"
-            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <Trash2 size={14} />
-          </button>
-        </form>
+        <>
+          <form ref={formRef} action={action}>
+            <input type="hidden" name="visitId" value={visit.id} />
+            <input type="hidden" name="placeId" value={placeId} />
+            <button
+              type="button"
+              onClick={() => setConfirmOpen(true)}
+              disabled={pending}
+              aria-label="Usuń wizytę"
+              title="Usuń wizytę"
+              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <Trash2 size={14} />
+            </button>
+          </form>
+          <ConfirmDialog
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            title="Usunąć wizytę?"
+            description="Wpis wraz z notatką zostanie trwale usunięty."
+            confirmLabel="Usuń"
+            destructive
+            onConfirm={() => formRef.current?.requestSubmit()}
+          />
+        </>
       )}
     </li>
   );

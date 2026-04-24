@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   deleteItemAction,
   type DeleteItemState,
@@ -13,26 +15,36 @@ export function DeleteItemButton({ itemId }: { itemId: string }) {
     deleteItemAction,
     null,
   );
-  const error = state && "error" in state ? state.error : null;
+  const [open, setOpen] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (state && "error" in state) toast.error(state.error);
+  }, [state]);
 
   return (
-    <form
-      action={(fd) => {
-        if (typeof window !== "undefined") {
-          if (!window.confirm("Na pewno usunąć ten produkt i jego oceny?")) {
-            return;
-          }
-        }
-        return action(fd);
-      }}
-      className="space-y-2"
-    >
-      <input type="hidden" name="itemId" value={itemId} />
-      <Button type="submit" variant="destructive" disabled={pending}>
-        <Trash2 size={14} className="mr-2" />
-        {pending ? "Usuwam…" : "Usuń produkt"}
-      </Button>
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
-    </form>
+    <>
+      <form ref={formRef} action={action}>
+        <input type="hidden" name="itemId" value={itemId} />
+        <Button
+          type="button"
+          onClick={() => setOpen(true)}
+          variant="destructive"
+          disabled={pending}
+        >
+          <Trash2 size={14} className="mr-2" />
+          {pending ? "Usuwam…" : "Usuń produkt"}
+        </Button>
+      </form>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="Usunąć produkt?"
+        description="Wszystkie oceny, notatki i zdjęcia tego produktu zostaną trwale usunięte."
+        confirmLabel="Usuń produkt"
+        destructive
+        onConfirm={() => formRef.current?.requestSubmit()}
+      />
+    </>
   );
 }
