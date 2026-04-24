@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import { groupMembers, places } from "@/infra/db/schema";
-import type { BBox, CreatePlaceInput } from "@/lib/validation/place";
+import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 import { err, ok, type Result } from "../result";
 
 export type PlaceMarker = {
@@ -192,4 +192,48 @@ export async function bulkCreatePlaces(
 
   const inserted = await db.insert(places).values(values).returning({ id: places.id });
   return ok({ inserted: inserted.length, skipped: items.length - inserted.length });
+}
+
+/**
+ * Edit an existing place. The caller must belong to the place's group.
+ * We keep the place's group membership untouched — places can't move
+ * between groups through this path. If the location moves, we drop
+ * osm_id because the OSM-entity association no longer holds.
+ */
+export async function updatePlace(
+  input: UpdatePlaceInput,
+  userId: string,
+): Promise<Result<null>> {
+  // Verify both that the place exists AND that the caller is a member
+  // of its group in a single query.
+  const [row] = await db
+    .select({
+      id: places.id,
+      groupId: places.groupId,
+      lat: sql<number>`ST_Y(${places.location}::geometry)`,
+      lng: sql<number>`ST_X(${places.location}::geometry)`,
+    })
+    .from(places)
+    .innerJoin(groupMembers, eq(groupMembers.groupId, places.groupId))
+    .where(and(eq(places.id, input.placeId), eq(groupMembers.userId, userId)))
+    .limit(1);
+  if (!row) return err("Nie znaleziono miejsca lub brak dostępu.");
+
+  const locationMoved =
+    Number(row.lat).toFixed(6) !== input.location.lat.toFixed(6) ||
+    Number(row.lng).toFixed(6) !== input.location.lng.toFixed(6);
+
+  await db
+    .update(places)
+    .set({
+      name: input.name,
+      categoryId: input.categoryId,
+      location: { lat: input.location.lat, lng: input.location.lng },
+      address: input.address ?? null,
+      osmId: locationMoved ? null : undefined,
+      updatedAt: new Date(),
+    })
+    .where(eq(places.id, input.placeId));
+
+  return ok(null);
 }

@@ -26,6 +26,7 @@ const DEFAULT_VIEW: Partial<ViewState> = {
 export function MapView({
   initial,
   onPick,
+  initialPick,
   onSelectPlace,
   selectedPlaceId,
   categoryFilter,
@@ -38,6 +39,8 @@ export function MapView({
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
   onPick?: (lnglat: { lng: number; lat: number }) => void;
+  /** Pre-placed pin for edit / "dodaj tutaj" flows. Only used in pick mode. */
+  initialPick?: { lat: number; lng: number };
   /** Called when a place marker is tapped. When provided, selection replaces navigation. */
   onSelectPlace?: (placeId: string | null) => void;
   selectedPlaceId?: string | null;
@@ -66,7 +69,9 @@ export function MapView({
     ...(loadCamera() ?? {}),
     ...initial,
   }));
-  const [pick, setPick] = useState<{ lng: number; lat: number } | null>(null);
+  const [pick, setPick] = useState<{ lng: number; lat: number } | null>(
+    initialPick ? { lat: initialPick.lat, lng: initialPick.lng } : null,
+  );
   const { resolvedTheme } = useTheme();
   const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
 

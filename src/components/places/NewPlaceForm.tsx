@@ -158,8 +158,19 @@ export function NewPlaceForm({
           <Label>Wybierz punkt na mapie</Label>
           <div className="h-64 overflow-hidden rounded-md border">
             <MapViewClient
+              initial={
+                picked
+                  ? { longitude: picked.lng, latitude: picked.lat, zoom: 15 }
+                  : undefined
+              }
+              initialPick={picked ? { lat: picked.lat, lng: picked.lng } : undefined}
               onPick={({ lng, lat }) =>
-                setPicked({ name: "", address: "", lat, lng })
+                setPicked((prev) => ({
+                  name: prev?.name ?? "",
+                  address: prev?.address ?? "",
+                  lat,
+                  lng,
+                }))
               }
             />
           </div>
