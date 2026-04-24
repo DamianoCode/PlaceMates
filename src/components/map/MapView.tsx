@@ -13,7 +13,7 @@ import type { GeolocateControl as MLGeolocate, Map as MLMap } from "maplibre-gl"
 import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
-import { iconForCategorySlug } from "./category-icons";
+import { CategoryIcon } from "./category-icons";
 
 type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
 
@@ -208,7 +208,6 @@ export function MapView({
         visible.map((p, i) => {
           const active = selectedPlaceId === p.id;
           const slug = categoriesById?.get(p.categoryId)?.slug ?? null;
-          const Icon = iconForCategorySlug(slug);
           // Tiny stagger so a filter change cascades a wave across the
           // viewport instead of all pins popping in at once. Capped at
           // 240 ms total so it never feels slow.
@@ -236,7 +235,12 @@ export function MapView({
                   animation: `pm-marker-in 320ms ${delay}ms cubic-bezier(0.2, 0.9, 0.25, 1.05) both`,
                 }}
               >
-                <Icon size={active ? 20 : 18} strokeWidth={2.25} aria-hidden />
+                <CategoryIcon
+                  slug={slug}
+                  size={active ? 20 : 18}
+                  strokeWidth={2.25}
+                  aria-hidden
+                />
               </span>
             </Marker>
           );
