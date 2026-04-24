@@ -4,6 +4,7 @@ import {
   Globe,
   Heart,
   Palette,
+  Trophy,
   Users as UsersIcon,
 } from "lucide-react";
 import {
@@ -63,6 +64,12 @@ export default async function MePage() {
             <CardTitle className="font-display text-xl">Odkrywaj</CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
+            <NavRow
+              href="/ranking"
+              icon={<Trophy size={18} className="text-amber-500" />}
+              title="Ranking PlaceMates"
+              subtitle="Globalny atlas najwyżej ocenianych miejsc"
+            />
             <NavRow
               href="/favorites"
               icon={<Heart size={18} className="text-rose-500" />}

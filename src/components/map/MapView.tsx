@@ -15,7 +15,14 @@ import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
 import { CategoryIcon } from "./category-icons";
 
-type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
+type PlacePin = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  categoryId: string;
+  canonicalPlaceId?: string | null;
+};
 
 const DEFAULT_VIEW: Partial<ViewState> = {
   longitude: 21.0122, // Warsaw
@@ -143,7 +150,16 @@ export function MapView({
     let out = places;
     if (categoryFilter) out = out.filter((p) => p.categoryId === categoryFilter);
     if (restrictToIds) out = out.filter((p) => restrictToIds.has(p.id));
-    return out;
+    // Dedupe markers by canonical place — when two groups have added the
+    // same POI, they share a canonical_place_id and should render as one
+    // pin. Local pin-drops (no canonical) always use their own id so they
+    // never collapse across groups.
+    const byKey: globalThis.Map<string, PlacePin> = new globalThis.Map();
+    for (const p of out) {
+      const key = p.canonicalPlaceId ?? `local:${p.id}`;
+      if (!byKey.has(key)) byKey.set(key, p);
+    }
+    return Array.from(byKey.values());
   }, [places, categoryFilter, restrictToIds]);
 
   return (

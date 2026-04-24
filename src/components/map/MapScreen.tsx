@@ -19,7 +19,14 @@ import { NearbyImportSheet } from "./NearbyImportSheet";
 
 type Category = { id: string; slug: string; name: string };
 type Bbox = { west: number; south: number; east: number; north: number };
-type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
+type PlacePin = {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  categoryId: string;
+  canonicalPlaceId?: string | null;
+};
 
 export function MapScreen({
   primaryGroupId,

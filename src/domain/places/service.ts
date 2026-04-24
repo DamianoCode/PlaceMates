@@ -10,6 +10,11 @@ import {
 import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
 import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 import { err, ok, type Result } from "../result";
+import {
+  categorySlugForId,
+  createLocalCanonical,
+  findOrCreateExternalCanonical,
+} from "./canonical";
 
 export type PlaceMarker = {
   id: string;
@@ -17,6 +22,7 @@ export type PlaceMarker = {
   categoryId: string;
   lat: number;
   lng: number;
+  canonicalPlaceId: string | null;
 };
 
 export type PlaceDetail = PlaceMarker & {
@@ -52,10 +58,11 @@ export async function listPlacesForUser(
     id: string;
     name: string;
     category_id: string;
+    canonical_place_id: string | null;
     lat: number;
     lng: number;
   }>(sql`
-    SELECT id, name, category_id,
+    SELECT id, name, category_id, canonical_place_id,
            ST_Y(${places.location}::geometry)::float8 AS lat,
            ST_X(${places.location}::geometry)::float8 AS lng
       FROM ${places}
@@ -68,6 +75,7 @@ export async function listPlacesForUser(
     id: r.id,
     name: r.name,
     categoryId: r.category_id,
+    canonicalPlaceId: r.canonical_place_id,
     lat: r.lat,
     lng: r.lng,
   }));
@@ -89,8 +97,10 @@ export async function getPlaceForUser(
     created_at: Date;
     lat: number;
     lng: number;
+    canonical_place_id: string | null;
   }>(sql`
     SELECT id, group_id, name, category_id, address, created_at,
+           canonical_place_id,
            ST_Y(${places.location}::geometry)::float8 AS lat,
            ST_X(${places.location}::geometry)::float8 AS lng
       FROM ${places}
@@ -109,6 +119,7 @@ export async function getPlaceForUser(
     createdAt: r.created_at,
     lat: r.lat,
     lng: r.lng,
+    canonicalPlaceId: r.canonical_place_id,
   };
 }
 
@@ -126,6 +137,31 @@ export async function createPlace(
     .limit(1);
   if (member.length === 0) return err("Nie należysz do tej grupy.");
 
+  // Link to a canonical place — external (OSM-backed) when we have an
+  // osm_id, otherwise a fresh local canonical carrying the place's
+  // category slug so the ranking can still filter on it.
+  let canonicalId: string;
+  if (input.osmId) {
+    canonicalId = await findOrCreateExternalCanonical({
+      provider: "osm",
+      externalId: input.osmId,
+      name: input.name,
+      lat: input.location.lat,
+      lng: input.location.lng,
+      // We don't receive the raw OSM tag on the create form; the
+      // canonical will carry null categoryHint and fall back to our
+      // own slug via the place's category_id when the ranking filters.
+    });
+  } else {
+    const slug = await categorySlugForId(input.categoryId);
+    canonicalId = await createLocalCanonical({
+      name: input.name,
+      lat: input.location.lat,
+      lng: input.location.lng,
+      categoryHint: slug ?? undefined,
+    });
+  }
+
   const [row] = await db
     .insert(places)
     .values({
@@ -135,6 +171,7 @@ export async function createPlace(
       location: { lat: input.location.lat, lng: input.location.lng },
       address: input.address ?? null,
       osmId: input.osmId ?? null,
+      canonicalPlaceId: canonicalId,
       createdBy: userId,
     })
     .returning({ id: places.id });
@@ -187,13 +224,41 @@ export async function bulkCreatePlaces(
     return ok({ inserted: 0, skipped: items.length });
   }
 
-  const values = fresh.map((i) => ({
+  // Bulk imports always carry osm_id (Overpass). Link each row to its
+  // external canonical — done in parallel so a 50-item import still
+  // resolves in roughly the time of a single upsert.
+  const groupCategorySlug = await categorySlugForId(categoryId);
+  const canonicals = await Promise.all(
+    fresh.map((i) =>
+      i.osmId
+        ? findOrCreateExternalCanonical({
+            provider: "osm",
+            externalId: i.osmId,
+            name: i.name,
+            lat: i.lat,
+            lng: i.lng,
+            // Bulk imports don't always carry the OSM category tag;
+            // fall back to the group-picked slug so the canonical has
+            // something meaningful in category_hint.
+            categoryHint: groupCategorySlug ?? undefined,
+          })
+        : createLocalCanonical({
+            name: i.name,
+            lat: i.lat,
+            lng: i.lng,
+            categoryHint: groupCategorySlug ?? undefined,
+          }),
+    ),
+  );
+
+  const values = fresh.map((i, idx) => ({
     groupId,
     name: i.name,
     categoryId,
     location: { lat: i.lat, lng: i.lng },
     address: i.address,
     osmId: i.osmId,
+    canonicalPlaceId: canonicals[idx],
     createdBy: userId,
   }));
 
@@ -275,6 +340,21 @@ export async function updatePlace(
     Number(row.lat).toFixed(6) !== input.location.lat.toFixed(6) ||
     Number(row.lng).toFixed(6) !== input.location.lng.toFixed(6);
 
+  // When the pin moves, the old canonical (whichever type) no longer
+  // represents this spot. Mint a fresh local canonical with the new
+  // position + current category. Ratings stay tied to places.id so
+  // nothing is lost.
+  let newCanonicalId: string | undefined;
+  if (locationMoved) {
+    const slug = await categorySlugForId(input.categoryId);
+    newCanonicalId = await createLocalCanonical({
+      name: input.name,
+      lat: input.location.lat,
+      lng: input.location.lng,
+      categoryHint: slug ?? undefined,
+    });
+  }
+
   await db
     .update(places)
     .set({
@@ -283,6 +363,7 @@ export async function updatePlace(
       location: { lat: input.location.lat, lng: input.location.lng },
       address: input.address ?? null,
       osmId: locationMoved ? null : undefined,
+      canonicalPlaceId: newCanonicalId ?? undefined,
       updatedAt: new Date(),
     })
     .where(eq(places.id, input.placeId));
