@@ -20,12 +20,15 @@ const CATEGORY_EMOJI: Record<string, string> = {
 /**
  * Hero block above the place detail.
  *  - 0 photos: full-width gradient with the category emoji.
- *  - 1 photo: the cover stretches full-width at a fixed aspect.
+ *  - 1 photo: the cover stretches full-width with a cinematic cap.
  *  - 2+ photos: cover stays full-width; the remaining photos render as
  *    a scrolling thumbnail strip beneath it.
  *
- * Photos arrive ordered cover-first from the server (see
- * listPhotosForPlace) so we trust the array order.
+ * aspect-[16/9] + max-height prevents the hero from ballooning to
+ * absurd heights on wide desktop viewports. On narrow screens the
+ * aspect ratio drives; once width * 9/16 would exceed the cap the
+ * element becomes a cinematic wide panorama and object-cover trims
+ * the top/bottom of the image.
  */
 export function PlaceHero({
   photos,
@@ -34,12 +37,15 @@ export function PlaceHero({
   photos: Photo[];
   categorySlug: string | null;
 }) {
+  const heroClasses =
+    "aspect-[16/9] max-h-[min(50vh,420px)] w-full rounded-2xl object-cover";
+
   if (photos.length === 0) {
     const emoji = categorySlug ? CATEGORY_EMOJI[categorySlug] ?? "📍" : "📍";
     return (
       <div
         aria-hidden
-        className="flex aspect-[16/9] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-muted text-6xl"
+        className={`${heroClasses} flex items-center justify-center bg-gradient-to-br from-primary/10 via-primary/5 to-muted text-6xl`}
       >
         {emoji}
       </div>
@@ -51,12 +57,7 @@ export function PlaceHero({
   return (
     <div className="space-y-2">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={cover.url}
-        alt=""
-        loading="lazy"
-        className="aspect-[16/9] w-full rounded-2xl object-cover"
-      />
+      <img src={cover.url} alt="" loading="lazy" className={heroClasses} />
       {rest.length > 0 && (
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {rest.map((p) => (

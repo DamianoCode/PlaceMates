@@ -85,7 +85,7 @@ export default async function PlaceDetailPage({
         }
       />
 
-      <section className="space-y-6 p-4">
+      <section className="mx-auto max-w-2xl space-y-6 p-4">
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}

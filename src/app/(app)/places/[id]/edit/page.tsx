@@ -31,7 +31,7 @@ export default async function EditPlacePage({
         subtitle={place.name}
         fallbackHref={`/places/${id}`}
       />
-      <section className="p-4">
+      <section className="mx-auto max-w-2xl p-4">
         <EditPlaceForm
           placeId={place.id}
           initialName={place.name}

@@ -19,7 +19,7 @@ export default async function PlacesPage({
   return (
     <>
       <PageHeader title="Miejsca" fallbackHref="/map" />
-      <section className="space-y-4 p-4">
+      <section className="mx-auto max-w-2xl space-y-4 p-4">
         <PlaceSearchInput />
 
         {cards.length === 0 ? (

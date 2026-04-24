@@ -55,7 +55,7 @@ export default async function ItemPage({
         subtitle={place.name}
         fallbackHref={`/places/${id}`}
       />
-      <section className="space-y-5 p-4">
+      <section className="mx-auto max-w-2xl space-y-5 p-4">
         {/* Hero gallery — horizontal scroll of photos, or gradient placeholder. */}
         {photos.length > 0 ? (
           <div className="flex gap-2 overflow-x-auto no-scrollbar">

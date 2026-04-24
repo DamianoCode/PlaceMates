@@ -31,7 +31,7 @@ export default async function MePage() {
   return (
     <>
       <PageHeader title="Twoje konto" fallbackHref="/map" />
-      <section className="space-y-5 p-4">
+      <section className="mx-auto max-w-2xl space-y-5 p-4">
         {user && (
           <AccountHeader
             displayName={profile?.displayName ?? user.displayName}

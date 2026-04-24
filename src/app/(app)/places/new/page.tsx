@@ -28,7 +28,7 @@ export default async function NewPlacePage({
     return (
       <>
         <PageHeader title="Dodaj miejsce" fallbackHref="/map" />
-        <section className="p-4">
+        <section className="mx-auto max-w-2xl p-4">
           <p>Brak grupy. Skontaktuj się z adminem.</p>
         </section>
       </>
@@ -44,7 +44,7 @@ export default async function NewPlacePage({
   return (
     <>
       <PageHeader title="Dodaj miejsce" fallbackHref="/map" />
-      <section className="p-4 space-y-4">
+      <section className="mx-auto max-w-2xl space-y-4 p-4">
         <NewPlaceForm
           categories={cats.map((c) => ({ id: c.id, slug: c.slug, name: c.name }))}
           groups={groups.map((g) => ({ id: g.id, name: g.name }))}

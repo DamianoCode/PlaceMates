@@ -13,7 +13,7 @@ export default async function WishlistPage() {
   return (
     <>
       <PageHeader title="Do odwiedzenia" fallbackHref="/map" />
-      <section className="space-y-4 p-4">
+      <section className="mx-auto max-w-2xl space-y-4 p-4">
         {cards.length === 0 ? (
           <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
             Nic tu jeszcze nie ma. Zaznacz miejsce zakładką „Do odwiedzenia”

@@ -37,7 +37,7 @@ export default async function GroupPage({
   return (
     <>
       <PageHeader title={group.name} fallbackHref="/me" />
-      <section className="space-y-5 p-4">
+      <section className="mx-auto max-w-2xl space-y-5 p-4">
         <div className="space-y-1">
           <RenameGroupForm
             groupId={group.id}

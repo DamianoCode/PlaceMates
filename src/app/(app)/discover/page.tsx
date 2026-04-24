@@ -20,7 +20,7 @@ export default async function DiscoverPage() {
   return (
     <>
       <PageHeader title="Odkrywaj" fallbackHref="/me" />
-      <section className="space-y-6 p-4">
+      <section className="mx-auto max-w-2xl space-y-6 p-4">
         <EditorialHeader
           eyebrow="Publicznie udostępnione"
           title={
