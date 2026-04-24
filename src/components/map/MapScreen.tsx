@@ -121,6 +121,11 @@ export function MapScreen({
         selectedPlaceId={selectedPlaceId}
         onSelectPlace={setSelectedPlaceId}
         onBoundsChange={handleBoundsChange}
+        onContextMenu={({ lng, lat }) => {
+          router.push(
+            `/places/new?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`,
+          );
+        }}
       />
 
       <div className="pointer-events-none absolute inset-x-0 top-2 z-10 px-2">

@@ -30,6 +30,7 @@ export function MapView({
   categoryFilter,
   restrictToIds,
   onBoundsChange,
+  onContextMenu,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
@@ -42,14 +43,18 @@ export function MapView({
   restrictToIds?: Set<string>;
   /** Fires on moveend with the current visible bounds. */
   onBoundsChange?: (bbox: { west: number; south: number; east: number; north: number }) => void;
+  /** Right-click / long-press at lng,lat. Ignored in pick mode. */
+  onContextMenu?: (lnglat: { lng: number; lat: number }) => void;
 }) {
   const [places, setPlaces] = useState<PlacePin[]>([]);
-  // Restore last camera on mount (pick mode always starts fresh so users
-  // aren't silently dropped at some old position mid-creation).
-  const [view, setView] = useState<Partial<ViewState>>(() => {
-    if (onPick) return { ...DEFAULT_VIEW, ...initial };
-    return { ...DEFAULT_VIEW, ...(loadCamera() ?? {}), ...initial };
-  });
+  // Restore the last camera for both the main map and the pick-mode
+  // form map, so /places/new opens where the user left /map. Explicit
+  // `initial` (e.g. ?lat=&lng= from "Dodaj tutaj") still wins.
+  const [view, setView] = useState<Partial<ViewState>>(() => ({
+    ...DEFAULT_VIEW,
+    ...(loadCamera() ?? {}),
+    ...initial,
+  }));
   const [pick, setPick] = useState<{ lng: number; lat: number } | null>(null);
   const { resolvedTheme } = useTheme();
   const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
@@ -158,6 +163,13 @@ export function MapView({
         }
         // Tap on blank map clears selection.
         onSelectPlace?.(null);
+      }}
+      onContextMenu={(e) => {
+        if (onPick || !onContextMenu) return;
+        // Prevent the native browser menu so our app action wins.
+        e.originalEvent.preventDefault();
+        const { lng, lat } = e.lngLat;
+        onContextMenu({ lng, lat });
       }}
       style={{ width: "100%", height: "100%" }}
       mapStyle={style}
