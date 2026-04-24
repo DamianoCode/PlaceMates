@@ -33,6 +33,7 @@ export function MapView({
   onBoundsChange,
   onContextMenu,
   categoriesById,
+  places: placesProp,
 }: {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
@@ -49,8 +50,14 @@ export function MapView({
   onContextMenu?: (lnglat: { lng: number; lat: number }) => void;
   /** Category lookup used to pick the per-marker icon. */
   categoriesById?: Map<string, { slug: string }>;
+  /** Server-fed places. When provided, MapView skips its own fetch. */
+  places?: PlacePin[];
 }) {
-  const [places, setPlaces] = useState<PlacePin[]>([]);
+  // When the parent supplies places (preferred — server-fetched, always
+  // fresh after router.refresh()), we use those directly. Otherwise fall
+  // back to a one-shot client fetch so the component stays embeddable.
+  const [fetched, setFetched] = useState<PlacePin[]>([]);
+  const places = placesProp ?? fetched;
   // Restore the last camera for both the main map and the pick-mode
   // form map, so /places/new opens where the user left /map. Explicit
   // `initial` (e.g. ?lat=&lng= from "Dodaj tutaj") still wins.
@@ -123,18 +130,18 @@ export function MapView({
   );
 
   useEffect(() => {
-    if (onPick) return;
+    if (onPick || placesProp) return;
     let abort = false;
     fetch("/api/places")
       .then((r) => (r.ok ? r.json() : { places: [] }))
       .then((data: { places: PlacePin[] }) => {
-        if (!abort) setPlaces(data.places ?? []);
+        if (!abort) setFetched(data.places ?? []);
       })
       .catch(() => {});
     return () => {
       abort = true;
     };
-  }, [onPick]);
+  }, [onPick, placesProp]);
 
   const visible = useMemo(() => {
     let out = places;

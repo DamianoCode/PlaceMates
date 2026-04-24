@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export function NearbyImportSheet({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (open) return;
@@ -114,6 +116,10 @@ export function NearbyImportSheet({
       }.`,
     );
     onClose();
+    // bulkImportAction calls revalidatePath("/map") server-side; refresh
+    // the current route so the RSC re-runs and the new places flow down
+    // as props to MapScreen / MapView without a full reload.
+    router.refresh();
   }
 
   if (!open) return null;

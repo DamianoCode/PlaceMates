@@ -19,15 +19,18 @@ import { NearbyImportSheet } from "./NearbyImportSheet";
 
 type Category = { id: string; slug: string; name: string };
 type Bbox = { west: number; south: number; east: number; north: number };
+type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
 
 export function MapScreen({
   primaryGroupId,
   categories,
+  places,
   wishlistedIds,
   favoriteIds,
 }: {
   primaryGroupId: string | null;
   categories: Category[];
+  places: PlacePin[];
   wishlistedIds: string[];
   favoriteIds: string[];
 }) {
@@ -127,6 +130,7 @@ export function MapScreen({
         onSelectPlace={setSelectedPlaceId}
         onBoundsChange={handleBoundsChange}
         categoriesById={categoriesById}
+        places={places}
         onContextMenu={({ lng, lat }) => {
           router.push(
             `/places/new?lat=${lat.toFixed(6)}&lng=${lng.toFixed(6)}`,
