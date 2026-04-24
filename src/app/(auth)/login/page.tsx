@@ -4,7 +4,6 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { LoginForm } from "@/components/auth/LoginForm";
-import { MagicLinkForm } from "@/components/auth/MagicLinkForm";
 import { WebViewNotice } from "@/components/auth/WebViewNotice";
 import { detectWebView } from "@/lib/webview";
 
@@ -89,8 +88,6 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             <AuthDivider />
           </>
         )}
-        <MagicLinkForm next={next} />
-        <AuthDivider label="lub hasłem" />
         <LoginForm next={next} />
       </FormCard>
     </AuthShell>

@@ -2,7 +2,6 @@ import { headers } from "next/headers";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
-import { MagicLinkForm } from "@/components/auth/MagicLinkForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { WebViewNotice } from "@/components/auth/WebViewNotice";
 import { detectWebView } from "@/lib/webview";
@@ -67,8 +66,6 @@ export default async function RegisterPage({
             <AuthDivider />
           </>
         )}
-        <MagicLinkForm next={next} />
-        <AuthDivider label="lub z hasłem" />
         <RegisterForm next={next} />
       </FormCard>
     </AuthShell>
