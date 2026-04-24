@@ -9,7 +9,7 @@ import Map, {
   type ViewState,
   type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
-import type { GeolocateControl as MLGeolocate, Map as MLMap } from "maplibre-gl";
+import type { Map as MLMap } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
@@ -106,30 +106,21 @@ export function MapView({
     [schedulePersist],
   );
 
-  const geolocateRef = useRef<MLGeolocate>(null);
-
-  // If the browser already has geolocation permission granted, show the
-  // user's blue dot immediately on load. If permission is "prompt" we
-  // stay quiet — auto-prompting without a user gesture is both bad UX
-  // and, on stricter browsers, outright blocked.
+  // Intentionally no auto-trigger: the map opens at the last camera
+  // position (from localStorage) and stays put until the user explicitly
+  // taps the locate button. Previous behaviour snapped the viewport to
+  // the user's GPS on every mount, which fought with the camera
+  // persistence and felt jumpy.
   const handleLoad = useCallback(
     (e: { target: MLMap }) => {
-      if (onBoundsChange) {
-        const b = e.target.getBounds();
-        onBoundsChange({
-          west: b.getWest(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          north: b.getNorth(),
-        });
-      }
-      if (!("permissions" in navigator) || !("geolocation" in navigator)) return;
-      navigator.permissions
-        .query({ name: "geolocation" as PermissionName })
-        .then((status) => {
-          if (status.state === "granted") geolocateRef.current?.trigger();
-        })
-        .catch(() => {});
+      if (!onBoundsChange) return;
+      const b = e.target.getBounds();
+      onBoundsChange({
+        west: b.getWest(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        north: b.getNorth(),
+      });
     },
     [onBoundsChange],
   );
@@ -194,10 +185,11 @@ export function MapView({
       <NavigationControl position="top-right" />
       {/* Available in every mode — including /places/new pin-drop — so
        *  users can always centre on themselves and drop a pin nearby. */}
+      {/* One-shot center-on-me. No trackUserLocation — the map stops
+       *  re-centering once it's snapped to the user, letting them pan
+       *  freely. Tapping the button again re-centers on demand. */}
       <GeolocateControl
-        ref={geolocateRef}
         position="top-right"
-        trackUserLocation
         showUserLocation
         showAccuracyCircle
         positionOptions={{ enableHighAccuracy: true, timeout: 10_000 }}

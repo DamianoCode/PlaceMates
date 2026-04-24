@@ -1,6 +1,13 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
-import { groupMembers, places } from "@/infra/db/schema";
+import {
+  groupMembers,
+  itemPhotos,
+  photos,
+  placeItems,
+  places,
+} from "@/infra/db/schema";
+import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
 import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 import { err, ok, type Result } from "../result";
 
@@ -280,5 +287,85 @@ export async function updatePlace(
     })
     .where(eq(places.id, input.placeId));
 
+  return ok(null);
+}
+
+/**
+ * Remove a place entirely. Permission mirrors edit (creator or group
+ * owner). Cascade on the FKs takes care of ratings, visits, wishlist,
+ * favorites, place_items, item_ratings, item_photos, photos, and
+ * public_shares — they're all ON DELETE CASCADE against place or its
+ * children.
+ *
+ * Storage objects (bucket files) don't cascade with the DB, so we
+ * gather every place/item photo path up-front and clean them
+ * explicitly. Best-effort — if storage removal fails mid-way the DB
+ * delete still runs so the user doesn't see an orphaned row.
+ */
+export async function deletePlace(
+  placeId: string,
+  userId: string,
+): Promise<Result<null>> {
+  // Single JOIN to confirm existence + permission (creator OR group owner).
+  const [row] = await db
+    .select({ id: places.id })
+    .from(places)
+    .innerJoin(
+      groupMembers,
+      and(
+        eq(groupMembers.groupId, places.groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .where(
+      and(
+        eq(places.id, placeId),
+        or(eq(places.createdBy, userId), eq(groupMembers.role, "owner")),
+      ),
+    )
+    .limit(1);
+  if (!row) {
+    return err("Tylko autor miejsca lub właściciel grupy może usuwać.");
+  }
+
+  // Collect storage paths before the cascade wipes the rows.
+  const [placePhotos, itemIds] = await Promise.all([
+    db
+      .select({ path: photos.storagePath })
+      .from(photos)
+      .where(eq(photos.placeId, placeId)),
+    db
+      .select({ id: placeItems.id })
+      .from(placeItems)
+      .where(eq(placeItems.placeId, placeId)),
+  ]);
+  const itemPhotosForPlace =
+    itemIds.length > 0
+      ? await db
+          .select({ path: itemPhotos.storagePath })
+          .from(itemPhotos)
+          .where(
+            inArray(
+              itemPhotos.itemId,
+              itemIds.map((i) => i.id),
+            ),
+          )
+      : [];
+
+  const storage = await getStorage();
+  // Storage SDK accepts batch removes; we collect all paths and fire
+  // one request per bucket. Failures are swallowed — DB integrity
+  // takes priority over orphaned files we can clean up later.
+  const allPaths = [
+    ...placePhotos.map((p) => p.path),
+    ...itemPhotosForPlace.map((p) => p.path),
+  ];
+  await Promise.all(
+    allPaths.map((path) =>
+      storage.remove(PHOTO_BUCKET, path).catch(() => undefined),
+    ),
+  );
+
+  await db.delete(places).where(eq(places.id, placeId));
   return ok(null);
 }
