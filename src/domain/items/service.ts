@@ -263,6 +263,18 @@ export async function upsertItemRating(
   return ok(null);
 }
 
+export async function deleteItemRating(
+  itemId: string,
+  userId: string,
+): Promise<Result<null>> {
+  const rows = await db
+    .delete(itemRatings)
+    .where(and(eq(itemRatings.itemId, itemId), eq(itemRatings.userId, userId)))
+    .returning({ id: itemRatings.id });
+  if (rows.length === 0) return err("Nie masz oceny do cofnięcia.");
+  return ok(null);
+}
+
 export async function addItemPhoto(
   itemId: string,
   userId: string,

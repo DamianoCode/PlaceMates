@@ -7,6 +7,7 @@ import {
   addItemPhoto,
   createItem,
   deleteItem,
+  deleteItemRating,
   getItemForUser,
   upsertItemRating,
 } from "@/domain/items/service";
@@ -117,6 +118,29 @@ export async function addItemPhotoAction(
     width: Number.isFinite(width) ? width : 0,
     height: Number.isFinite(height) ? height : 0,
   });
+  if (!result.ok) return { error: result.error };
+
+  const item = await getItemForUser(itemId, user.id);
+  if (item) {
+    revalidatePath(`/places/${item.placeId}`);
+    revalidatePath(`/places/${item.placeId}/items/${item.id}`);
+  }
+  return { ok: true };
+}
+
+export type DeleteItemRatingState = { error: string } | { ok: true } | null;
+
+export async function deleteItemRatingAction(
+  _: DeleteItemRatingState,
+  formData: FormData,
+): Promise<DeleteItemRatingState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const itemId = formData.get("itemId") as string | null;
+  if (!itemId) return { error: "Brak produktu." };
+
+  const result = await deleteItemRating(itemId, user.id);
   if (!result.ok) return { error: result.error };
 
   const item = await getItemForUser(itemId, user.id);

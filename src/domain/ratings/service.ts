@@ -104,3 +104,22 @@ export async function upsertRating(
 
   return ok({ id: row.id, overall });
 }
+
+/**
+ * Remove the caller's rating for a place. Also cascades the public
+ * share (if any) so we don't leave a share pointing at a deleted
+ * rating — ON DELETE CASCADE on public_shares.rating_id handles that
+ * at the DB level.
+ */
+export async function deleteRating(
+  placeId: string,
+  userId: string,
+): Promise<Result<null>> {
+  const rows = await db
+    .delete(ratings)
+    .where(and(eq(ratings.placeId, placeId), eq(ratings.userId, userId)))
+    .returning({ id: ratings.id });
+  if (rows.length === 0) return err("Nie masz oceny do cofnięcia.");
+  return ok(null);
+}
+

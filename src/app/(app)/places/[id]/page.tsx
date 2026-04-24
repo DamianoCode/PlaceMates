@@ -33,16 +33,10 @@ import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { PhotoTile } from "@/components/places/PhotoTile";
 import { StatPill } from "@/components/places/StatPill";
+import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
-
-function fmtDate(d: Date) {
-  return new Intl.DateTimeFormat("pl-PL", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(d);
-}
 
 export default async function PlaceDetailPage({
   params,
@@ -241,25 +235,7 @@ export default async function PlaceDetailPage({
           </CardHeader>
           <CardContent className="space-y-3">
             <VisitForm placeId={id} />
-            {visits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Brak wizyt jeszcze.</p>
-            ) : (
-              <ul className="space-y-2">
-                {visits.map((v) => (
-                  <li key={v.id} className="rounded-xl border bg-muted/20 p-3 text-sm">
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-medium">{v.userDisplayName}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {fmtDate(v.visitedAt)}
-                      </span>
-                    </div>
-                    {v.note && (
-                      <p className="mt-1 italic text-muted-foreground">“{v.note}”</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <VisitList visits={visits} placeId={id} currentUserId={user.id} />
           </CardContent>
         </Card>
 

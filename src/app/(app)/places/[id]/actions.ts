@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getAuth } from "@/infra/auth";
 import { getCategory } from "@/domain/categories/service";
 import { getPlaceForUser } from "@/domain/places/service";
-import { upsertRating } from "@/domain/ratings/service";
-import { addVisit } from "@/domain/visits/service";
+import { deleteRating, upsertRating } from "@/domain/ratings/service";
+import { addVisit, deleteVisit } from "@/domain/visits/service";
 import { addPhoto, deletePhoto, setCoverPhoto } from "@/domain/photos/service";
 
 type ActionState = { error: string } | { ok: true } | null;
@@ -138,5 +138,44 @@ export async function deletePhotoAction(
   revalidatePath(`/places/${result.data.placeId}`);
   revalidatePath("/map");
   revalidatePath("/places");
+  return { ok: true };
+}
+
+export type DeleteVisitState = { error: string } | { ok: true } | null;
+
+export async function deleteVisitAction(
+  _: DeleteVisitState,
+  formData: FormData,
+): Promise<DeleteVisitState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const visitId = formData.get("visitId") as string | null;
+  const placeId = formData.get("placeId") as string | null;
+  if (!visitId) return { error: "Brak wpisu." };
+
+  const result = await deleteVisit(visitId, user.id);
+  if (!result.ok) return { error: result.error };
+  if (placeId) revalidatePath(`/places/${placeId}`);
+  return { ok: true };
+}
+
+export type DeleteRatingState = { error: string } | { ok: true } | null;
+
+export async function deleteRatingAction(
+  _: DeleteRatingState,
+  formData: FormData,
+): Promise<DeleteRatingState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const placeId = formData.get("placeId") as string | null;
+  if (!placeId) return { error: "Brak miejsca." };
+
+  const result = await deleteRating(placeId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${placeId}`);
+  revalidatePath("/map");
   return { ok: true };
 }
