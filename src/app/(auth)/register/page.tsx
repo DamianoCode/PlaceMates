@@ -1,7 +1,10 @@
+import { headers } from "next/headers";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { RegisterForm } from "@/components/auth/RegisterForm";
+import { WebViewNotice } from "@/components/auth/WebViewNotice";
+import { detectWebView } from "@/lib/webview";
 
 type Search = Promise<{ next?: string }>;
 
@@ -16,6 +19,7 @@ export default async function RegisterPage({
 }) {
   const { next } = await searchParams;
   const invited = invitedFrom(next);
+  const webView = detectWebView((await headers()).get("user-agent"));
 
   return (
     <AuthShell
@@ -55,8 +59,13 @@ export default async function RegisterPage({
             : "Darmowe. Bez reklam. Twoje."
         }
       >
-        <GoogleButton next={next} label="Załóż przez Google" />
-        <AuthDivider />
+        {webView && <WebViewNotice kind={webView} />}
+        {!webView && (
+          <>
+            <GoogleButton next={next} label="Załóż przez Google" />
+            <AuthDivider />
+          </>
+        )}
         <RegisterForm next={next} />
       </FormCard>
     </AuthShell>

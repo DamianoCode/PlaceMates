@@ -1,8 +1,11 @@
+import { headers } from "next/headers";
 import { AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { WebViewNotice } from "@/components/auth/WebViewNotice";
+import { detectWebView } from "@/lib/webview";
 
 type Search = Promise<{ next?: string; error?: string }>;
 
@@ -27,6 +30,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   const { next, error } = await searchParams;
   const invited = invitedFrom(next);
   const errMsg = error ? humaniseError(error) : null;
+  const webView = detectWebView((await headers()).get("user-agent"));
 
   return (
     <AuthShell
@@ -68,6 +72,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             : "Konto istnieje od pierwszej pinezki."
         }
       >
+        {webView && <WebViewNotice kind={webView} />}
         {errMsg && (
           <div
             role="alert"
@@ -77,8 +82,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             <span>{errMsg}</span>
           </div>
         )}
-        <GoogleButton next={next} label="Zaloguj przez Google" />
-        <AuthDivider />
+        {!webView && (
+          <>
+            <GoogleButton next={next} label="Zaloguj przez Google" />
+            <AuthDivider />
+          </>
+        )}
         <LoginForm next={next} />
       </FormCard>
     </AuthShell>
