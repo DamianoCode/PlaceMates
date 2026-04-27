@@ -14,7 +14,9 @@ import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
 import { CategoryIcon } from "./category-icons";
+import { useQuery } from "@tanstack/react-query";
 import { MARKER_STAGGER_CAP_MS, MARKER_STAGGER_MS } from "@/lib/constants";
+import { fetchJson } from "@/lib/fetch-json";
 import type { PlaceMarker } from "@/domain/places/service";
 
 type PlacePin = PlaceMarker;
@@ -60,9 +62,17 @@ export function MapView({
 }) {
   // When the parent supplies places (preferred — server-fetched, always
   // fresh after router.refresh()), we use those directly. Otherwise fall
-  // back to a one-shot client fetch so the component stays embeddable.
-  const [fetched, setFetched] = useState<PlacePin[]>([]);
-  const places = placesProp ?? fetched;
+  // back to a TanStack Query fetch so the component stays embeddable.
+  const { data: fetched } = useQuery({
+    queryKey: ["map-places"],
+    enabled: !onPick && !placesProp,
+    queryFn: () => fetchJson<{ places: PlacePin[] }>("/api/places"),
+    staleTime: 30_000,
+  });
+  const places = useMemo(
+    () => placesProp ?? fetched?.places ?? [],
+    [placesProp, fetched],
+  );
   // Restore the last camera for both the main map and the pick-mode
   // form map, so /places/new opens where the user left /map. Explicit
   // `initial` (e.g. ?lat=&lng= from "Dodaj tutaj") still wins.
@@ -126,20 +136,6 @@ export function MapView({
     },
     [onBoundsChange],
   );
-
-  useEffect(() => {
-    if (onPick || placesProp) return;
-    let abort = false;
-    fetch("/api/places")
-      .then((r) => (r.ok ? r.json() : { places: [] }))
-      .then((data: { places: PlacePin[] }) => {
-        if (!abort) setFetched(data.places ?? []);
-      })
-      .catch(() => {});
-    return () => {
-      abort = true;
-    };
-  }, [onPick, placesProp]);
 
   const visible = useMemo(() => {
     let out = places;

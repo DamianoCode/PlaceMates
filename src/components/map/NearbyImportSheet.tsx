@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { bulkImportAction } from "@/app/(app)/places/import-actions";
+import { fetchJson, HttpError } from "@/lib/fetch-json";
 
 export type ImportCategory = { id: string; slug: string; name: string };
 
@@ -38,54 +40,86 @@ export function NearbyImportSheet({
   getBbox: () => { west: number; south: number; east: number; north: number } | null;
 }) {
   const [selectedCat, setSelectedCat] = useState<ImportCategory | null>(null);
-  const [results, setResults] = useState<Poi[]>([]);
+  const [searchBbox, setSearchBbox] = useState<{
+    west: number;
+    south: number;
+    east: number;
+    north: number;
+  } | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
 
+  const {
+    data: searchData,
+    isFetching: loading,
+    error: searchError,
+  } = useQuery({
+    queryKey: [
+      "nearby-import",
+      selectedCat?.slug,
+      searchBbox?.west,
+      searchBbox?.south,
+      searchBbox?.east,
+      searchBbox?.north,
+    ],
+    enabled: selectedCat !== null && searchBbox !== null,
+    queryFn: () => {
+      const b = searchBbox!;
+      const bboxParam = `${b.west},${b.south},${b.east},${b.north}`;
+      return fetchJson<{ results: Poi[] }>(
+        `/api/nearby?category=${encodeURIComponent(selectedCat!.slug)}&bbox=${bboxParam}`,
+      );
+    },
+    staleTime: 60_000,
+  });
+  const results = searchData?.results ?? [];
+
+  // Toast on error and pre-check all results when a fresh response
+  // lands. Both are side effects on query state changes.
+  useEffect(() => {
+    if (!searchError) return;
+    if (searchError instanceof HttpError && searchError.status === 400) {
+      toast.error("Obszar mapy jest zbyt duży.");
+    } else {
+      toast.error("Nie udało się pobrać miejsc.");
+    }
+  }, [searchError]);
+
+  useEffect(() => {
+    if (!searchData) return;
+    let abort = false;
+    queueMicrotask(() => {
+      if (!abort) setChecked(new Set(searchData.results.map((r) => r.osmId)));
+    });
+    return () => {
+      abort = true;
+    };
+  }, [searchData]);
+
   useEffect(() => {
     if (open) return;
-    // Reset asynchronously so we don't setState synchronously inside an effect.
-    const t = queueMicrotask(() => {
+    let abort = false;
+    queueMicrotask(() => {
+      if (abort) return;
       setSelectedCat(null);
-      setResults([]);
+      setSearchBbox(null);
       setChecked(new Set());
     });
     return () => {
-      void t;
+      abort = true;
     };
   }, [open]);
 
-  async function runSearch(cat: ImportCategory) {
+  function runSearch(cat: ImportCategory) {
     const bbox = getBbox();
     if (!bbox) {
       toast.error("Nie udało się odczytać obszaru mapy.");
       return;
     }
     setSelectedCat(cat);
-    setLoading(true);
-    setResults([]);
+    setSearchBbox(bbox);
     setChecked(new Set());
-    try {
-      const bboxParam = `${bbox.west},${bbox.south},${bbox.east},${bbox.north}`;
-      const res = await fetch(
-        `/api/nearby?category=${encodeURIComponent(cat.slug)}&bbox=${bboxParam}`,
-      );
-      if (!res.ok) {
-        if (res.status === 400) toast.error("Obszar mapy jest zbyt duży.");
-        else toast.error("Nie udało się pobrać miejsc.");
-        return;
-      }
-      const data = (await res.json()) as { results: Poi[] };
-      setResults(data.results);
-      // Pre-check all so the default action is "import everything".
-      setChecked(new Set(data.results.map((r) => r.osmId)));
-    } catch {
-      toast.error("Błąd sieci.");
-    } finally {
-      setLoading(false);
-    }
   }
 
   async function doImport() {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchJson, HttpError } from "@/lib/fetch-json";
 
 type GroupBreakdownEntry = {
   placeId: string;
@@ -28,33 +29,21 @@ export function PlacePreviewSheet({
   placeId: string | null;
   onClose: () => void;
 }) {
-  const [preview, setPreview] = useState<Preview | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    let abort = false;
-    // Defer all state updates off the sync path so the compiler's
-    // set-state-in-effect rule is satisfied.
-    queueMicrotask(() => {
-      if (abort) return;
-      if (!placeId) {
-        setPreview(null);
-        return;
+  const { data: preview, isLoading } = useQuery({
+    queryKey: ["place-preview", placeId],
+    enabled: placeId !== null,
+    queryFn: async () => {
+      if (!placeId) return null;
+      try {
+        return await fetchJson<Preview>(`/api/places/${placeId}/preview`);
+      } catch (err) {
+        // 404 = the place was deleted between the marker render and the
+        // sheet open. Treat as "no preview" instead of an error state.
+        if (err instanceof HttpError && err.status === 404) return null;
+        throw err;
       }
-      setLoading(true);
-      fetch(`/api/places/${placeId}/preview`)
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: Preview | null) => {
-          if (!abort) setPreview(data);
-        })
-        .finally(() => {
-          if (!abort) setLoading(false);
-        });
-    });
-    return () => {
-      abort = true;
-    };
-  }, [placeId]);
+    },
+  });
 
   if (!placeId) return null;
 
@@ -84,7 +73,7 @@ export function PlacePreviewSheet({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold">
-                  {preview?.name ?? (loading ? "Ładuję…" : "")}
+                  {preview?.name ?? (isLoading ? "Ładuję…" : "")}
                 </h2>
                 <p className="truncate text-xs text-muted-foreground">
                   {preview?.categoryName ?? ""}
