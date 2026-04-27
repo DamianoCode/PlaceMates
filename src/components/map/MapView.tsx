@@ -87,6 +87,17 @@ export function MapView({
   const { resolvedTheme } = useTheme();
   const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
 
+  // Hold the underlying maplibre instance so we can attach native touch
+  // listeners (long-press) — react-map-gl only forwards a fixed set of
+  // events and `contextmenu` doesn't fire on mobile webkit. State, not
+  // ref, so an effect can run when the map finally loads.
+  const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
+
+  // After a long-press fires we get a synthetic click on the same spot.
+  // Without this flag, that click would clear the selection or, in
+  // pick-mode, drop a pin where the user only meant to long-press.
+  const suppressNextClick = useRef(false);
+
   // Persist on idle rather than every onMove tick to keep localStorage quiet.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const schedulePersist = useCallback(
@@ -125,17 +136,98 @@ export function MapView({
   // persistence and felt jumpy.
   const handleLoad = useCallback(
     (e: { target: MLMap }) => {
-      if (!onBoundsChange) return;
-      const b = e.target.getBounds();
-      onBoundsChange({
-        west: b.getWest(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        north: b.getNorth(),
-      });
+      setMapInstance(e.target);
+      if (onBoundsChange) {
+        const b = e.target.getBounds();
+        onBoundsChange({
+          west: b.getWest(),
+          south: b.getSouth(),
+          east: b.getEast(),
+          north: b.getNorth(),
+        });
+      }
     },
     [onBoundsChange],
   );
+
+  // Mobile long-press → onContextMenu. Maplibre doesn't fire a
+  // `contextmenu` event on touchscreen webkit, so we time it ourselves
+  // off raw touch events and convert pixel → lng/lat with `unproject`.
+  // Cancels on movement (panning) and second-finger touch (pinch).
+  useEffect(() => {
+    const map = mapInstance;
+    if (!map) return;
+    if (!onContextMenu || onPick) return;
+
+    const HOLD_MS = 500;
+    const MOVE_TOLERANCE_PX = 10;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let startX = 0;
+    let startY = 0;
+
+    const cancel = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) {
+        // Pinch / multi-touch — bail.
+        cancel();
+        return;
+      }
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      cancel();
+      timer = setTimeout(() => {
+        timer = null;
+        // Convert client px → map container px → lng/lat.
+        const rect = map.getCanvasContainer().getBoundingClientRect();
+        const px = startX - rect.left;
+        const py = startY - rect.top;
+        const lngLat = map.unproject([px, py]);
+        suppressNextClick.current = true;
+        // Light haptic nudge so the gesture feels confirmed. Silently
+        // unsupported on iOS Safari and any non-secure context.
+        if (typeof navigator !== "undefined" && navigator.vibrate) {
+          try {
+            navigator.vibrate(40);
+          } catch {
+            // ignore
+          }
+        }
+        onContextMenu({ lng: lngLat.lng, lat: lngLat.lat });
+      }, HOLD_MS);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!timer) return;
+      const t = e.touches[0];
+      if (!t) return;
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      if (dx * dx + dy * dy > MOVE_TOLERANCE_PX * MOVE_TOLERANCE_PX) {
+        cancel();
+      }
+    };
+
+    const container = map.getCanvasContainer();
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchmove", handleTouchMove, { passive: true });
+    container.addEventListener("touchend", cancel, { passive: true });
+    container.addEventListener("touchcancel", cancel, { passive: true });
+
+    return () => {
+      cancel();
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchmove", handleTouchMove);
+      container.removeEventListener("touchend", cancel);
+      container.removeEventListener("touchcancel", cancel);
+    };
+  }, [mapInstance, onContextMenu, onPick]);
 
   const visible = useMemo(() => {
     let out = places;
@@ -169,6 +261,13 @@ export function MapView({
       }}
       onLoad={handleLoad}
       onClick={(e) => {
+        // Mobile long-press dispatches a synthetic click on touchend;
+        // swallow that one so we don't drop a pin / clear selection
+        // immediately after the user invoked the context menu.
+        if (suppressNextClick.current) {
+          suppressNextClick.current = false;
+          return;
+        }
         if (onPick) {
           const { lng, lat } = e.lngLat;
           setPick({ lng, lat });
