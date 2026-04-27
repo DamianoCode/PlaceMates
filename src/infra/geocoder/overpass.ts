@@ -104,6 +104,43 @@ function elementToPoi(el: OverpassElement): OverpassPoi | null {
   };
 }
 
+/**
+ * Approximate metres → degrees conversion. Latitude is uniform
+ * (~111 km/deg); longitude shrinks toward the poles (~111 km × cos lat).
+ * Plenty good for the small 50–100 m bbox we use for pin-drop matches.
+ */
+function metersToBbox(
+  lat: number,
+  lng: number,
+  radiusM: number,
+): { south: number; west: number; north: number; east: number } {
+  const dLat = radiusM / 111_320;
+  const dLng = radiusM / (111_320 * Math.max(0.01, Math.cos((lat * Math.PI) / 180)));
+  return {
+    south: lat - dLat,
+    north: lat + dLat,
+    west: lng - dLng,
+    east: lng + dLng,
+  };
+}
+
+/**
+ * Find OSM POIs near a point that match our category slug. Used after
+ * a pin-drop to ask "did you mean: …?" and link to an external
+ * canonical instead of creating a fresh local one — avoids fragmenting
+ * the ranking when the same real-world spot already exists in OSM.
+ */
+export async function overpassNearbyByCategory(
+  categorySlug: string,
+  lat: number,
+  lng: number,
+  radiusM: number,
+  opts?: { limit?: number; userAgent?: string },
+): Promise<OverpassPoi[]> {
+  const bbox = metersToBbox(lat, lng, radiusM);
+  return overpassSearchByCategory(categorySlug, bbox, opts);
+}
+
 export async function overpassSearchByCategory(
   categorySlug: string,
   bbox: { south: number; west: number; north: number; east: number },

@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Star, X } from "lucide-react";
 
+type GroupBreakdownEntry = {
+  placeId: string;
+  groupName: string;
+  avg: number | null;
+  count: number;
+};
+
 type Preview = {
   id: string;
   name: string;
@@ -11,6 +18,7 @@ type Preview = {
   overall: number | null;
   ratingCount: number;
   photoUrl: string | null;
+  groupBreakdown: GroupBreakdownEntry[] | null;
 };
 
 export function PlacePreviewSheet({
@@ -120,6 +128,32 @@ export function PlacePreviewSheet({
             </div>
           </div>
         </div>
+
+        {preview?.groupBreakdown && preview.groupBreakdown.length > 1 && (
+          <ul className="border-t border-border/60 divide-y divide-border/40 bg-muted/30">
+            {preview.groupBreakdown.map((b) => (
+              <li
+                key={b.placeId}
+                className="flex items-center justify-between gap-3 px-3 py-2 text-xs"
+              >
+                <span className="truncate text-muted-foreground">
+                  W „{b.groupName}”
+                </span>
+                <span className="flex items-center gap-1 tabular-nums">
+                  {b.avg !== null ? (
+                    <>
+                      <Star size={11} className="fill-amber-400 stroke-amber-500" />
+                      <span className="font-medium">{b.avg.toFixed(2)}</span>
+                      <span className="text-muted-foreground">({b.count})</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">brak ocen</span>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

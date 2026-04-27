@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Star } from "lucide-react";
+import { ChevronRight, Star, Trophy } from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import { listPublicShares } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -30,6 +30,27 @@ export default async function DiscoverPage() {
           }
           lede="Oceny wystawione i upublicznione przez innych użytkowników PlaceMates. Kliknij, żeby zobaczyć pełną pocztówkę."
         />
+
+        <Link
+          href="/ranking"
+          className="group flex items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 transition-colors hover:border-primary/50"
+        >
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <Trophy size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base leading-tight">
+              Ranking PlaceMates
+            </p>
+            <p className="truncate text-xs italic text-muted-foreground">
+              Globalny atlas — anonimowe średnie ze wszystkich grup.
+            </p>
+          </div>
+          <ChevronRight
+            size={18}
+            className="flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          />
+        </Link>
 
         {items.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">

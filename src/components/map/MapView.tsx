@@ -2,7 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Map, {
+import MapLibreMap, {
   GeolocateControl,
   Marker,
   NavigationControl,
@@ -14,8 +14,10 @@ import { useTheme } from "next-themes";
 import { getMapStyle } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
 import { CategoryIcon } from "./category-icons";
+import { MARKER_STAGGER_CAP_MS, MARKER_STAGGER_MS } from "@/lib/constants";
+import type { PlaceMarker } from "@/domain/places/service";
 
-type PlacePin = { id: string; name: string; lat: number; lng: number; categoryId: string };
+type PlacePin = PlaceMarker;
 
 const DEFAULT_VIEW: Partial<ViewState> = {
   longitude: 21.0122, // Warsaw
@@ -143,11 +145,20 @@ export function MapView({
     let out = places;
     if (categoryFilter) out = out.filter((p) => p.categoryId === categoryFilter);
     if (restrictToIds) out = out.filter((p) => restrictToIds.has(p.id));
-    return out;
+    // Dedupe markers by canonical place — when two groups have added the
+    // same POI, they share a canonical_place_id and should render as one
+    // pin. Local pin-drops (no canonical) always use their own id so they
+    // never collapse across groups.
+    const byKey = new Map<string, PlacePin>();
+    for (const p of out) {
+      const key = p.canonicalPlaceId ?? `local:${p.id}`;
+      if (!byKey.has(key)) byKey.set(key, p);
+    }
+    return Array.from(byKey.values());
   }, [places, categoryFilter, restrictToIds]);
 
   return (
-    <Map
+    <MapLibreMap
       {...view}
       onMove={handleMove}
       onMoveEnd={(e) => {
@@ -203,7 +214,7 @@ export function MapView({
           // Tiny stagger so a filter change cascades a wave across the
           // viewport instead of all pins popping in at once. Capped at
           // 240 ms total so it never feels slow.
-          const delay = Math.min(i * 8, 240);
+          const delay = Math.min(i * MARKER_STAGGER_MS, MARKER_STAGGER_CAP_MS);
           return (
             <Marker
               key={p.id}
@@ -247,6 +258,6 @@ export function MapView({
           </span>
         </Marker>
       )}
-    </Map>
+    </MapLibreMap>
   );
 }

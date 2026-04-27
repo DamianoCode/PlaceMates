@@ -14,7 +14,7 @@ import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { getCategory } from "@/domain/categories/service";
 import {
   getUserRating,
-  listRatingsForPlace,
+  listRatingsForPlaceAcrossGroups,
 } from "@/domain/ratings/service";
 import { listVisitsForPlace } from "@/domain/visits/service";
 import { listPhotosForPlace } from "@/domain/photos/service";
@@ -37,6 +37,7 @@ import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
+import { RatingsByGroup } from "@/components/places/RatingsByGroup";
 
 export default async function PlaceDetailPage({
   params,
@@ -50,26 +51,44 @@ export default async function PlaceDetailPage({
   const place = await getPlaceForUser(id, user.id);
   if (!place) notFound();
 
-  const [category, ratings, visits, photos, myRating, wish, fav, canEdit, items] =
-    await Promise.all([
-      getCategory(place.categoryId),
-      listRatingsForPlace(id, user.id),
-      listVisitsForPlace(id, user.id),
-      listPhotosForPlace(id, user.id),
-      getUserRating(id, user.id),
-      isOnWishlist(id, user.id),
-      isFavorite(id, user.id),
-      canUserEditPlace(id, user.id),
-      listItemsForPlace(id, user.id),
-    ]);
+  const [
+    category,
+    ratingsByGroup,
+    visits,
+    photos,
+    myRating,
+    wish,
+    fav,
+    canEdit,
+    items,
+  ] = await Promise.all([
+    getCategory(place.categoryId),
+    listRatingsForPlaceAcrossGroups(id, user.id),
+    listVisitsForPlace(id, user.id),
+    listPhotosForPlace(id, user.id),
+    getUserRating(id, user.id),
+    isOnWishlist(id, user.id),
+    isFavorite(id, user.id),
+    canUserEditPlace(id, user.id),
+    listItemsForPlace(id, user.id),
+  ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  const othersRatings = ratings.filter((r) => r.userId !== user.id);
+  // Cross-group aggregate — "ocena · X" stat on top now counts every
+  // rating the user can see for this canonical, not just this place.
+  const allCrossGroupRatings = ratingsByGroup.flatMap((b) => b.ratings);
   const groupAvg =
-    ratings.length > 0
-      ? ratings.reduce((s, r) => s + r.overall, 0) / ratings.length
+    allCrossGroupRatings.length > 0
+      ? allCrossGroupRatings.reduce((s, r) => s + r.overall, 0) /
+        allCrossGroupRatings.length
       : null;
+  // "od innych" counter still means ratings not authored by the current
+  // user (same meaning as before, just computed from the cross-group
+  // pool so multi-group places show the full count).
+  const othersCount = allCrossGroupRatings.filter(
+    (r) => r.userId !== user.id,
+  ).length;
 
   return (
     <>
@@ -105,7 +124,7 @@ export default async function PlaceDetailPage({
             index={0}
             icon={Star}
             value={groupAvg !== null ? groupAvg.toFixed(2) : "—"}
-            label={`Ocena · ${ratings.length}`}
+            label={`Ocena · ${allCrossGroupRatings.length}`}
           />
           <StatPill
             index={1}
@@ -122,7 +141,7 @@ export default async function PlaceDetailPage({
           <StatPill
             index={3}
             icon={Users}
-            value={String(othersRatings.length)}
+            value={String(othersCount)}
             label="Od innych"
           />
         </div>
@@ -205,31 +224,7 @@ export default async function PlaceDetailPage({
           </CardContent>
         </Card>
 
-        {othersRatings.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display text-xl">
-                <Users size={18} /> Oceny grupy
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {othersRatings.map((r) => (
-                <div key={r.id} className="rounded-xl border bg-muted/20 p-3 text-sm">
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-medium">{r.userDisplayName}</span>
-                    <span className="flex items-center gap-1 tabular-nums text-primary">
-                      <Star size={14} className="fill-current" />
-                      {r.overall.toFixed(2)}
-                    </span>
-                  </div>
-                  {r.note && (
-                    <p className="mt-1 italic text-muted-foreground">“{r.note}”</p>
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        <RatingsByGroup buckets={ratingsByGroup} currentUserId={user.id} />
 
         <Card>
           <CardHeader>

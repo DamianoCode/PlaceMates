@@ -112,6 +112,29 @@ export const categories = pgTable(
   ],
 );
 
+// Canonical places: provider-agnostic identity for real-world lookups.
+// External canonical (POI search / import) has (provider, external_id);
+// local canonical (user pin-drop) has both NULL. Partial unique index
+// on (provider, external_id) WHERE provider IS NOT NULL enforces dedupe
+// only for external entries — local pin-drops are always distinct.
+export const canonicalPlaces = pgTable(
+  "canonical_places",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    provider: text("provider"),
+    externalId: text("external_id"),
+    name: text("name").notNull(),
+    location: geographyPoint("location").notNull(),
+    // Our own category slug (e.g. "ice-cream"), not the raw OSM value,
+    // so ranking filters compose with the rest of the app.
+    categoryHint: text("category_hint"),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  // Partial unique + GIST index added in raw SQL migration.
+);
+
 export const places = pgTable(
   "places",
   {
@@ -126,6 +149,10 @@ export const places = pgTable(
     location: geographyPoint("location").notNull(),
     address: text("address"),
     osmId: text("osm_id"),
+    canonicalPlaceId: uuid("canonical_place_id").references(
+      () => canonicalPlaces.id,
+      { onDelete: "set null" },
+    ),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => profiles.id, { onDelete: "restrict" }),
@@ -135,6 +162,7 @@ export const places = pgTable(
   (t) => [
     index("places_group_idx").on(t.groupId),
     index("places_category_idx").on(t.categoryId),
+    index("places_canonical_idx").on(t.canonicalPlaceId),
     // GIST index added in raw SQL migration (Drizzle has no GIST builder yet).
   ],
 );
