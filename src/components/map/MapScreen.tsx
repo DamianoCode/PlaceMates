@@ -16,17 +16,11 @@ import { MapViewClient } from "./MapViewClient";
 import { PlacePreviewSheet } from "./PlacePreviewSheet";
 import { SpeedDial, type SpeedDialAction } from "./SpeedDial";
 import { NearbyImportSheet } from "./NearbyImportSheet";
+import type { PlaceMarker } from "@/domain/places/service";
 
 type Category = { id: string; slug: string; name: string };
 type Bbox = { west: number; south: number; east: number; north: number };
-type PlacePin = {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  categoryId: string;
-  canonicalPlaceId?: string | null;
-};
+type PlacePin = PlaceMarker;
 
 export function MapScreen({
   primaryGroupId,

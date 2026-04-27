@@ -1,7 +1,9 @@
 import { and, desc, eq, sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { db } from "@/infra/db/client";
 import { groupMembers, places, profiles, ratings } from "@/infra/db/schema";
 import { computeOverall, type RatingSchema } from "@/lib/validation/rating";
+import { RANKING_CACHE_TAG } from "@/lib/constants";
 import { err, ok, type Result } from "../result";
 
 export type RatingView = {
@@ -102,6 +104,8 @@ export async function upsertRating(
     })
     .returning({ id: ratings.id });
 
+  // Any rating change invalidates every cached ranking variant.
+  revalidateTag(RANKING_CACHE_TAG, "max");
   return ok({ id: row.id, overall });
 }
 
@@ -120,6 +124,7 @@ export async function deleteRating(
     .where(and(eq(ratings.placeId, placeId), eq(ratings.userId, userId)))
     .returning({ id: ratings.id });
   if (rows.length === 0) return err("Nie masz oceny do cofnięcia.");
+  revalidateTag(RANKING_CACHE_TAG, "max");
   return ok(null);
 }
 

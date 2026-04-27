@@ -1,6 +1,13 @@
 import { sql } from "drizzle-orm";
+import { unstable_cache } from "next/cache";
 import { db } from "@/infra/db/client";
 import { canonicalPlaces } from "@/infra/db/schema";
+import {
+  RANKING_CACHE_TAG,
+  RANKING_CACHE_TTL_SECONDS,
+  RANKING_LIMIT_DEFAULT,
+  RANKING_MIN_RATINGS_DEFAULT,
+} from "@/lib/constants";
 
 export type RankedPlace = {
   canonicalId: string;
@@ -34,11 +41,11 @@ export type RankingOptions = {
  * is stored as our own slug (already normalised from OSM values at
  * ingest time by findOrCreateExternalCanonical / createLocalCanonical).
  */
-export async function listRankedPlaces(
+async function listRankedPlacesUncached(
   opts: RankingOptions = {},
 ): Promise<RankedPlace[]> {
-  const limit = opts.limit ?? 50;
-  const minRatings = opts.minRatings ?? 1;
+  const limit = opts.limit ?? RANKING_LIMIT_DEFAULT;
+  const minRatings = opts.minRatings ?? RANKING_MIN_RATINGS_DEFAULT;
   const category = opts.categorySlug ?? null;
 
   const rows = await db.execute<{
@@ -81,6 +88,22 @@ export async function listRankedPlaces(
   }));
 }
 
+/**
+ * Cached entry-point for `/ranking` and any other consumer. The data
+ * is anonymous and slowly changing — a new rating reaches the surface
+ * within RANKING_CACHE_TTL_SECONDS or when `revalidateTag` is called
+ * after a rating mutation. Keys include all option fields so different
+ * filters cache independently.
+ */
+export const listRankedPlaces = unstable_cache(
+  listRankedPlacesUncached,
+  ["ranking-list"],
+  {
+    tags: [RANKING_CACHE_TAG],
+    revalidate: RANKING_CACHE_TTL_SECONDS,
+  },
+);
+
 export type CanonicalView = {
   id: string;
   name: string;
@@ -98,7 +121,7 @@ export type CanonicalView = {
  * minRatings gate — user lands here from ranking list so a non-gated
  * view is fine.
  */
-export async function getCanonicalById(
+async function getCanonicalByIdUncached(
   canonicalId: string,
 ): Promise<CanonicalView | null> {
   const rows = await db.execute<{
@@ -138,6 +161,15 @@ export async function getCanonicalById(
     count: Number(r.cnt),
   };
 }
+
+export const getCanonicalById = unstable_cache(
+  getCanonicalByIdUncached,
+  ["ranking-canonical"],
+  {
+    tags: [RANKING_CACHE_TAG],
+    revalidate: RANKING_CACHE_TTL_SECONDS,
+  },
+);
 
 /**
  * Find the user's own place linked to a canonical (any group they're in).

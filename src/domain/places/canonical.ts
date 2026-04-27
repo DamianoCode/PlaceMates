@@ -48,10 +48,17 @@ function normaliseCategoryHint(raw?: string | null): string | null {
 
 /**
  * Find-or-create a canonical for an external POI. The ON CONFLICT
- * clause targets the partial unique (canonical_places_ext_uk) and
- * refreshes the name to track provider-side label updates. Category
- * hint only fills in when the existing row has NULL so we never
- * overwrite a good slug with a missing one from a later call.
+ * clause targets the partial unique (canonical_places_ext_uk).
+ *
+ * On conflict we keep the original name (the first writer wins) so two
+ * users typing slightly different labels for the same osm_id don't
+ * fight over the row. Category hint only back-fills when the existing
+ * row has NULL — never overwrites a good slug.
+ *
+ * The literal `name = canonical_places.name` is a deliberate no-op:
+ * `DO NOTHING` would not return the existing id from RETURNING, and we
+ * need the id either way. Touching the row this way costs one tuple
+ * write but keeps the API a single round-trip.
  */
 export async function findOrCreateExternalCanonical(
   source: ExternalSource,
@@ -71,7 +78,7 @@ export async function findOrCreateExternalCanonical(
     ON CONFLICT (provider, external_id)
       WHERE provider IS NOT NULL AND external_id IS NOT NULL
     DO UPDATE SET
-      name = EXCLUDED.name,
+      name = canonical_places.name,
       category_hint = COALESCE(canonical_places.category_hint, EXCLUDED.category_hint)
     RETURNING id
   `);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,15 @@ type PoiHit = {
   lat: number;
   lng: number;
   categoryHint: string;
+};
+
+type NearbyHit = {
+  osmId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  categoryHint: string;
+  address: string | null;
 };
 
 type Category = { id: string; slug: string; name: string };
@@ -49,6 +58,74 @@ export function NewPlaceForm({
   } | null>(
     initialPick ? { name: "", address: "", lat: initialPick.lat, lng: initialPick.lng } : null,
   );
+  const [categoryId, setCategoryId] = useState<string>("");
+  const [nearby, setNearby] = useState<NearbyHit[]>([]);
+  const [nearbyChecked, setNearbyChecked] = useState(false);
+  const [dismissedNearby, setDismissedNearby] = useState(false);
+  const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
+
+  // Pin-drop POI suggestion. When the user has dropped a pin AND chosen
+  // a category, ask Overpass whether OSM already knows a POI at that
+  // spot in the same category. If so, surface "Czy chodzi o…?" so they
+  // can link the new place to the existing external canonical instead
+  // of creating a fresh local one — keeps the global ranking from
+  // fragmenting across pin-drops vs POI-search adds of the same place.
+  useEffect(() => {
+    if (mode !== "pin") return;
+    if (!picked || picked.osmId) return; // already POI-backed
+    if (!selectedCategory) return;
+    if (dismissedNearby) return;
+    let abort = false;
+    const t = setTimeout(async () => {
+      if (abort) return;
+      try {
+        const url = new URL("/api/poi/nearby", window.location.origin);
+        url.searchParams.set("lat", String(picked.lat));
+        url.searchParams.set("lng", String(picked.lng));
+        url.searchParams.set("category", selectedCategory.slug);
+        const res = await fetch(url);
+        if (!res.ok) {
+          if (!abort) {
+            setNearby([]);
+            setNearbyChecked(true);
+          }
+          return;
+        }
+        const data: { results: NearbyHit[] } = await res.json();
+        if (!abort) {
+          setNearby(data.results ?? []);
+          setNearbyChecked(true);
+        }
+      } catch {
+        if (!abort) setNearbyChecked(true);
+      }
+    }, 350);
+    return () => {
+      abort = true;
+      clearTimeout(t);
+    };
+  }, [
+    mode,
+    picked,
+    selectedCategory,
+    dismissedNearby,
+  ]);
+
+  // Reset nearby when the user moves the pin or changes category — the
+  // previous suggestions no longer apply. Defer with queueMicrotask so
+  // the React-compiler set-state-in-effect rule is satisfied.
+  useEffect(() => {
+    let abort = false;
+    queueMicrotask(() => {
+      if (abort) return;
+      setNearbyChecked(false);
+      setNearby([]);
+      setDismissedNearby(false);
+    });
+    return () => {
+      abort = true;
+    };
+  }, [picked?.lat, picked?.lng, categoryId]);
 
   // Debounced POI search. All setState calls happen inside the debounce
   // timer (async) to avoid cascading-render warnings.
@@ -200,6 +277,8 @@ export function NewPlaceForm({
           id="categoryId"
           name="categoryId"
           required
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
           className="field-base h-11"
         >
           <option value="" disabled>
@@ -212,6 +291,61 @@ export function NewPlaceForm({
           ))}
         </select>
       </div>
+
+      {mode === "pin" &&
+        picked &&
+        !picked.osmId &&
+        selectedCategory &&
+        nearbyChecked &&
+        nearby.length > 0 &&
+        !dismissedNearby && (
+          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3 space-y-2">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Sparkles size={16} className="text-primary" />W tej okolicy
+              istnieje już:
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Wybierz, jeśli chodzi ci o jedno z tych miejsc — dodasz je
+              wtedy do wspólnego rankingu razem z ocenami innych grup.
+              W przeciwnym razie zostaw nowy pin.
+            </p>
+            <ul className="space-y-1">
+              {nearby.map((n) => (
+                <li key={n.osmId}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPicked({
+                        name: n.name,
+                        address: n.address ?? "",
+                        lat: n.lat,
+                        lng: n.lng,
+                        osmId: n.osmId,
+                      });
+                      setNearby([]);
+                      setNearbyChecked(true);
+                    }}
+                    className="w-full rounded-md bg-background px-3 py-2 text-left text-sm shadow-sm hover:bg-muted"
+                  >
+                    <div className="font-medium">{n.name}</div>
+                    {n.address && (
+                      <div className="truncate text-xs text-muted-foreground">
+                        {n.address}
+                      </div>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => setDismissedNearby(true)}
+              className="text-xs italic text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Żadne z powyższych — nowy pin
+            </button>
+          </div>
+        )}
 
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
 
