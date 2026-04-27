@@ -137,20 +137,20 @@ export async function createPlace(
     .limit(1);
   if (member.length === 0) return err("Nie należysz do tej grupy.");
 
-  // Link to a canonical place — external (OSM-backed) when we have an
-  // osm_id, otherwise a fresh local canonical carrying the place's
-  // category slug so the ranking can still filter on it.
+  // Resolve the external identity: explicit (provider, externalId)
+  // wins; legacy `osmId` falls back to provider='osm'; otherwise it's
+  // a pin-drop that needs a fresh local canonical.
+  const provider = input.provider ?? (input.osmId ? "osm" : null);
+  const externalId = input.externalId ?? input.osmId ?? null;
+
   let canonicalId: string;
-  if (input.osmId) {
+  if (provider && externalId) {
     canonicalId = await findOrCreateExternalCanonical({
-      provider: "osm",
-      externalId: input.osmId,
+      provider,
+      externalId,
       name: input.name,
       lat: input.location.lat,
       lng: input.location.lng,
-      // We don't receive the raw OSM tag on the create form; the
-      // canonical will carry null categoryHint and fall back to our
-      // own slug via the place's category_id when the ranking filters.
     });
   } else {
     const slug = await categorySlugForId(input.categoryId);
@@ -162,6 +162,11 @@ export async function createPlace(
     });
   }
 
+  // We still keep places.osm_id populated when the source was OSM —
+  // bulkCreatePlaces dedupes within a group on it. Non-OSM providers
+  // (Geoapify) leave it null and rely on canonical_place_id alone.
+  const legacyOsmId = provider === "osm" ? externalId : null;
+
   const [row] = await db
     .insert(places)
     .values({
@@ -170,7 +175,7 @@ export async function createPlace(
       categoryId: input.categoryId,
       location: { lat: input.location.lat, lng: input.location.lng },
       address: input.address ?? null,
-      osmId: input.osmId ?? null,
+      osmId: legacyOsmId,
       canonicalPlaceId: canonicalId,
       createdBy: userId,
     })

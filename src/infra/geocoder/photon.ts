@@ -54,8 +54,11 @@ function toResult(f: PhotonFeature): PoiResult {
   const [lng, lat] = f.geometry.coordinates;
   const p = f.properties;
   const prefix = toOsmTypePrefix(p.osm_type);
+  const externalId = p.osm_id ? `${prefix}${p.osm_id}` : "";
   return {
-    osmId: p.osm_id ? `${prefix}${p.osm_id}` : "",
+    provider: "osm",
+    externalId,
+    osmId: externalId,
     name: p.name ?? formatAddress(p).split(",")[0] ?? "",
     address: formatAddress(p),
     lat,
@@ -68,12 +71,22 @@ export function createPhoton(userAgent: string, defaultLang = "pl"): PoiSearch {
   const headers = { "User-Agent": userAgent, Accept: "application/json" };
 
   return {
-    async search(query, limit = 10) {
+    async search(query, opts) {
       if (query.trim().length < 2) return [];
       const url = new URL(`${BASE}/`);
       url.searchParams.set("q", query);
-      url.searchParams.set("limit", String(Math.min(limit, 20)));
+      url.searchParams.set("limit", String(Math.min(opts?.limit ?? 10, 20)));
       url.searchParams.set("lang", defaultLang);
+      // Soft proximity bias — pulls nearby results to the top without
+      // hiding far-away ones. Critical for small-town queries that
+      // would otherwise be drowned by warsaw/kraków hits.
+      if (opts?.bias) {
+        url.searchParams.set("lat", String(opts.bias.lat));
+        url.searchParams.set("lon", String(opts.bias.lng));
+        // Default scale is 0.2 (very weak); 1.6 keeps remote hits on
+        // the page but reliably puts the user's neighbourhood first.
+        url.searchParams.set("location_bias_scale", "1.6");
+      }
       const res = await fetch(url, { headers, cache: "no-store" });
       if (!res.ok) return [];
       const data = (await res.json()) as PhotonResponse;

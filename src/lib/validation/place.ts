@@ -5,13 +5,28 @@ export const LatLng = z.object({
   lng: z.number().min(-180).max(180),
 });
 
+/**
+ * External provider tag. `osm` covers Photon/Nominatim/Overpass which
+ * all return OSM ids; `geoapify` carries Geoapify's opaque place_id.
+ * Pin-drops set neither and fall through to a local canonical.
+ */
+export const ExternalProvider = z.enum(["osm", "geoapify"]);
+export type ExternalProvider = z.infer<typeof ExternalProvider>;
+
 export const CreatePlaceInput = z.object({
   name: z.string().min(1).max(200),
   categoryId: z.string().uuid(),
   groupId: z.string().uuid(),
   location: LatLng,
   address: z.string().max(500).optional(),
+  /**
+   * @deprecated Prefer `provider` + `externalId`. Retained for forms
+   * that still post `osmId`; treated as `provider='osm'` when present
+   * and `provider`/`externalId` aren't.
+   */
   osmId: z.string().max(64).optional(),
+  provider: ExternalProvider.optional(),
+  externalId: z.string().max(128).optional(),
 });
 export type CreatePlaceInput = z.infer<typeof CreatePlaceInput>;
 

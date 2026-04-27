@@ -3,7 +3,7 @@ import { db } from "@/infra/db/client";
 import { canonicalPlaces, categories } from "@/infra/db/schema";
 
 export type ExternalSource = {
-  provider: "osm"; // extend with "google" | "mapbox" when a new geocoder lands
+  provider: "osm" | "geoapify"; // extend with "google" | "mapbox" when a new geocoder lands
   externalId: string;
   name: string;
   lat: number;
