@@ -2,11 +2,14 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { MapPin, Search, Sparkles } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MapViewClient } from "@/components/map/MapViewClient";
 import { createPlaceAction, type CreatePlaceState } from "@/app/(app)/places/actions";
+import { fetchJson } from "@/lib/fetch-json";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 
 type PoiHit = {
   osmId: string;
@@ -47,8 +50,6 @@ export function NewPlaceForm({
   );
   const [mode, setMode] = useState<Mode>(initialPick ? "pin" : "search");
   const [query, setQuery] = useState("");
-  const [hits, setHits] = useState<PoiHit[]>([]);
-  const [searching, setSearching] = useState(false);
   const [picked, setPicked] = useState<{
     name: string;
     address: string;
@@ -59,10 +60,23 @@ export function NewPlaceForm({
     initialPick ? { name: "", address: "", lat: initialPick.lat, lng: initialPick.lng } : null,
   );
   const [categoryId, setCategoryId] = useState<string>("");
-  const [nearby, setNearby] = useState<NearbyHit[]>([]);
-  const [nearbyChecked, setNearbyChecked] = useState(false);
   const [dismissedNearby, setDismissedNearby] = useState(false);
   const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
+
+  // Debounced query keeps the search useQuery from spawning a new
+  // request on every keystroke; debouncedQuery is what feeds the key.
+  const debouncedQuery = useDebouncedValue(query.trim(), 400);
+  const searchEnabled = mode === "search" && debouncedQuery.length >= 2;
+  const { data: searchData, isFetching: searching } = useQuery({
+    queryKey: ["poi-search", debouncedQuery],
+    enabled: searchEnabled,
+    queryFn: () =>
+      fetchJson<{ results: PoiHit[] }>(
+        `/api/poi/search?q=${encodeURIComponent(debouncedQuery)}`,
+      ),
+    staleTime: 5 * 60_000,
+  });
+  const hits = searchEnabled ? searchData?.results ?? [] : [];
 
   // Pin-drop POI suggestion. When the user has dropped a pin AND chosen
   // a category, ask Overpass whether OSM already knows a POI at that
@@ -70,89 +84,44 @@ export function NewPlaceForm({
   // can link the new place to the existing external canonical instead
   // of creating a fresh local one — keeps the global ranking from
   // fragmenting across pin-drops vs POI-search adds of the same place.
-  useEffect(() => {
-    if (mode !== "pin") return;
-    if (!picked || picked.osmId) return; // already POI-backed
-    if (!selectedCategory) return;
-    if (dismissedNearby) return;
-    let abort = false;
-    const t = setTimeout(async () => {
-      if (abort) return;
-      try {
-        const url = new URL("/api/poi/nearby", window.location.origin);
-        url.searchParams.set("lat", String(picked.lat));
-        url.searchParams.set("lng", String(picked.lng));
-        url.searchParams.set("category", selectedCategory.slug);
-        const res = await fetch(url);
-        if (!res.ok) {
-          if (!abort) {
-            setNearby([]);
-            setNearbyChecked(true);
-          }
-          return;
-        }
-        const data: { results: NearbyHit[] } = await res.json();
-        if (!abort) {
-          setNearby(data.results ?? []);
-          setNearbyChecked(true);
-        }
-      } catch {
-        if (!abort) setNearbyChecked(true);
-      }
-    }, 350);
-    return () => {
-      abort = true;
-      clearTimeout(t);
-    };
-  }, [
-    mode,
-    picked,
-    selectedCategory,
-    dismissedNearby,
-  ]);
+  const nearbyEnabled =
+    mode === "pin" &&
+    !!picked &&
+    !picked.osmId &&
+    !!selectedCategory &&
+    !dismissedNearby;
+  const { data: nearbyData, isSuccess: nearbyChecked } = useQuery({
+    queryKey: [
+      "poi-nearby",
+      picked?.lat,
+      picked?.lng,
+      selectedCategory?.slug ?? null,
+    ],
+    enabled: nearbyEnabled,
+    queryFn: () => {
+      const url = new URL("/api/poi/nearby", window.location.origin);
+      url.searchParams.set("lat", String(picked!.lat));
+      url.searchParams.set("lng", String(picked!.lng));
+      url.searchParams.set("category", selectedCategory!.slug);
+      return fetchJson<{ results: NearbyHit[] }>(url.toString());
+    },
+    staleTime: 5 * 60_000,
+  });
+  const nearby = nearbyEnabled ? nearbyData?.results ?? [] : [];
 
-  // Reset nearby when the user moves the pin or changes category — the
-  // previous suggestions no longer apply. Defer with queueMicrotask so
-  // the React-compiler set-state-in-effect rule is satisfied.
+  // Reset the dismiss flag when the user moves the pin or changes
+  // category — the previous suggestion no longer applies. Defer with
+  // queueMicrotask so the React-compiler set-state-in-effect rule is
+  // satisfied.
   useEffect(() => {
     let abort = false;
     queueMicrotask(() => {
-      if (abort) return;
-      setNearbyChecked(false);
-      setNearby([]);
-      setDismissedNearby(false);
+      if (!abort) setDismissedNearby(false);
     });
     return () => {
       abort = true;
     };
   }, [picked?.lat, picked?.lng, categoryId]);
-
-  // Debounced POI search. All setState calls happen inside the debounce
-  // timer (async) to avoid cascading-render warnings.
-  useEffect(() => {
-    if (mode !== "search") return;
-    const q = query.trim();
-    let abort = false;
-    const t = setTimeout(async () => {
-      if (abort) return;
-      if (q.length < 2) {
-        setHits([]);
-        return;
-      }
-      setSearching(true);
-      try {
-        const res = await fetch(`/api/poi/search?q=${encodeURIComponent(q)}`);
-        const data: { results: PoiHit[] } = await res.json();
-        if (!abort) setHits(data.results ?? []);
-      } finally {
-        if (!abort) setSearching(false);
-      }
-    }, 400);
-    return () => {
-      abort = true;
-      clearTimeout(t);
-    };
-  }, [query, mode]);
 
   const error = state && "error" in state ? state.error : null;
 
@@ -322,8 +291,6 @@ export function NewPlaceForm({
                         lng: n.lng,
                         osmId: n.osmId,
                       });
-                      setNearby([]);
-                      setNearbyChecked(true);
                     }}
                     className="w-full rounded-md bg-background px-3 py-2 text-left text-sm shadow-sm hover:bg-muted"
                   >
