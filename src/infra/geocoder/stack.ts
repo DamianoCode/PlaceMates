@@ -7,10 +7,10 @@ import type { PoiSearch } from "./provider";
  */
 export function createStack(providers: PoiSearch[]): PoiSearch {
   return {
-    async search(query, limit) {
+    async search(query, opts) {
       for (const p of providers) {
         try {
-          const hits = await p.search(query, limit);
+          const hits = await p.search(query, opts);
           if (hits.length > 0) return hits;
         } catch {
           // fall through to the next provider
