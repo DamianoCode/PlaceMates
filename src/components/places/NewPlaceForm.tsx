@@ -206,7 +206,10 @@ export function NewPlaceForm({
           <Label htmlFor="poi">Szukaj miejsca</Label>
           <Input
             id="poi"
-            type="search"
+            // type="text" + role keeps the searchbox semantics without
+            // the duplicate native clear "X" that type="search" injects.
+            type="text"
+            role="searchbox"
             placeholder="np. lodziarnia Stara Miłosna"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

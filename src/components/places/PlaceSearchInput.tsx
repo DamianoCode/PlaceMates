@@ -32,7 +32,10 @@ export function PlaceSearchInput({ placeholder }: { placeholder?: string }) {
         className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
       />
       <input
-        type="search"
+        // type="text" not "search" — the browser-native clear "X" on
+        // type=search would pile on top of our custom clear button.
+        type="text"
+        role="searchbox"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder ?? "Szukaj miejsca…"}
