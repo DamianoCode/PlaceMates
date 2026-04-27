@@ -48,7 +48,47 @@ export async function getPlacePreview(
     .innerJoin(groupMembers, eq(groupMembers.groupId, places.groupId))
     .where(and(eq(places.id, placeId), eq(groupMembers.userId, userId)))
     .limit(1);
-  if (!row) return null;
+  if (!row) {
+    // Split the join into individual checks so we can pinpoint why the
+    // composite returned nothing. Strip once the cause is identified.
+    const placeRow = await db
+      .select({
+        id: places.id,
+        groupId: places.groupId,
+        categoryId: places.categoryId,
+      })
+      .from(places)
+      .where(eq(places.id, placeId))
+      .limit(1);
+    const memberRow = placeRow[0]
+      ? await db
+          .select({ userId: groupMembers.userId })
+          .from(groupMembers)
+          .where(
+            and(
+              eq(groupMembers.groupId, placeRow[0].groupId),
+              eq(groupMembers.userId, userId),
+            ),
+          )
+          .limit(1)
+      : [];
+    const categoryRow = placeRow[0]
+      ? await db
+          .select({ id: categories.id })
+          .from(categories)
+          .where(eq(categories.id, placeRow[0].categoryId))
+          .limit(1)
+      : [];
+    console.warn("[preview] composite miss", {
+      placeId,
+      userId,
+      placeExists: placeRow.length > 0,
+      placeGroupId: placeRow[0]?.groupId,
+      userInGroup: memberRow.length > 0,
+      categoryExists: categoryRow.length > 0,
+    });
+    return null;
+  }
 
   // Fetch per-group aggregates across every place sharing this
   // canonical that the user has access to. One query regardless of
