@@ -28,6 +28,13 @@ export type RankingOptions = {
   limit?: number;
   /** default 1 — matches the user's 2-person group scenario. */
   minRatings?: number;
+  /**
+   * Restrict the aggregate to a single group. Null / undefined = global
+   * anonymous ranking (every group's ratings contribute). Caller must
+   * verify the user is a member before passing a real id — the SQL
+   * doesn't enforce this on its own.
+   */
+  groupId?: string | null;
 };
 
 /**
@@ -47,6 +54,17 @@ async function listRankedPlacesUncached(
   const limit = opts.limit ?? RANKING_LIMIT_DEFAULT;
   const minRatings = opts.minRatings ?? RANKING_MIN_RATINGS_DEFAULT;
   const category = opts.categorySlug ?? null;
+  const groupId = opts.groupId ?? null;
+
+  // Two optional filters, possibly both — compose into a single WHERE.
+  const filters = [
+    category ? sql`cp.category_hint = ${category}` : null,
+    groupId ? sql`p.group_id = ${groupId}` : null,
+  ].filter((f): f is NonNullable<typeof f> => f !== null);
+  const whereClause =
+    filters.length === 0
+      ? sql``
+      : sql`WHERE ${sql.join(filters, sql` AND `)}`;
 
   const rows = await db.execute<{
     id: string;
@@ -69,7 +87,7 @@ async function listRankedPlacesUncached(
       FROM ${canonicalPlaces} cp
       JOIN places p  ON p.canonical_place_id = cp.id
       JOIN ratings r ON r.place_id = p.id
-     ${category ? sql`WHERE cp.category_hint = ${category}` : sql``}
+     ${whereClause}
      GROUP BY cp.id
     HAVING COUNT(r.*) >= ${minRatings}
      ORDER BY AVG(r.overall) DESC, COUNT(r.*) DESC

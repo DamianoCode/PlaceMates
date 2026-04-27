@@ -2,11 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
 import { listRankedPlaces } from "@/domain/ranking/service";
+import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditorialHeader } from "@/components/layout/EditorialHeader";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
 
-type Search = Promise<{ category?: string }>;
+type Search = Promise<{ category?: string; group?: string }>;
 
 // Slugs exposed as filter pills. Stays aligned with scripts/seed-categories.ts
 // and the CATEGORY_TO_OSM map in overpass.ts.
@@ -31,44 +32,100 @@ export default async function RankingPage({
   const user = await (await getAuth()).getUser();
   if (!user) redirect("/login");
 
-  const { category } = await searchParams;
+  const { category, group } = await searchParams;
   const activeCategory = category && FILTERS.some((f) => f.slug === category)
     ? category
     : null;
 
+  // Group scope: only honour `?group=<id>` when the user is actually in
+  // that group — otherwise we'd render an empty list (membership check
+  // also keeps the cache key from leaking foreign group ids).
+  const userGroups = await listUserGroups(user.id);
+  const activeGroup =
+    group && userGroups.some((g) => g.id === group) ? group : null;
+  const activeGroupName = activeGroup
+    ? userGroups.find((g) => g.id === activeGroup)?.name ?? null
+    : null;
+
   const ranked = await listRankedPlaces({
     categorySlug: activeCategory,
+    groupId: activeGroup,
     limit: 100,
     // default 1 — matches small private groups where every rating counts.
     minRatings: 1,
   });
+
+  function buildHref(opts: { category?: string | null; group?: string | null }) {
+    const params = new URLSearchParams();
+    const nextCategory = opts.category === undefined ? activeCategory : opts.category;
+    const nextGroup = opts.group === undefined ? activeGroup : opts.group;
+    if (nextCategory) params.set("category", nextCategory);
+    if (nextGroup) params.set("group", nextGroup);
+    const qs = params.toString();
+    return qs ? `/ranking?${qs}` : "/ranking";
+  }
 
   return (
     <>
       <PageHeader title="Ranking" fallbackHref="/me" />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
         <EditorialHeader
-          eyebrow="Agregat wszystkich ocen"
-          title={
-            <>
-              Ranking <em className="font-display italic text-primary">wspólnego</em>{" "}
-              atlasu.
-            </>
+          eyebrow={
+            activeGroupName
+              ? `Ranking grupy „${activeGroupName}”`
+              : "Agregat wszystkich ocen"
           }
-          lede="Każda ocena — twoja, twoich bliskich, i wszystkich innych użytkowników PlaceMates — wlicza się anonimowo. Nazwiska i grupy nie są tu widoczne."
+          title={
+            activeGroupName ? (
+              <>
+                Co <em className="font-display italic text-primary">my</em>{" "}
+                ocenialiśmy najlepiej.
+              </>
+            ) : (
+              <>
+                Ranking <em className="font-display italic text-primary">wspólnego</em>{" "}
+                atlasu.
+              </>
+            )
+          }
+          lede={
+            activeGroupName
+              ? "Tylko miejsca dodane przez tę grupę i tylko oceny jej członków. Idealne do porównania waszych własnych odkryć."
+              : "Każda ocena — twoja, twoich bliskich, i wszystkich innych użytkowników PlaceMates — wlicza się anonimowo. Nazwiska i grupy nie są tu widoczne."
+          }
         />
+
+        {userGroups.length > 0 && (
+          <nav
+            aria-label="Zakres rankingu"
+            className="flex gap-1.5 overflow-x-auto no-scrollbar"
+          >
+            <Pill href={buildHref({ group: null })} active={!activeGroup}>
+              Wszyscy
+            </Pill>
+            {userGroups.map((g) => (
+              <Pill
+                key={g.id}
+                href={buildHref({ group: g.id })}
+                active={activeGroup === g.id}
+              >
+                {g.name}
+              </Pill>
+            ))}
+          </nav>
+        )}
 
         <nav
           aria-label="Filtry kategorii"
           className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
-          <Pill href="/ranking" active={!activeCategory}>
+          <Pill href={buildHref({ category: null })} active={!activeCategory}>
             Wszystkie
           </Pill>
           {FILTERS.map((f) => (
             <Pill
               key={f.slug}
-              href={`/ranking?category=${f.slug}`}
+              href={buildHref({ category: f.slug })}
               active={activeCategory === f.slug}
             >
               {f.label}
@@ -78,9 +135,13 @@ export default async function RankingPage({
 
         {ranked.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">
-            {activeCategory
-              ? "Nikt jeszcze nie ocenił miejsca w tej kategorii."
-              : "Ranking czeka na pierwsze oceny."}
+            {activeGroup
+              ? activeCategory
+                ? "Wasza grupa nie ma jeszcze ocen w tej kategorii."
+                : "Wasza grupa nie ma jeszcze ocenionych miejsc."
+              : activeCategory
+                ? "Nikt jeszcze nie ocenił miejsca w tej kategorii."
+                : "Ranking czeka na pierwsze oceny."}
           </p>
         ) : (
           <ul className="space-y-2">

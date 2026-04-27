@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Users } from "lucide-react";
+import { ChevronRight, Trophy, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import {
   getGroupForUser,
@@ -51,6 +52,27 @@ export default async function GroupPage({
             )}
           </p>
         </div>
+
+        <Link
+          href={`/ranking?group=${group.id}`}
+          className="group flex items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 transition-colors hover:border-primary/50"
+        >
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <Trophy size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base leading-tight">
+              Ranking grupy
+            </p>
+            <p className="truncate text-xs italic text-muted-foreground">
+              Porównaj wasze własne odkrycia — tylko wasze miejsca i oceny.
+            </p>
+          </div>
+          <ChevronRight
+            size={18}
+            className="flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+          />
+        </Link>
 
         <Card>
           <CardHeader>
