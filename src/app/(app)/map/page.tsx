@@ -57,7 +57,7 @@ export default async function MapPage({
     placeRaw && places.some((p) => p.id === placeRaw) ? placeRaw : null;
   const focus =
     lat !== null && lng !== null
-      ? { lat, lng, zoom: zoom ?? 17, placeId }
+      ? { lat, lng, zoom: zoom ?? 18, placeId }
       : null;
 
   return (

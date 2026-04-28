@@ -161,7 +161,7 @@ export default async function PlaceDetailPage({
           </div>
           <NavigateButton lat={place.lat} lng={place.lng} label={place.name} />
           <Link
-            href={`/map?lat=${place.lat.toFixed(6)}&lng=${place.lng.toFixed(6)}&zoom=17&place=${id}`}
+            href={`/map?lat=${place.lat.toFixed(6)}&lng=${place.lng.toFixed(6)}&zoom=18&place=${id}`}
             aria-label="Pokaż na mapie"
             className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
           >
