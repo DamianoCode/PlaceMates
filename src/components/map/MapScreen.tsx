@@ -28,12 +28,19 @@ export function MapScreen({
   places,
   wishlistedIds,
   favoriteIds,
+  focus,
 }: {
   primaryGroupId: string | null;
   categories: Category[];
   places: PlacePin[];
   wishlistedIds: string[];
   favoriteIds: string[];
+  /**
+   * Optional initial camera + selection driven by ?lat=&lng=&zoom=&place=
+   * deeplink. When present we open the map centred on the place and
+   * auto-pop the preview sheet so it's clear which marker we landed on.
+   */
+  focus?: { lat: number; lng: number; zoom: number; placeId: string | null } | null;
 }) {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [setFilter, setSetFilter] = useState<"none" | "wishlist" | "favorites">(
@@ -48,7 +55,11 @@ export function MapScreen({
         ? favSet
         : null;
 
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
+  // Seed selection from a focus deeplink so the preview sheet pops
+  // immediately on landing — saves the user a tap.
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(
+    focus?.placeId ?? null,
+  );
   const [importOpen, setImportOpen] = useState(false);
   const bboxRef = useRef<Bbox | null>(null);
   const router = useRouter();
@@ -125,6 +136,17 @@ export function MapScreen({
   return (
     <div className="relative h-[calc(100dvh-60px-env(safe-area-inset-bottom))] w-full">
       <MapViewClient
+        // Deeplink-driven camera wins over the persisted last-camera.
+        // MapView still falls back to localStorage when initial is empty.
+        initial={
+          focus
+            ? {
+                latitude: focus.lat,
+                longitude: focus.lng,
+                zoom: focus.zoom,
+              }
+            : undefined
+        }
         categoryFilter={categoryFilter}
         restrictToIds={activeIdSet ?? undefined}
         selectedPlaceId={selectedPlaceId}
