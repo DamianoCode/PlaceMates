@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { MapPin, Search, Sparkles } from "lucide-react";
+import { MapPin, Pin, Search, Sparkles, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,7 +216,11 @@ export function NewPlaceForm({
             autoComplete="off"
           />
           {searching && <p className="text-xs text-muted-foreground">Szukam…</p>}
-          {hits.length > 0 && (
+          {/* Hide the result list once the user has picked one — the
+           *  PickedLocationSummary below carries the visual confirmation
+           *  forward, so the list isn't earning its space anymore. The
+           *  user can hit "Zmień" on the summary to re-open search. */}
+          {!picked?.externalId && hits.length > 0 && (
             <ul className="max-h-60 space-y-1 overflow-auto rounded-md border p-1">
               {hits.map((h) => (
                 <li key={`${h.provider}:${h.externalId}`}>
@@ -232,6 +236,9 @@ export function NewPlaceForm({
                         externalId: h.externalId,
                         osmId: h.provider === "osm" ? h.externalId : undefined,
                       });
+                      // Clear the query so the list collapses cleanly.
+                      // The picked card takes over.
+                      setQuery("");
                     }}
                     className="w-full rounded-sm px-2 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground focus-visible:bg-accent focus-visible:outline-none"
                   >
@@ -266,12 +273,17 @@ export function NewPlaceForm({
               }
             />
           </div>
-          {picked && (
-            <p className="text-xs text-muted-foreground">
-              Wybrano: {picked.lat.toFixed(5)}, {picked.lng.toFixed(5)}
-            </p>
-          )}
         </div>
+      )}
+
+      {picked && (
+        <PickedLocationSummary
+          picked={picked}
+          onClear={() => {
+            setPicked(null);
+            setDismissedNearby(false);
+          }}
+        />
       )}
 
       <div className="space-y-2">
@@ -368,5 +380,65 @@ export function NewPlaceForm({
         {pending ? "Zapisuję…" : "Zapisz miejsce"}
       </Button>
     </form>
+  );
+}
+
+/**
+ * Persistent confirmation of the location the user picked. Lives between
+ * the mode panel and the Name input so editing the name never loses the
+ * "what did I select again?" answer. The original POI name is shown
+ * even if the user has since edited the Name input — this stays read-only
+ * until they explicitly clear with "Zmień".
+ */
+function PickedLocationSummary({
+  picked,
+  onClear,
+}: {
+  picked: {
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
+    provider?: "osm" | "geoapify";
+    externalId?: string;
+  };
+  onClear: () => void;
+}) {
+  const fromSearch = !!picked.externalId;
+  return (
+    <div className="rounded-2xl border border-primary/30 bg-primary/5 p-3">
+      <div className="flex items-start gap-2">
+        <span
+          aria-hidden
+          className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+        >
+          {fromSearch ? <MapPin size={14} /> : <Pin size={14} />}
+        </span>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-primary/80">
+            {fromSearch ? "Wybrana lokalizacja" : "Pin na mapie"}
+          </p>
+          {fromSearch && picked.name ? (
+            <p className="text-sm font-medium leading-tight">{picked.name}</p>
+          ) : null}
+          {picked.address ? (
+            <p className="text-xs leading-snug text-muted-foreground">
+              {picked.address}
+            </p>
+          ) : null}
+          <p className="font-mono text-[10px] tabular-nums text-muted-foreground/80">
+            {picked.lat.toFixed(5)}°N · {picked.lng.toFixed(5)}°E
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="Wyczyść wybór lokalizacji"
+          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <X size={14} />
+        </button>
+      </div>
+    </div>
   );
 }
