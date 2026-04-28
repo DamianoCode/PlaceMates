@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   Camera,
   Footprints,
+  Map as MapIcon,
   MapPin,
   PencilLine,
   Star,
@@ -159,6 +160,14 @@ export default async function PlaceDetailPage({
             </p>
           </div>
           <NavigateButton lat={place.lat} lng={place.lng} label={place.name} />
+          <Link
+            href={`/map?lat=${place.lat.toFixed(6)}&lng=${place.lng.toFixed(6)}&zoom=17&place=${id}`}
+            aria-label="Pokaż na mapie"
+            className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
+          >
+            <MapIcon size={16} />
+            Na mapie
+          </Link>
           {canEdit && (
             <Link
               href={`/places/${id}/edit`}
