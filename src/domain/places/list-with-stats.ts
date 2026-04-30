@@ -22,6 +22,20 @@ export type PlaceCard = {
   ratingCount: number;
   isWishlisted: boolean;
   isFavorite: boolean;
+  createdAt: Date;
+};
+
+export type PlacesSortBy = "recent" | "name" | "rating";
+export type PlacesSortDir = "asc" | "desc";
+
+export type ListPlacesOptions = {
+  query?: string;
+  /** Filter by category id. When undefined, no category filter is applied. */
+  categoryId?: string;
+  /** Default: "recent". */
+  sortBy?: PlacesSortBy;
+  /** Default: "desc" (newest first / highest rating first / Z→A). */
+  sortDir?: PlacesSortDir;
 };
 
 async function userGroupIds(userId: string): Promise<string[]> {
@@ -36,11 +50,27 @@ async function userGroupIds(userId: string): Promise<string[]> {
  * List all places in the user's groups with stats ready for card rendering.
  * Uses separate roundtrips rather than a heavy JOIN — readable and fine
  * for the group-sized datasets this app handles.
+ *
+ * Sorting policy: places without ratings always land at the end of the
+ * list when sorting by rating, regardless of direction. Other sort modes
+ * are direction-symmetric.
  */
 export async function listPlacesWithStats(
   userId: string,
-  query?: string,
+  optsOrQuery?: string | ListPlacesOptions,
 ): Promise<PlaceCard[]> {
+  // Backwards-compat: callers passing a bare query string still work.
+  const opts: ListPlacesOptions =
+    typeof optsOrQuery === "string"
+      ? { query: optsOrQuery }
+      : (optsOrQuery ?? {});
+  const {
+    query,
+    categoryId,
+    sortBy = "recent",
+    sortDir = "desc",
+  } = opts;
+
   const groupIds = await userGroupIds(userId);
   if (groupIds.length === 0) return [];
 
@@ -52,6 +82,7 @@ export async function listPlacesWithStats(
       categoryName: categories.name,
       categorySlug: categories.slug,
       address: places.address,
+      createdAt: places.createdAt,
     })
     .from(places)
     .innerJoin(categories, eq(categories.id, places.categoryId))
@@ -59,9 +90,9 @@ export async function listPlacesWithStats(
       and(
         inArray(places.groupId, groupIds),
         q.length > 0 ? ilike(places.name, `%${q}%`) : undefined,
+        categoryId ? eq(places.categoryId, categoryId) : undefined,
       ),
-    )
-    .orderBy(places.name);
+    );
 
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
@@ -105,7 +136,6 @@ export async function listPlacesWithStats(
   );
   const photoBy = new Map<string, string>();
   for (const p of photoRows) {
-    // photoRows is ordered DESC by createdAt, so the first hit per place wins.
     if (!photoBy.has(p.placeId)) photoBy.set(p.placeId, p.storagePath);
   }
   const wishSet = new Set(wishRows.map((r) => r.id));
@@ -113,7 +143,6 @@ export async function listPlacesWithStats(
 
   const storage = await getStorage();
 
-  // Sort: favorites first, then wishlist, then alphabetical (which rows already are).
   const cards: PlaceCard[] = rows.map((r) => {
     const s = statsBy.get(r.id);
     const p = photoBy.get(r.id);
@@ -128,7 +157,41 @@ export async function listPlacesWithStats(
       ratingCount: s?.cnt ?? 0,
       isWishlisted: wishSet.has(r.id),
       isFavorite: favSet.has(r.id),
+      createdAt: r.createdAt,
     };
   });
-  return cards;
+
+  return sortCards(cards, sortBy, sortDir);
+}
+
+function sortCards(
+  cards: PlaceCard[],
+  by: PlacesSortBy,
+  dir: PlacesSortDir,
+): PlaceCard[] {
+  const sign = dir === "asc" ? 1 : -1;
+  const out = cards.slice();
+
+  if (by === "name") {
+    out.sort(
+      (a, b) =>
+        sign * a.name.localeCompare(b.name, "pl", { sensitivity: "base" }),
+    );
+    return out;
+  }
+
+  if (by === "recent") {
+    out.sort((a, b) => sign * (a.createdAt.getTime() - b.createdAt.getTime()));
+    return out;
+  }
+
+  // sortBy === "rating": null overall always sinks to the end regardless
+  // of direction. The ranking otherwise is direction-symmetric.
+  out.sort((a, b) => {
+    if (a.overall === null && b.overall === null) return 0;
+    if (a.overall === null) return 1;
+    if (b.overall === null) return -1;
+    return sign * (a.overall - b.overall);
+  });
+  return out;
 }
