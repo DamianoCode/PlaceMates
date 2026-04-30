@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ArrowDown,
   ArrowDownAZ,
+  ArrowUp,
   Check,
   Loader2,
   Locate,
@@ -35,6 +37,7 @@ type NearbyResult = {
 type Bbox = { west: number; south: number; east: number; north: number };
 
 type SortBy = "distance" | "name";
+type SortDir = "asc" | "desc";
 
 /**
  * Bottom drawer for "Find places nearby". Multi-category — toggle as
@@ -73,6 +76,7 @@ export function NearbyImportSheet({
   } | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortBy>("distance");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [submitting, setSubmitting] = useState(false);
   // GPS reference for distance / sort. Null until either the browser
   // has no geolocation API, the user denied permission, or the request
@@ -168,15 +172,20 @@ export function NearbyImportSheet({
       ...r,
       distanceM: distanceRef ? haversineMeters(distanceRef, r) : null,
     }));
+    const dirSign = sortDir === "asc" ? 1 : -1;
     if (sortBy === "name") {
-      withDistance.sort((a, b) =>
-        a.name.localeCompare(b.name, "pl", { sensitivity: "base" }),
+      withDistance.sort(
+        (a, b) =>
+          dirSign *
+          a.name.localeCompare(b.name, "pl", { sensitivity: "base" }),
       );
     } else {
-      withDistance.sort((a, b) => (a.distanceM ?? 0) - (b.distanceM ?? 0));
+      withDistance.sort(
+        (a, b) => dirSign * ((a.distanceM ?? 0) - (b.distanceM ?? 0)),
+      );
     }
     return withDistance;
-  }, [rawResults, distanceRef, sortBy]);
+  }, [rawResults, distanceRef, sortBy, sortDir]);
 
   // Pre-check all on a fresh response. Defer with queueMicrotask so
   // the React-compiler set-state-in-effect rule is satisfied.
@@ -215,6 +224,7 @@ export function NearbyImportSheet({
       setSearch(null);
       setChecked(new Set());
       setSortBy("distance");
+      setSortDir("asc");
       setUserPos(null);
       setDistanceSource("gps");
       setRequestingPos(false);
@@ -414,28 +424,55 @@ export function NearbyImportSheet({
                       : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
                 </span>
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSortBy((s) =>
-                        s === "distance" ? "name" : "distance",
-                      )
-                    }
-                    aria-label="Zmień sortowanie"
-                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                  >
-                    {sortBy === "distance" ? (
-                      <>
-                        <MapPin size={12} />
-                        Odległość
-                      </>
-                    ) : (
-                      <>
-                        <ArrowDownAZ size={12} />
-                        Nazwa
-                      </>
-                    )}
-                  </button>
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSortBy((s) =>
+                          s === "distance" ? "name" : "distance",
+                        )
+                      }
+                      aria-label="Zmień kryterium sortowania"
+                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                    >
+                      {sortBy === "distance" ? (
+                        <>
+                          <MapPin size={12} />
+                          Odległość
+                        </>
+                      ) : (
+                        <>
+                          <ArrowDownAZ size={12} />
+                          Nazwa
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+                      }
+                      aria-label={
+                        sortDir === "asc" ? "Sortuj malejąco" : "Sortuj rosnąco"
+                      }
+                      title={
+                        sortBy === "distance"
+                          ? sortDir === "asc"
+                            ? "Od najbliższych"
+                            : "Od najdalszych"
+                          : sortDir === "asc"
+                            ? "A → Z"
+                            : "Z → A"
+                      }
+                      className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      {sortDir === "asc" ? (
+                        <ArrowDown size={12} />
+                      ) : (
+                        <ArrowUp size={12} />
+                      )}
+                    </button>
+                  </div>
                   {sortBy === "distance" && (
                     /* Segmented control: GPS vs bbox centre. Switching
                      * to GPS after a previous denial re-requests
