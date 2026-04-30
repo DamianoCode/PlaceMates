@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, List, Map, User } from "lucide-react";
+import { Bookmark, List, Map, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Five tabs sit comfortably on a 360px+ viewport (~72 px each). The
+// Bookmark icon for "Zapisane" replaces the previous Heart — Heart
+// belongs to favourites specifically, not the saved-things container.
 const ITEMS = [
   { href: "/map", label: "Mapa", icon: Map },
   { href: "/places", label: "Miejsca", icon: List },
-  { href: "/wishlist", label: "Wishlist", icon: Heart },
+  { href: "/saved", label: "Zapisane", icon: Bookmark },
+  { href: "/ranking", label: "Ranking", icon: Trophy },
   { href: "/me", label: "Ja", icon: User },
 ] as const;
 
