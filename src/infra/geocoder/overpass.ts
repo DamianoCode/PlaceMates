@@ -258,8 +258,22 @@ export async function overpassSearchByCategory(
   bbox: { south: number; west: number; north: number; east: number },
   opts?: { limit?: number; userAgent?: string },
 ): Promise<OverpassPoi[]> {
-  const filters = CATEGORY_TO_OSM[categorySlug];
-  if (!filters || filters.length === 0) return [];
+  return overpassSearchByCategories([categorySlug], bbox, opts);
+}
+
+/**
+ * Same as `overpassSearchByCategory` but unions multiple categories
+ * into a single query. One round-trip regardless of how many
+ * categories the user toggled. Filters from every slug are merged
+ * before query construction so we don't re-query Overpass per slug.
+ */
+export async function overpassSearchByCategories(
+  categorySlugs: string[],
+  bbox: { south: number; west: number; north: number; east: number },
+  opts?: { limit?: number; userAgent?: string },
+): Promise<OverpassPoi[]> {
+  const filters = categorySlugs.flatMap((s) => CATEGORY_TO_OSM[s] ?? []);
+  if (filters.length === 0) return [];
   const query = buildQuery(filters, bbox, opts?.limit ?? 100);
   const headers = {
     "User-Agent": opts?.userAgent ?? "PlaceMates (placemates.app)",

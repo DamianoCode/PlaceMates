@@ -15,7 +15,12 @@ const BulkInput = z.object({
         lat: z.number().min(-90).max(90),
         lng: z.number().min(-180).max(180),
         address: z.string().max(500).nullable(),
-        osmId: z.string().max(64).nullable(),
+        // Either the legacy `osmId` (kept for old clients) or the
+        // explicit (provider, externalId) pair the multi-provider
+        // nearby flow now ships.
+        osmId: z.string().max(64).nullable().optional(),
+        provider: z.enum(["osm", "geoapify"]).nullable().optional(),
+        externalId: z.string().max(128).nullable().optional(),
       }),
     )
     .min(1)
