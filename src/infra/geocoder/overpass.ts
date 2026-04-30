@@ -11,7 +11,18 @@ const ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter",
 ];
 
-export type OverpassTagFilter = { key: string; value: string };
+/**
+ * Tag filter for one OSM category. `nameOptional=true` means we accept
+ * unnamed POIs too — necessary for outdoor categories (viewpoints,
+ * peaks, cliffs) where mappers often only tag the type, not the name.
+ * Indoor/commercial categories (cafe, restaurant) keep the name
+ * filter on — an unnamed café is just noise.
+ */
+export type OverpassTagFilter = {
+  key: string;
+  value: string;
+  nameOptional?: boolean;
+};
 
 export type OverpassPoi = {
   osmId: string;
@@ -23,25 +34,62 @@ export type OverpassPoi = {
 };
 
 // Our built-in category slugs → OSM tag filters. A single slug maps to
-// one or more tag filters, joined as a union in the Overpass query.
+// one or more tag filters; the Overpass query unions them.
+//
+// Outdoor categories are intentionally wide. Mappers tag the same
+// concept under different keys: a viewpoint may be tourism=viewpoint
+// OR natural=peak OR man_made=tower with viewpoint=yes. Hitting just
+// one of those keys (the original implementation) misses 60–80% of
+// real-world POIs in a typical Polish provincial city.
 export const CATEGORY_TO_OSM: Record<string, OverpassTagFilter[]> = {
   restaurant: [{ key: "amenity", value: "restaurant" }],
   cafe: [{ key: "amenity", value: "cafe" }],
   "ice-cream": [{ key: "amenity", value: "ice_cream" }],
   bakery: [{ key: "shop", value: "bakery" }],
-  viewpoint: [{ key: "tourism", value: "viewpoint" }],
-  attraction: [{ key: "tourism", value: "attraction" }],
-  park: [{ key: "leisure", value: "park" }],
-  beach: [{ key: "natural", value: "beach" }],
+
+  // Viewpoints + nearby outdoor scenery. Most peaks, cliffs and
+  // waterfalls have no `name` in OSM — accept them anyway and we'll
+  // synthesize a label downstream.
+  viewpoint: [
+    { key: "tourism", value: "viewpoint", nameOptional: true },
+    { key: "natural", value: "peak", nameOptional: true },
+    { key: "natural", value: "cliff", nameOptional: true },
+    { key: "natural", value: "waterfall", nameOptional: true },
+    { key: "man_made", value: "tower", nameOptional: true },
+  ],
+
+  // Cultural / historic / sights.
+  attraction: [
+    { key: "tourism", value: "attraction", nameOptional: true },
+    { key: "tourism", value: "museum" },
+    { key: "tourism", value: "artwork", nameOptional: true },
+    { key: "historic", value: "castle" },
+    { key: "historic", value: "ruins", nameOptional: true },
+    { key: "historic", value: "monument", nameOptional: true },
+    { key: "historic", value: "memorial", nameOptional: true },
+    { key: "historic", value: "archaeological_site", nameOptional: true },
+    { key: "man_made", value: "lighthouse" },
+  ],
+
+  park: [
+    { key: "leisure", value: "park", nameOptional: true },
+    { key: "leisure", value: "nature_reserve", nameOptional: true },
+    { key: "boundary", value: "protected_area", nameOptional: true },
+  ],
+
+  beach: [{ key: "natural", value: "beach", nameOptional: true }],
+
   bar: [
     { key: "amenity", value: "bar" },
     { key: "amenity", value: "pub" },
   ],
+
   accommodation: [
     { key: "tourism", value: "hotel" },
     { key: "tourism", value: "guest_house" },
     { key: "tourism", value: "hostel" },
   ],
+
   shop: [
     { key: "shop", value: "deli" },
     { key: "shop", value: "greengrocer" },
@@ -49,19 +97,41 @@ export const CATEGORY_TO_OSM: Record<string, OverpassTagFilter[]> = {
   ],
 };
 
+function bboxArgs(bbox: {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}): string {
+  return `${bbox.south},${bbox.west},${bbox.north},${bbox.east}`;
+}
+
 function buildQuery(
   filters: OverpassTagFilter[],
   bbox: { south: number; west: number; north: number; east: number },
   limit: number,
 ): string {
+  const args = bboxArgs(bbox);
   const inner = filters
-    .map(
-      (f) =>
-        `node["${f.key}"="${f.value}"]["name"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});` +
-        `way["${f.key}"="${f.value}"]["name"](${bbox.south},${bbox.west},${bbox.north},${bbox.east});`,
-    )
+    .map((f) => {
+      // Name-required filter: every element type carries the ["name"]
+      // restriction. Optional means we accept unnamed too.
+      const nameRestrict = f.nameOptional ? "" : '["name"]';
+      const tag = `["${f.key}"="${f.value}"]`;
+      // node + way + relation. Relations matter for big features
+      // (city parks, lakes, protected areas) which are often modeled
+      // as multipolygon relations in OSM.
+      return (
+        `node${tag}${nameRestrict}(${args});` +
+        `way${tag}${nameRestrict}(${args});` +
+        `relation${tag}${nameRestrict}(${args});`
+      );
+    })
     .join("");
-  return `[out:json][timeout:20];(${inner});out center ${Math.min(limit, 200)};`;
+  // `out center` gives ways and relations a representative point
+  // (centroid of the bbox) so we can render them as pins without
+  // resolving every member node.
+  return `[out:json][timeout:25];(${inner});out center ${Math.min(limit, 200)};`;
 }
 
 type OverpassElement = {
@@ -84,16 +154,58 @@ function toAddress(tags: Record<string, string>): string | null {
   return parts.length > 0 ? parts.join(", ") : null;
 }
 
+/**
+ * Polish fallback label for unnamed POIs, derived from the most
+ * specific OSM tag we see. Without this an unnamed peak shows up as
+ * empty string in the import sheet and the user can't identify it.
+ */
+function synthesizeName(tags: Record<string, string>): string {
+  // Most specific first.
+  if (tags.tourism === "viewpoint") return "Punkt widokowy";
+  if (tags.tourism === "attraction") return "Atrakcja";
+  if (tags.tourism === "artwork") return "Sztuka publiczna";
+  if (tags.tourism === "museum") return "Muzeum";
+  if (tags.tourism === "picnic_site") return "Miejsce piknikowe";
+  if (tags.historic === "castle") return "Zamek";
+  if (tags.historic === "ruins") return "Ruiny";
+  if (tags.historic === "monument") return "Pomnik";
+  if (tags.historic === "memorial") return "Pamiątkowe miejsce";
+  if (tags.historic === "archaeological_site") return "Stanowisko archeologiczne";
+  if (tags.natural === "peak") return tags.ele ? `Szczyt (${tags.ele} m)` : "Szczyt";
+  if (tags.natural === "cliff") return "Klif";
+  if (tags.natural === "waterfall") return "Wodospad";
+  if (tags.natural === "beach") return "Plaża";
+  if (tags.man_made === "tower") {
+    return tags["tower:type"] === "observation"
+      ? "Wieża widokowa"
+      : "Wieża";
+  }
+  if (tags.man_made === "lighthouse") return "Latarnia morska";
+  if (tags.leisure === "park") return "Park";
+  if (tags.leisure === "nature_reserve") return "Rezerwat przyrody";
+  if (tags.boundary === "protected_area") return "Obszar chroniony";
+  return "Bez nazwy";
+}
+
 function elementToPoi(el: OverpassElement): OverpassPoi | null {
   const tags = el.tags ?? {};
-  const name = tags.name;
-  if (!name) return null;
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
   if (typeof lat !== "number" || typeof lng !== "number") return null;
+  // Prefer the OSM `name`; fall back to a human-readable label derived
+  // from tags so unnamed outdoor features still render meaningfully.
+  const name = tags.name ?? synthesizeName(tags);
   const prefix = el.type[0].toUpperCase();
   const categoryHint =
-    tags.amenity ?? tags.shop ?? tags.tourism ?? tags.leisure ?? tags.natural ?? "";
+    tags.amenity ??
+    tags.shop ??
+    tags.tourism ??
+    tags.historic ??
+    tags.leisure ??
+    tags.natural ??
+    tags.man_made ??
+    tags.boundary ??
+    "";
   return {
     osmId: `${prefix}${el.id}`,
     name,
@@ -170,7 +282,11 @@ export async function overpassSearchByCategory(
       for (const el of data.elements) {
         const poi = elementToPoi(el);
         if (!poi) continue;
-        // Dedupe multiple OSM type variants of the same place.
+        // Dedupe multiple OSM type variants of the same place. With
+        // synthesized fallback names many unnamed POIs would all
+        // collide on the same fake "Bez nazwy" key, so include the
+        // OSM type prefix too — keeps node/way/relation duplicates
+        // collapsed but preserves distinct nearby features.
         const key = `${poi.lat.toFixed(5)}:${poi.lng.toFixed(5)}:${poi.name}`;
         if (seen.has(key)) continue;
         seen.add(key);
