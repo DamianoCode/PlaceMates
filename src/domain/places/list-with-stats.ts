@@ -28,10 +28,20 @@ export type PlaceCard = {
 export type PlacesSortBy = "recent" | "name" | "rating";
 export type PlacesSortDir = "asc" | "desc";
 
+/**
+ * "Set" filter — restrict the list to a saved subset (wishlist or
+ * favourites). Applied AFTER stats are fetched, so it reuses the same
+ * isWishlisted / isFavorite flags the cards already carry. Combines
+ * with the category filter (intersection: ulubione restauracje, etc.).
+ */
+export type PlacesSetFilter = "wishlist" | "favorites";
+
 export type ListPlacesOptions = {
   query?: string;
   /** Filter by category id. When undefined, no category filter is applied. */
   categoryId?: string;
+  /** Restrict to wishlist or favourites. When undefined, all places. */
+  setFilter?: PlacesSetFilter;
   /** Default: "recent". */
   sortBy?: PlacesSortBy;
   /** Default: "desc" (newest first / highest rating first / Z→A). */
@@ -67,6 +77,7 @@ export async function listPlacesWithStats(
   const {
     query,
     categoryId,
+    setFilter,
     sortBy = "recent",
     sortDir = "desc",
   } = opts;
@@ -161,7 +172,16 @@ export async function listPlacesWithStats(
     };
   });
 
-  return sortCards(cards, sortBy, sortDir);
+  // Apply the set filter after stats are merged — cheaper than
+  // adding another join and lets a single SQL pass back the union of
+  // both flags for downstream callers (e.g. PlaceCard icons).
+  const filtered = setFilter
+    ? cards.filter((c) =>
+        setFilter === "wishlist" ? c.isWishlisted : c.isFavorite,
+      )
+    : cards;
+
+  return sortCards(filtered, sortBy, sortDir);
 }
 
 function sortCards(

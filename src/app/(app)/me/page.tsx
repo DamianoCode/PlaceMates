@@ -2,9 +2,7 @@ import Link from "next/link";
 import {
   ChevronRight,
   Globe,
-  Heart,
   Palette,
-  Trophy,
   Users as UsersIcon,
 } from "lucide-react";
 import {
@@ -64,18 +62,11 @@ export default async function MePage() {
             <CardTitle className="font-display text-xl">Odkrywaj</CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
-            <NavRow
-              href="/ranking"
-              icon={<Trophy size={18} className="text-amber-500" />}
-              title="Ranking PlaceMates"
-              subtitle="Globalny atlas najwyżej ocenianych miejsc"
-            />
-            <NavRow
-              href="/favorites"
-              icon={<Heart size={18} className="text-rose-500" />}
-              title="Ulubione"
-              subtitle="Miejsca oznaczone serduszkiem"
-            />
+            {/* Ranking jumped to BottomNav as its own tab, and
+             *  Ulubione + Do odwiedzenia are now filter pills on
+             *  /places — both navigation duplicates removed.
+             *  "Publiczne opinie" stays here as a less-frequent
+             *  destination that doesn't earn a tab. */}
             <NavRow
               href="/discover"
               icon={<Globe size={18} className="text-primary" />}
