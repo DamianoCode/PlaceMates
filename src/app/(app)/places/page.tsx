@@ -16,7 +16,7 @@ import {
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { PlaceCard } from "@/components/places/PlaceCard";
+import { PlacesVirtualList } from "@/components/places/PlacesVirtualList";
 import { PlaceSearchInput } from "@/components/places/PlaceSearchInput";
 import { cn } from "@/lib/utils";
 
@@ -166,13 +166,7 @@ export default async function PlacesPage({
                 : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
           </p>
         ) : (
-          <ul className="space-y-2">
-            {cards.map((c) => (
-              <li key={c.id}>
-                <PlaceCard place={c} />
-              </li>
-            ))}
-          </ul>
+          <PlacesVirtualList cards={cards} />
         )}
       </section>
     </>
