@@ -164,15 +164,23 @@ export function NearbyImportSheet({
     <div
       role="dialog"
       aria-label="Znajdź w okolicy"
-      // z-50 sits above the z-40 BottomNav. On mobile we dock the sheet
-      // above the tab bar; on ≥sm we centre a full card instead.
-      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-0 backdrop-blur-sm pb-[calc(60px+env(safe-area-inset-bottom))] sm:items-center sm:p-4 sm:pb-4"
+      // z-50 sits above the z-40 BottomNav. On mobile the drawer
+      // hugs the viewport's bottom edge (covers the BottomNav while
+      // open — standard mobile drawer behaviour); on ≥sm we centre
+      // a full card instead.
+      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex w-full max-w-2xl max-h-[80dvh] flex-col overflow-hidden rounded-t-3xl border bg-background shadow-2xl animate-in slide-in-from-bottom-6 duration-200 sm:rounded-3xl sm:max-h-[80vh]"
+        className="flex w-full max-w-2xl max-h-[85dvh] flex-col overflow-hidden rounded-t-3xl border-t border-x bg-background shadow-2xl animate-in slide-in-from-bottom-6 duration-200 pb-[env(safe-area-inset-bottom)] sm:rounded-3xl sm:border sm:max-h-[80vh] sm:pb-0"
       >
+        {/* Mobile drag-handle. Pure visual cue — there's no actual
+         *  swipe-to-dismiss yet, but the affordance signals "this is
+         *  a sheet" and anchors the eye when it slides up. */}
+        <div className="flex justify-center pt-2 sm:hidden" aria-hidden>
+          <span className="h-1.5 w-10 rounded-full bg-muted" />
+        </div>
         <div className="flex items-center justify-between border-b px-4 py-3">
           <div className="min-w-0">
             <h2 className="font-display text-xl leading-tight">Znajdź w okolicy</h2>
