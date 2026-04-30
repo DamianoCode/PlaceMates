@@ -2,7 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDownAZ, Check, Loader2, MapPin, Search, X } from "lucide-react";
+import {
+  ArrowDownAZ,
+  Check,
+  Loader2,
+  Locate,
+  Map as MapIcon,
+  MapPin,
+  Search,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { Drawer } from "vaul";
@@ -71,29 +80,49 @@ export function NearbyImportSheet({
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
     null,
   );
+  // User-controlled override of the distance reference. "gps" prefers
+  // userPos when available; "map" forces bbox centre even when GPS
+  // exists (useful when planning a trip from elsewhere).
+  const [distanceSource, setDistanceSource] = useState<"gps" | "map">("gps");
+  // Light "asking for location now" indicator so toggling to GPS
+  // while permission is still being prompted has a visible state.
+  const [requestingPos, setRequestingPos] = useState(false);
   const router = useRouter();
 
-  // Ask the browser for the user's current position once on drawer
-  // open. We pass a generous maximumAge so the OS can hand back a
-  // cached fix instead of waking the GPS, and a short timeout so a
-  // slow lock doesn't delay distance rendering — bbox-centre fallback
-  // takes over until/unless GPS catches up later.
-  useEffect(() => {
-    if (!open) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    let abort = false;
+  // Shared geolocation request — used both on drawer open (silent) and
+  // when the user explicitly toggles to GPS after a previous denial.
+  function requestUserPos(opts: { silent: boolean }) {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      if (!opts.silent) toast.error("Lokalizacja nieobsługiwana w tej przeglądarce.");
+      return;
+    }
+    setRequestingPos(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        if (abort) return;
+        setRequestingPos(false);
         setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
       () => {
-        // Permission denied / timeout / unavailable — silent fallback,
-        // no toast (we don't want a permission dialog to feel like an
-        // error when the user dismisses it).
+        setRequestingPos(false);
+        if (!opts.silent) {
+          toast.error("Brak dostępu do lokalizacji.");
+        }
       },
       { maximumAge: 5 * 60_000, timeout: 4_000, enableHighAccuracy: false },
     );
+  }
+
+  // Ask the browser for the user's current position once on drawer
+  // open. Silent — denial dismisses cleanly; the user can still
+  // explicitly request GPS later via the source toggle. Deferred
+  // through queueMicrotask so the React-compiler set-state-in-effect
+  // rule is satisfied.
+  useEffect(() => {
+    if (!open) return;
+    let abort = false;
+    queueMicrotask(() => {
+      if (!abort) requestUserPos({ silent: true });
+    });
     return () => {
       abort = true;
     };
@@ -124,12 +153,13 @@ export function NearbyImportSheet({
   });
   const rawResults = useMemo(() => searchData?.results ?? [], [searchData]);
 
-  // GPS wins as distance reference; bbox centre fills in until GPS
-  // resolves (or permanently if denied / unsupported).
-  const distanceRef = useMemo(
-    () => userPos ?? search?.center ?? null,
-    [userPos, search],
-  );
+  // Distance reference: user toggles between GPS and map centre.
+  // "gps" still falls back to bbox centre while waiting for the
+  // first GPS fix — better than rendering blank distances.
+  const distanceRef = useMemo(() => {
+    if (distanceSource === "gps") return userPos ?? search?.center ?? null;
+    return search?.center ?? null;
+  }, [distanceSource, userPos, search]);
 
   // Distances + sort, recomputed only when results or reference or
   // sort change.
@@ -186,6 +216,8 @@ export function NearbyImportSheet({
       setChecked(new Set());
       setSortBy("distance");
       setUserPos(null);
+      setDistanceSource("gps");
+      setRequestingPos(false);
     });
     return () => {
       abort = true;
@@ -391,21 +423,11 @@ export function NearbyImportSheet({
                     }
                     aria-label="Zmień sortowanie"
                     className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                    title={
-                      sortBy === "distance"
-                        ? userPos
-                          ? "Od twojej lokalizacji"
-                          : "Od środka widocznej mapy"
-                        : undefined
-                    }
                   >
                     {sortBy === "distance" ? (
                       <>
                         <MapPin size={12} />
                         Odległość
-                        <span className="text-[9px] uppercase tracking-wider opacity-60">
-                          {userPos ? "GPS" : "mapa"}
-                        </span>
                       </>
                     ) : (
                       <>
@@ -414,6 +436,54 @@ export function NearbyImportSheet({
                       </>
                     )}
                   </button>
+                  {sortBy === "distance" && (
+                    /* Segmented control: GPS vs bbox centre. Switching
+                     * to GPS after a previous denial re-requests
+                     * permission (loud — toast on failure). */
+                    <div
+                      role="group"
+                      aria-label="Skąd liczyć odległość"
+                      className="inline-flex items-center rounded-full border border-border bg-background p-0.5"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!userPos) requestUserPos({ silent: false });
+                          setDistanceSource("gps");
+                        }}
+                        aria-pressed={distanceSource === "gps"}
+                        title="Liczone od twojej lokalizacji"
+                        className={cn(
+                          "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-medium uppercase tracking-wider transition-colors",
+                          distanceSource === "gps"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {requestingPos && distanceSource === "gps" ? (
+                          <Loader2 size={10} className="animate-spin" />
+                        ) : (
+                          <Locate size={10} />
+                        )}
+                        GPS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDistanceSource("map")}
+                        aria-pressed={distanceSource === "map"}
+                        title="Liczone od środka widocznej mapy"
+                        className={cn(
+                          "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-medium uppercase tracking-wider transition-colors",
+                          distanceSource === "map"
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        <MapIcon size={10} />
+                        Mapa
+                      </button>
+                    </div>
+                  )}
                   {results.length > 0 && (
                     <button
                       type="button"
