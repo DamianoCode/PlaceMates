@@ -391,24 +391,47 @@ export function NearbyImportSheet({
               })}
             </ul>
             <div className="mt-2 flex items-center justify-between gap-2">
-              <p className="text-[11px] text-muted-foreground">
-                {selectedSlugs.size === 0
-                  ? "Brak wyboru."
-                  : `Wybrano ${selectedSlugs.size}.`}
-              </p>
               <button
                 type="button"
-                onClick={runSearch}
-                disabled={loading || selectedSlugs.size === 0}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-sm disabled:opacity-50"
+                onClick={() => {
+                  // Toggle: if every category is already selected,
+                  // clear them all; otherwise select every available
+                  // category. Single tap for the "show me everything
+                  // interesting" use case without forcing a hunt
+                  // through pills.
+                  const allSlugs = categories.map((c) => c.slug);
+                  setSelectedSlugs(
+                    selectedSlugs.size === allSlugs.length
+                      ? new Set()
+                      : new Set(allSlugs),
+                  );
+                }}
+                className="inline-flex h-9 items-center rounded-full px-3 text-[11px] font-medium text-primary hover:bg-primary/10"
               >
-                {loading ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Search size={14} />
-                )}
-                Szukaj
+                {selectedSlugs.size === categories.length
+                  ? "Odznacz wszystkie"
+                  : "Zaznacz wszystkie"}
               </button>
+              <div className="flex items-center gap-2">
+                <p className="text-[11px] text-muted-foreground">
+                  {selectedSlugs.size === 0
+                    ? "Brak wyboru."
+                    : `Wybrano ${selectedSlugs.size}.`}
+                </p>
+                <button
+                  type="button"
+                  onClick={runSearch}
+                  disabled={loading || selectedSlugs.size === 0}
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-sm disabled:opacity-50"
+                >
+                  {loading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Search size={14} />
+                  )}
+                  Szukaj
+                </button>
+              </div>
             </div>
           </div>
 
