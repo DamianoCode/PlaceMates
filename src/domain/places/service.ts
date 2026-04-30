@@ -189,13 +189,26 @@ export type BulkPlaceItem = {
   lat: number;
   lng: number;
   address: string | null;
-  osmId: string | null;
+  /**
+   * External provider tag. Geoapify hits get `provider="geoapify"`,
+   * Overpass hits `provider="osm"`. Pin-drops in bulk are not
+   * supported (always nullish).
+   */
+  provider?: "osm" | "geoapify" | null;
+  externalId?: string | null;
+  /**
+   * @deprecated Legacy alias. When `provider`/`externalId` aren't set
+   * but `osmId` is, we treat it as `provider="osm"`.
+   */
+  osmId?: string | null;
 };
 
 /**
  * Insert many places at once into a group for a single category. Skips
- * rows already present (same osm_id in the same group), so repeated
- * imports are idempotent.
+ * rows already present (same OSM id in the same group), so repeated
+ * imports are idempotent. Geoapify hits dedupe through the canonical
+ * layer's (provider, external_id) unique index; the per-group `osm_id`
+ * dedupe doesn't apply to them but cross-group canonical sharing does.
  */
 export async function bulkCreatePlaces(
   groupId: string,
@@ -211,10 +224,30 @@ export async function bulkCreatePlaces(
   if (member.length === 0) return err("Nie należysz do tej grupy.");
   if (items.length === 0) return ok({ inserted: 0, skipped: 0 });
 
-  // Filter out items whose osm_id is already in this group.
-  const osmIds = items.map((i) => i.osmId).filter((x): x is string => !!x);
+  // Resolve provider+externalId for every item, including the legacy
+  // `osmId` shape that older callers still send.
+  type Resolved = BulkPlaceItem & {
+    provider: "osm" | "geoapify" | null;
+    externalId: string | null;
+  };
+  const resolved: Resolved[] = items.map((i) => ({
+    ...i,
+    provider: i.provider ?? (i.osmId ? "osm" : null),
+    externalId: i.externalId ?? i.osmId ?? null,
+  }));
+
+  // Skip duplicates within this group. We dedupe on `osm_id` (legacy
+  // column) for OSM hits — that's the only signal we have stored per
+  // place. Geoapify hits aren't tracked via places.osm_id so they
+  // can re-import here and rely on canonical-layer dedupe instead;
+  // the small downside is the same Geoapify spot can be saved twice
+  // in the same group, which is rare and fixable in a follow-up if
+  // it bites.
+  const osmIdsToCheck = resolved
+    .filter((i) => i.provider === "osm" && i.externalId)
+    .map((i) => i.externalId as string);
   let existing = new Set<string>();
-  if (osmIds.length > 0) {
+  if (osmIdsToCheck.length > 0) {
     const rows = await db
       .select({ osmId: places.osmId })
       .from(places)
@@ -224,25 +257,27 @@ export async function bulkCreatePlaces(
     );
   }
 
-  const fresh = items.filter((i) => !i.osmId || !existing.has(i.osmId));
+  const fresh = resolved.filter(
+    (i) =>
+      !(i.provider === "osm" && i.externalId && existing.has(i.externalId)),
+  );
   if (fresh.length === 0) {
     return ok({ inserted: 0, skipped: items.length });
   }
 
-  // Bulk imports always carry osm_id (Overpass). Link each row to its
-  // external canonical — done in parallel so a 50-item import still
-  // resolves in roughly the time of a single upsert.
+  // Link each row to its external canonical (or a fresh local one if
+  // somehow there's no provider). Done in parallel.
   const groupCategorySlug = await categorySlugForId(categoryId);
   const canonicals = await Promise.all(
     fresh.map((i) =>
-      i.osmId
+      i.provider && i.externalId
         ? findOrCreateExternalCanonical({
-            provider: "osm",
-            externalId: i.osmId,
+            provider: i.provider,
+            externalId: i.externalId,
             name: i.name,
             lat: i.lat,
             lng: i.lng,
-            // Bulk imports don't always carry the OSM category tag;
+            // Bulk imports don't always carry the raw category tag;
             // fall back to the group-picked slug so the canonical has
             // something meaningful in category_hint.
             categoryHint: groupCategorySlug ?? undefined,
@@ -262,7 +297,8 @@ export async function bulkCreatePlaces(
     categoryId,
     location: { lat: i.lat, lng: i.lng },
     address: i.address,
-    osmId: i.osmId,
+    // Only OSM hits populate places.osm_id (used by per-group dedupe).
+    osmId: i.provider === "osm" ? i.externalId : null,
     canonicalPlaceId: canonicals[idx],
     createdBy: userId,
   }));
