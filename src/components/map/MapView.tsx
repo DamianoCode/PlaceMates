@@ -136,9 +136,25 @@ export function MapView({
   // persistence and felt jumpy.
   const handleLoad = useCallback(
     (e: { target: MLMap }) => {
-      setMapInstance(e.target);
+      const map = e.target;
+      setMapInstance(map);
+
+      // Hide the basemap's own POI / transit pictograms. With our
+      // category markers on top they'd otherwise create visual
+      // clutter — two cafés stacked, a tiny grey OSM cup beside our
+      // big orange one. No-op for raster providers (Carto): they
+      // expose only the single raster layer, none match the prefixes.
+      for (const layer of map.getStyle().layers) {
+        if (
+          layer.id.startsWith("poi") ||
+          layer.id.startsWith("transit-stop")
+        ) {
+          map.setLayoutProperty(layer.id, "visibility", "none");
+        }
+      }
+
       if (onBoundsChange) {
-        const b = e.target.getBounds();
+        const b = map.getBounds();
         onBoundsChange({
           west: b.getWest(),
           south: b.getSouth(),

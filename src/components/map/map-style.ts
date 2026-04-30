@@ -22,8 +22,14 @@ import type { StyleSpecification } from "maplibre-gl";
 export function getMapStyle(dark = false): StyleSpecification | string {
   const key = process.env.NEXT_PUBLIC_MAPTILER_KEY;
   if (key) {
-    const variant = dark ? "streets-v2-dark" : "streets-v2";
-    return `https://api.maptiler.com/maps/${variant}/style.json?key=${key}`;
+    // MapTiler "voyager" is their direct counterpart to Carto Voyager:
+    // same warm cream/sand palette, same vibe — keeps the brand
+    // identity intact when the user upgrades from raster Carto to
+    // vector MapTiler. `voyager-dark` exists too but the CSS-invert
+    // dark-mode pipeline (globals.css) plays better with the light
+    // variant, so we serve `voyager` for both themes.
+    void dark;
+    return `https://api.maptiler.com/maps/voyager/style.json?key=${key}`;
   }
 
   const provider = process.env.NEXT_PUBLIC_MAP_PROVIDER;
