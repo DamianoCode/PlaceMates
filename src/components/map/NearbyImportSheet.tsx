@@ -65,7 +65,39 @@ export function NearbyImportSheet({
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<SortBy>("distance");
   const [submitting, setSubmitting] = useState(false);
+  // GPS reference for distance / sort. Null until either the browser
+  // has no geolocation API, the user denied permission, or the request
+  // times out — in those cases we fall back to the search bbox centre.
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(
+    null,
+  );
   const router = useRouter();
+
+  // Ask the browser for the user's current position once on drawer
+  // open. We pass a generous maximumAge so the OS can hand back a
+  // cached fix instead of waking the GPS, and a short timeout so a
+  // slow lock doesn't delay distance rendering — bbox-centre fallback
+  // takes over until/unless GPS catches up later.
+  useEffect(() => {
+    if (!open) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let abort = false;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (abort) return;
+        setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        // Permission denied / timeout / unavailable — silent fallback,
+        // no toast (we don't want a permission dialog to feel like an
+        // error when the user dismisses it).
+      },
+      { maximumAge: 5 * 60_000, timeout: 4_000, enableHighAccuracy: false },
+    );
+    return () => {
+      abort = true;
+    };
+  }, [open]);
 
   const {
     data: searchData,
@@ -92,12 +124,19 @@ export function NearbyImportSheet({
   });
   const rawResults = useMemo(() => searchData?.results ?? [], [searchData]);
 
-  // Distances + sort, recomputed only when results or sort change.
+  // GPS wins as distance reference; bbox centre fills in until GPS
+  // resolves (or permanently if denied / unsupported).
+  const distanceRef = useMemo(
+    () => userPos ?? search?.center ?? null,
+    [userPos, search],
+  );
+
+  // Distances + sort, recomputed only when results or reference or
+  // sort change.
   const results = useMemo(() => {
-    const center = search?.center ?? null;
     const withDistance = rawResults.map((r) => ({
       ...r,
-      distanceM: center ? haversineMeters(center, r) : null,
+      distanceM: distanceRef ? haversineMeters(distanceRef, r) : null,
     }));
     if (sortBy === "name") {
       withDistance.sort((a, b) =>
@@ -107,7 +146,7 @@ export function NearbyImportSheet({
       withDistance.sort((a, b) => (a.distanceM ?? 0) - (b.distanceM ?? 0));
     }
     return withDistance;
-  }, [rawResults, search, sortBy]);
+  }, [rawResults, distanceRef, sortBy]);
 
   // Pre-check all on a fresh response. Defer with queueMicrotask so
   // the React-compiler set-state-in-effect rule is satisfied.
@@ -146,6 +185,7 @@ export function NearbyImportSheet({
       setSearch(null);
       setChecked(new Set());
       setSortBy("distance");
+      setUserPos(null);
     });
     return () => {
       abort = true;
@@ -351,11 +391,21 @@ export function NearbyImportSheet({
                     }
                     aria-label="Zmień sortowanie"
                     className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                    title={
+                      sortBy === "distance"
+                        ? userPos
+                          ? "Od twojej lokalizacji"
+                          : "Od środka widocznej mapy"
+                        : undefined
+                    }
                   >
                     {sortBy === "distance" ? (
                       <>
                         <MapPin size={12} />
                         Odległość
+                        <span className="text-[9px] uppercase tracking-wider opacity-60">
+                          {userPos ? "GPS" : "mapa"}
+                        </span>
                       </>
                     ) : (
                       <>
