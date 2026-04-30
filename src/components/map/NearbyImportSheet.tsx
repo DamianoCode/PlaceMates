@@ -549,7 +549,13 @@ export function NearbyImportSheet({
                             <p className="truncate text-sm font-medium">
                               {r.name}
                             </p>
-                            {r.distanceM !== null && (
+                            {/* Per-row distance is only meaningful
+                             * while we sort by it — when sorting by
+                             * name the GPS/Map toggle is hidden so
+                             * the user has no way to verify which
+                             * reference the numbers are coming from.
+                             * Hide the numbers in that mode too. */}
+                            {sortBy === "distance" && r.distanceM !== null && (
                               <span className="flex-shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
                                 {formatDistance(r.distanceM)}
                               </span>
