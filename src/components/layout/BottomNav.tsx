@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, List, Map, User } from "lucide-react";
+import { List, Map, Trophy, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Wishlist + Favorites collapsed into the /places list as filter
+// pills — they were the same view with an extra `where` clause and
+// the user can now combine them with category filters (e.g. ulubione
+// restauracje). Frees a tab slot for Ranking, which previously sat
+// buried inside /me.
 const ITEMS = [
   { href: "/map", label: "Mapa", icon: Map },
   { href: "/places", label: "Miejsca", icon: List },
-  { href: "/wishlist", label: "Wishlist", icon: Heart },
+  { href: "/ranking", label: "Ranking", icon: Trophy },
   { href: "/me", label: "Ja", icon: User },
 ] as const;
 

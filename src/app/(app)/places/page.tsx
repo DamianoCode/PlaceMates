@@ -4,12 +4,15 @@ import {
   ArrowDown,
   ArrowDownAZ,
   ArrowUp,
+  Bookmark,
   Clock,
+  Heart,
   Star,
 } from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import {
   listPlacesWithStats,
+  type PlacesSetFilter,
   type PlacesSortBy,
   type PlacesSortDir,
 } from "@/domain/places/list-with-stats";
@@ -22,6 +25,7 @@ import { cn } from "@/lib/utils";
 
 type Search = {
   q?: string;
+  set?: string;
   category?: string;
   sort?: string;
   dir?: string;
@@ -40,9 +44,11 @@ const SORT_OPTIONS: {
 function parseSort(raw: string | undefined): PlacesSortBy {
   return raw === "name" || raw === "rating" ? raw : "recent";
 }
-
 function parseDir(raw: string | undefined): PlacesSortDir {
   return raw === "asc" ? "asc" : "desc";
+}
+function parseSet(raw: string | undefined): PlacesSetFilter | null {
+  return raw === "wishlist" || raw === "favorites" ? raw : null;
 }
 
 export default async function PlacesPage({
@@ -53,9 +59,10 @@ export default async function PlacesPage({
   const user = await (await getAuth()).getUser();
   if (!user) redirect("/login");
 
-  const { q, category, sort, dir } = await searchParams;
+  const { q, set, category, sort, dir } = await searchParams;
   const sortBy = parseSort(sort);
   const sortDir = parseDir(dir);
+  const setFilter = parseSet(set);
 
   // Categories for the filter pills come from the user's primary group
   // — same source the map and the new-place form already use. A user
@@ -72,21 +79,25 @@ export default async function PlacesPage({
   const cards = await listPlacesWithStats(user.id, {
     query: q,
     categoryId: activeCategory ?? undefined,
+    setFilter: setFilter ?? undefined,
     sortBy,
     sortDir,
   });
 
   function buildHref(opts: {
+    set?: PlacesSetFilter | null;
     category?: string | null;
     sort?: PlacesSortBy;
     dir?: PlacesSortDir;
   }) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    const nextSet = opts.set === undefined ? setFilter : opts.set;
     const nextCategory =
       opts.category === undefined ? activeCategory : opts.category;
     const nextSort = opts.sort ?? sortBy;
     const nextDir = opts.dir ?? sortDir;
+    if (nextSet) params.set("set", nextSet);
     if (nextCategory) params.set("category", nextCategory);
     if (nextSort !== "recent") params.set("sort", nextSort);
     if (nextDir !== "desc") params.set("dir", nextDir);
@@ -95,7 +106,6 @@ export default async function PlacesPage({
   }
 
   const activeSortMeta = SORT_OPTIONS.find((s) => s.value === sortBy)!;
-  // Cycle through the three sort modes on each tap of the mode button.
   const nextSortBy: PlacesSortBy =
     sortBy === "recent" ? "name" : sortBy === "name" ? "rating" : "recent";
 
@@ -104,6 +114,37 @@ export default async function PlacesPage({
       <PageHeader title="Miejsca" fallbackHref="/map" />
       <section className="mx-auto max-w-2xl space-y-4 p-4">
         <PlaceSearchInput />
+
+        {/* Saved-set filter row. Each pill is a toggle: clicking the
+         *  active one clears it (so "Wszystkie" isn't strictly needed
+         *  but stays visible as a no-op default for clarity). Combines
+         *  with the category filter — favourites + restaurant works. */}
+        <nav
+          aria-label="Filtr zapisanych"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar"
+        >
+          <Pill href={buildHref({ set: null })} active={!setFilter}>
+            Wszystkie
+          </Pill>
+          <Pill
+            href={buildHref({
+              set: setFilter === "wishlist" ? null : "wishlist",
+            })}
+            active={setFilter === "wishlist"}
+            icon={<Bookmark size={12} />}
+          >
+            Do odwiedzenia
+          </Pill>
+          <Pill
+            href={buildHref({
+              set: setFilter === "favorites" ? null : "favorites",
+            })}
+            active={setFilter === "favorites"}
+            icon={<Heart size={12} />}
+          >
+            Ulubione
+          </Pill>
+        </nav>
 
         {cats.length > 0 && (
           <nav
@@ -161,9 +202,13 @@ export default async function PlacesPage({
           <p className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
             {q
               ? `Brak wyników dla „${q}".`
-              : activeCategory
-                ? "Brak miejsc w tej kategorii."
-                : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
+              : setFilter === "wishlist"
+                ? "Nic do odwiedzenia. Zaznacz miejsce zakładką w nagłówku jego widoku."
+                : setFilter === "favorites"
+                  ? "Brak ulubionych. Zaznacz miejsce serduszkiem w nagłówku jego widoku."
+                  : activeCategory
+                    ? "Brak miejsc w tej kategorii."
+                    : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
           </p>
         ) : (
           <PlacesVirtualList cards={cards} />
@@ -183,10 +228,12 @@ function dirTitle(sortBy: PlacesSortBy, dir: PlacesSortDir): string {
 function Pill({
   href,
   active,
+  icon,
   children,
 }: {
   href: string;
   active: boolean;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const base =
@@ -201,6 +248,7 @@ function Pill({
           : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
+      {icon}
       {children}
     </Link>
   );
