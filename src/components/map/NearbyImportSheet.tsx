@@ -415,112 +415,21 @@ export function NearbyImportSheet({
           {/* Results panel. Hidden until the user runs a search. */}
           {search && (
             <>
-              <div className="flex items-center justify-between border-b px-4 py-2 text-xs">
-                <span className="text-muted-foreground">
-                  {loading
-                    ? "Szukam…"
-                    : results.length === 0
-                      ? "Brak wyników w widocznym obszarze."
-                      : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="inline-flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSortBy((s) =>
-                          s === "distance" ? "name" : "distance",
-                        )
-                      }
-                      aria-label="Zmień kryterium sortowania"
-                      className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                    >
-                      {sortBy === "distance" ? (
-                        <>
-                          <MapPin size={12} />
-                          Odległość
-                        </>
-                      ) : (
-                        <>
-                          <ArrowDownAZ size={12} />
-                          Nazwa
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSortDir((d) => (d === "asc" ? "desc" : "asc"))
-                      }
-                      aria-label={
-                        sortDir === "asc" ? "Sortuj malejąco" : "Sortuj rosnąco"
-                      }
-                      title={
-                        sortBy === "distance"
-                          ? sortDir === "asc"
-                            ? "Od najbliższych"
-                            : "Od najdalszych"
-                          : sortDir === "asc"
-                            ? "A → Z"
-                            : "Z → A"
-                      }
-                      className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      {sortDir === "asc" ? (
-                        <ArrowDown size={12} />
-                      ) : (
-                        <ArrowUp size={12} />
-                      )}
-                    </button>
-                  </div>
-                  {sortBy === "distance" && (
-                    /* Segmented control: GPS vs bbox centre. Switching
-                     * to GPS after a previous denial re-requests
-                     * permission (loud — toast on failure). */
-                    <div
-                      role="group"
-                      aria-label="Skąd liczyć odległość"
-                      className="inline-flex items-center rounded-full border border-border bg-background p-0.5"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!userPos) requestUserPos({ silent: false });
-                          setDistanceSource("gps");
-                        }}
-                        aria-pressed={distanceSource === "gps"}
-                        title="Liczone od twojej lokalizacji"
-                        className={cn(
-                          "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-medium uppercase tracking-wider transition-colors",
-                          distanceSource === "gps"
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {requestingPos && distanceSource === "gps" ? (
-                          <Loader2 size={10} className="animate-spin" />
-                        ) : (
-                          <Locate size={10} />
-                        )}
-                        GPS
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDistanceSource("map")}
-                        aria-pressed={distanceSource === "map"}
-                        title="Liczone od środka widocznej mapy"
-                        className={cn(
-                          "inline-flex h-6 items-center gap-1 rounded-full px-2 text-[10px] font-medium uppercase tracking-wider transition-colors",
-                          distanceSource === "map"
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        <MapIcon size={10} />
-                        Mapa
-                      </button>
-                    </div>
-                  )}
+              {/* Two-row toolbar on mobile: count + select-all on top,
+               *  sort + source toggle below. The original single-row
+               *  layout was too dense on phone widths — buttons were
+               *  ~24 px tall and pressed shoulder-to-shoulder. Each
+               *  control is now h-9 with comfortable padding. On ≥sm
+               *  the bottom row ungrows to sit alongside the count. */}
+              <div className="flex flex-col gap-2 border-b px-3 py-2 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-muted-foreground">
+                    {loading
+                      ? "Szukam…"
+                      : results.length === 0
+                        ? "Brak wyników w widocznym obszarze."
+                        : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
+                  </span>
                   {results.length > 0 && (
                     <button
                       type="button"
@@ -531,12 +440,114 @@ export function NearbyImportSheet({
                             : new Set(results.map(resultKey)),
                         )
                       }
-                      className="font-medium text-primary hover:underline"
+                      className="inline-flex h-9 items-center rounded-full px-3 font-medium text-primary hover:bg-primary/10"
                     >
                       {allChecked ? "Odznacz" : "Zaznacz"} wszystkie
                     </button>
                   )}
                 </div>
+
+                {results.length > 0 && (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSortBy((s) =>
+                            s === "distance" ? "name" : "distance",
+                          )
+                        }
+                        aria-label="Zmień kryterium sortowania"
+                        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        {sortBy === "distance" ? (
+                          <>
+                            <MapPin size={14} />
+                            Odległość
+                          </>
+                        ) : (
+                          <>
+                            <ArrowDownAZ size={14} />
+                            Nazwa
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSortDir((d) => (d === "asc" ? "desc" : "asc"))
+                        }
+                        aria-label={
+                          sortDir === "asc"
+                            ? "Sortuj malejąco"
+                            : "Sortuj rosnąco"
+                        }
+                        title={
+                          sortBy === "distance"
+                            ? sortDir === "asc"
+                              ? "Od najbliższych"
+                              : "Od najdalszych"
+                            : sortDir === "asc"
+                              ? "A → Z"
+                              : "Z → A"
+                        }
+                        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+                      >
+                        {sortDir === "asc" ? (
+                          <ArrowDown size={14} />
+                        ) : (
+                          <ArrowUp size={14} />
+                        )}
+                      </button>
+                    </div>
+
+                    {sortBy === "distance" && (
+                      <div
+                        role="group"
+                        aria-label="Skąd liczyć odległość"
+                        className="inline-flex h-9 items-center rounded-full border border-border bg-background p-0.5"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!userPos) requestUserPos({ silent: false });
+                            setDistanceSource("gps");
+                          }}
+                          aria-pressed={distanceSource === "gps"}
+                          title="Liczone od twojej lokalizacji"
+                          className={cn(
+                            "inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            distanceSource === "gps"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {requestingPos && distanceSource === "gps" ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Locate size={12} />
+                          )}
+                          GPS
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDistanceSource("map")}
+                          aria-pressed={distanceSource === "map"}
+                          title="Liczone od środka widocznej mapy"
+                          className={cn(
+                            "inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            distanceSource === "map"
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          <MapIcon size={12} />
+                          Mapa
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <ul className="min-h-0 flex-1 divide-y overflow-auto">
