@@ -566,6 +566,15 @@ export function NearbyImportSheet({
                 {results.map((r) => {
                   const key = resultKey(r);
                   const isChecked = checked.has(key);
+                  // Resolve the row's group-category (the same slug
+                  // that doImport will route it to) so the user can
+                  // tell *what* the place is at a glance — important
+                  // for multi-category searches where the list mixes
+                  // cafés, viewpoints, monuments etc.
+                  const slug = hintToOurSlug(r.categoryHint);
+                  const catName = slug
+                    ? categories.find((c) => c.slug === slug)?.name ?? null
+                    : null;
                   return (
                     <li key={key}>
                       <button
@@ -609,9 +618,18 @@ export function NearbyImportSheet({
                               </span>
                             )}
                           </div>
-                          {r.address && (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {r.address}
+                          {(catName || r.address) && (
+                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              {catName && (
+                                <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wider text-primary">
+                                  {catName}
+                                </span>
+                              )}
+                              {r.address && (
+                                <span className="min-w-0 truncate">
+                                  {r.address}
+                                </span>
+                              )}
                             </p>
                           )}
                         </div>
