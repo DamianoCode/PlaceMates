@@ -24,6 +24,7 @@ import { isOnWishlist } from "@/domain/wishlist/service";
 import { isFavorite } from "@/domain/favorites/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { PhotoGallery } from "@/components/places/PhotoGallery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RatingForm } from "@/components/places/RatingForm";
 import { VisitForm } from "@/components/places/VisitForm";
@@ -106,6 +107,10 @@ export default async function PlaceDetailPage({
       />
 
       <section className="mx-auto max-w-2xl space-y-6 p-4">
+        {/* PhotoGallery wraps both the hero and the photo grid below
+         *  so swipe-between in the lightbox spans the entire set,
+         *  not just the hero strip. */}
+        <PhotoGallery>
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}
@@ -271,6 +276,7 @@ export default async function PlaceDetailPage({
             )}
           </CardContent>
         </Card>
+        </PhotoGallery>
       </section>
     </>
   );

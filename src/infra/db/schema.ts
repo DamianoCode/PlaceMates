@@ -308,6 +308,10 @@ export const itemPhotos = pgTable(
     storagePath: text("storage_path").notNull(),
     width: integer("width").notNull(),
     height: integer("height").notNull(),
+    // Cover / wizytówka — at most one true per item, enforced in the
+    // service layer (clear others before setting). Same pattern as
+    // photos.is_cover for places.
+    isCover: boolean("is_cover").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [index("item_photos_item_idx").on(t.itemId)],
