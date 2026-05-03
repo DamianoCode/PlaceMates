@@ -18,6 +18,7 @@ import {
 import { ItemRateForm } from "@/components/items/ItemRateForm";
 import { ItemPhotoUpload } from "@/components/items/ItemPhotoUpload";
 import { ItemPhotoTile } from "@/components/items/ItemPhotoTile";
+import { PhotoGallery } from "@/components/places/PhotoGallery";
 import { PhotoHero } from "@/components/places/PhotoHero";
 import { StarRating } from "@/components/places/StarRating";
 import { DeleteItemButton } from "@/components/items/DeleteItemButton";
@@ -58,9 +59,9 @@ export default async function ItemPage({
         fallbackHref={`/places/${id}`}
       />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
-        {/* Cinematic hero matching the place page — same `<PhotoHero>`,
-         *  with a generic dish icon for the empty state since items
-         *  don't carry a category slug of their own. */}
+        {/* PhotoGallery wraps hero + grid so the lightbox swipe
+         *  spans every photo of the item, not just the hero strip. */}
+        <PhotoGallery>
         <PhotoHero
           photos={photos}
           fallback={
@@ -157,6 +158,7 @@ export default async function ItemPage({
                     <ItemPhotoTile
                       photoId={p.id}
                       url={p.url}
+                      isCover={p.isCover}
                       canDelete={p.userId === user.id}
                     />
                   </li>
@@ -181,6 +183,7 @@ export default async function ItemPage({
             </CardContent>
           </Card>
         )}
+        </PhotoGallery>
       </section>
     </>
   );

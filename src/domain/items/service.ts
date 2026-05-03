@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import {
   groupMembers,
@@ -175,6 +175,7 @@ export type ItemPhotoView = {
   id: string;
   userId: string;
   url: string;
+  isCover: boolean;
   createdAt: Date;
 };
 
@@ -187,12 +188,15 @@ export async function listItemPhotos(
     .select()
     .from(itemPhotos)
     .where(eq(itemPhotos.itemId, itemId))
-    .orderBy(desc(itemPhotos.createdAt));
+    // Cover first so the hero picks the right photo automatically;
+    // tie-break by recency for the rest of the strip.
+    .orderBy(desc(itemPhotos.isCover), desc(itemPhotos.createdAt));
   const storage = await getStorage();
   return rows.map((r) => ({
     id: r.id,
     userId: r.userId,
     url: storage.publicUrl(PHOTO_BUCKET, r.storagePath),
+    isCover: r.isCover,
     createdAt: r.createdAt,
   }));
 }
@@ -347,6 +351,58 @@ export async function deleteItemPhoto(
   const storage = await getStorage();
   await storage.remove(PHOTO_BUCKET, row.storagePath);
   await db.delete(itemPhotos).where(eq(itemPhotos.id, photoId));
+
+  return ok({ itemId: row.itemId, placeId: parent.placeId });
+}
+
+/**
+ * Promote a photo to be the item's cover (the one the hero shows).
+ * Any existing cover for the same item is demoted in the same call.
+ * Group members can re-pick — items live inside a shared scrapbook,
+ * mirrors the place setCoverPhoto policy.
+ */
+export async function setCoverItemPhoto(
+  photoId: string,
+  userId: string,
+): Promise<Result<{ itemId: string; placeId: string }>> {
+  // Locate photo + verify membership in one go.
+  const [row] = await db
+    .select({ id: itemPhotos.id, itemId: itemPhotos.itemId })
+    .from(itemPhotos)
+    .innerJoin(placeItems, eq(placeItems.id, itemPhotos.itemId))
+    .innerJoin(places, eq(places.id, placeItems.placeId))
+    .innerJoin(groupMembers, eq(groupMembers.groupId, places.groupId))
+    .where(
+      and(eq(itemPhotos.id, photoId), eq(groupMembers.userId, userId)),
+    )
+    .limit(1);
+  if (!row) return err("Brak dostępu do tego zdjęcia.");
+
+  // Look up parent place for revalidation.
+  const [parent] = await db
+    .select({ placeId: placeItems.placeId })
+    .from(placeItems)
+    .where(eq(placeItems.id, row.itemId))
+    .limit(1);
+  if (!parent) return err("Brak produktu — być może został usunięty.");
+
+  // Demote any other cover, then promote the picked one. Two writes
+  // are simpler than a CASE expression and both run atomically under
+  // read-committed in the sub-second window between them.
+  await db
+    .update(itemPhotos)
+    .set({ isCover: false })
+    .where(
+      and(
+        eq(itemPhotos.itemId, row.itemId),
+        eq(itemPhotos.isCover, true),
+        ne(itemPhotos.id, photoId),
+      ),
+    );
+  await db
+    .update(itemPhotos)
+    .set({ isCover: true })
+    .where(eq(itemPhotos.id, photoId));
 
   return ok({ itemId: row.itemId, placeId: parent.placeId });
 }

@@ -10,6 +10,7 @@ import {
   deleteItemPhoto,
   deleteItemRating,
   getItemForUser,
+  setCoverItemPhoto,
   upsertItemRating,
 } from "@/domain/items/service";
 import { CreateItemInput, RateItemInput } from "@/lib/validation/item";
@@ -165,6 +166,26 @@ export async function deleteItemPhotoAction(
   if (!photoId) return { error: "Brak zdjęcia." };
 
   const result = await deleteItemPhoto(photoId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${result.data.placeId}/items/${result.data.itemId}`);
+  revalidatePath(`/places/${result.data.placeId}`);
+  return { ok: true };
+}
+
+export type SetCoverItemPhotoState = { error: string } | { ok: true } | null;
+
+export async function setCoverItemPhotoAction(
+  _: SetCoverItemPhotoState,
+  formData: FormData,
+): Promise<SetCoverItemPhotoState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const photoId = formData.get("photoId") as string | null;
+  if (!photoId) return { error: "Brak zdjęcia." };
+
+  const result = await setCoverItemPhoto(photoId, user.id);
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/places/${result.data.placeId}/items/${result.data.itemId}`);

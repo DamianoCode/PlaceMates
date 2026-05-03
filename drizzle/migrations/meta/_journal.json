@@ -36,6 +36,13 @@
       "when": 1777064090525,
       "tag": "0004_canonical_places",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777640000000,
+      "tag": "0005_item_photos_cover",
+      "breakpoints": true
     }
   ]
 }
