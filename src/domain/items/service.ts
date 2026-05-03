@@ -313,3 +313,40 @@ export async function addItemPhoto(
     .returning({ id: itemPhotos.id });
   return ok({ id: row.id });
 }
+
+/**
+ * Delete an item photo. Only the uploader may do this — same rule as
+ * place photos. Returns the parent itemId so the caller can revalidate
+ * the right detail page.
+ */
+export async function deleteItemPhoto(
+  photoId: string,
+  userId: string,
+): Promise<Result<{ itemId: string; placeId: string }>> {
+  const [row] = await db
+    .select({
+      id: itemPhotos.id,
+      itemId: itemPhotos.itemId,
+      storagePath: itemPhotos.storagePath,
+    })
+    .from(itemPhotos)
+    .where(and(eq(itemPhotos.id, photoId), eq(itemPhotos.userId, userId)))
+    .limit(1);
+  if (!row) return err("Tylko autor zdjęcia może je usunąć.");
+
+  // Look up the parent item so we can return the placeId for
+  // revalidation. The item's place_id never changes once set, so a
+  // single read here is fine.
+  const [parent] = await db
+    .select({ placeId: placeItems.placeId })
+    .from(placeItems)
+    .where(eq(placeItems.id, row.itemId))
+    .limit(1);
+  if (!parent) return err("Brak produktu — być może został usunięty.");
+
+  const storage = await getStorage();
+  await storage.remove(PHOTO_BUCKET, row.storagePath);
+  await db.delete(itemPhotos).where(eq(itemPhotos.id, photoId));
+
+  return ok({ itemId: row.itemId, placeId: parent.placeId });
+}
