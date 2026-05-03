@@ -11,6 +11,7 @@ import {
   uploadAvatarAction,
   type AvatarState,
 } from "@/app/(app)/me/avatar-actions";
+import { compressImage } from "@/lib/compress-image";
 
 export function AccountHeader({
   displayName,
@@ -67,10 +68,22 @@ export function AccountHeader({
           name="avatar"
           accept="image/*"
           className="sr-only"
-          onChange={(e) => {
-            if (e.target.files && e.target.files.length > 0) {
-              formRef.current?.requestSubmit();
-            }
+          onChange={async (e) => {
+            const picked = e.target.files?.[0];
+            if (!picked || !fileInputRef.current) return;
+            // Avatar uploads typically come from the same camera roll
+            // as place photos (3-12 MB JPEGs). Compress before
+            // auto-submitting so the server-action body cap doesn't
+            // reject them. Avatars are small in the UI anyway —
+            // 1.5 MB ceiling is generous for a 64-px circle.
+            const { file } = await compressImage(picked, {
+              maxSizeMB: 0.5,
+              maxWidthOrHeight: 512,
+            });
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fileInputRef.current.files = dt.files;
+            formRef.current?.requestSubmit();
           }}
         />
         <button

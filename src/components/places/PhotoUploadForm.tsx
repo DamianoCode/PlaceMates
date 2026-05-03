@@ -1,10 +1,11 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Camera, Image as ImageIcon, X } from "lucide-react";
+import { Camera, Image as ImageIcon, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { addPhotoAction } from "@/app/(app)/places/[id]/actions";
+import { compressImage } from "@/lib/compress-image";
 
 type State = { error: string } | { ok: true } | null;
 
@@ -20,6 +21,15 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
   const [dims, setDims] = useState<{ width: number; height: number } | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  // Phone cameras commonly produce 3-12 MB JPEGs that overshoot the
+  // Next.js Server Action body cap. Compress on the client before
+  // submission and surface progress so the user knows the wait isn't
+  // a freeze.
+  const [compressing, setCompressing] = useState(false);
+  const [compressionInfo, setCompressionInfo] = useState<{
+    originalKB: number;
+    compressedKB: number;
+  } | null>(null);
 
   const error = state && "error" in state ? state.error : null;
   const saved = !!(state && "ok" in state && state.ok === true);
@@ -43,10 +53,11 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     };
   }, []);
 
-  function setFile(file: File | null) {
+  async function setFile(file: File | null) {
     // Revoke the previous blob before creating a new one.
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     urlRef.current = null;
+    setCompressionInfo(null);
 
     if (!file) {
       setPreview(null);
@@ -54,10 +65,40 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
       setFileName(null);
       return;
     }
-    const url = URL.createObjectURL(file);
+
+    // Compress before everything else so dims, preview and the file
+    // input all reflect the final upload payload. Show a spinner —
+    // re-encoding a 12 MP photo on a low-end phone can easily take
+    // 1-3 seconds.
+    setCompressing(true);
+    let prepared: File;
+    try {
+      const result = await compressImage(file);
+      prepared = result.file;
+      if (result.wasCompressed) {
+        setCompressionInfo({
+          originalKB: Math.round(result.originalBytes / 1024),
+          compressedKB: Math.round(result.compressedBytes / 1024),
+        });
+      }
+    } finally {
+      setCompressing(false);
+    }
+
+    // Replace the file input's underlying file list with the
+    // compressed version so form submission picks up the smaller
+    // blob (the input still holds the original from the user's
+    // pick). DataTransfer is the cross-browser way to set .files.
+    if (fileInputRef.current) {
+      const dt = new DataTransfer();
+      dt.items.add(prepared);
+      fileInputRef.current.files = dt.files;
+    }
+
+    const url = URL.createObjectURL(prepared);
     urlRef.current = url;
     setPreview(url);
-    setFileName(file.name);
+    setFileName(prepared.name);
 
     // Read natural dimensions for server-side storage. The image stays
     // alive in the <img> tag; we do NOT revoke the URL here.
@@ -120,6 +161,13 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
         </div>
       )}
 
+      {compressing && !hasSelection && (
+        <div className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed bg-card text-xs text-muted-foreground">
+          <Loader2 size={14} className="animate-spin" />
+          Optymalizuję zdjęcie…
+        </div>
+      )}
+
       {hasSelection && (
         <div className="space-y-2">
           <div className="relative overflow-hidden rounded-xl border bg-muted">
@@ -141,13 +189,27 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
           {fileName && (
             <p className="truncate text-xs text-muted-foreground">{fileName}</p>
           )}
+          {compressionInfo && (
+            <p className="text-[11px] italic text-muted-foreground">
+              Skompresowano: {compressionInfo.originalKB} KB →{" "}
+              {compressionInfo.compressedKB} KB
+            </p>
+          )}
         </div>
       )}
 
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
 
-      <Button type="submit" disabled={pending || !hasSelection} className="w-full">
-        {pending ? "Wysyłam…" : "Dodaj zdjęcie"}
+      <Button
+        type="submit"
+        disabled={pending || compressing || !hasSelection}
+        className="w-full"
+      >
+        {pending
+          ? "Wysyłam…"
+          : compressing
+            ? "Optymalizuję…"
+            : "Dodaj zdjęcie"}
       </Button>
     </form>
   );
