@@ -32,6 +32,9 @@ export function AccountHeader({
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Compressed avatar held in a ref because no rendering depends on
+  // it — only the form-action wrapper reads it once on submit.
+  const preparedAvatarRef = useRef<File | null>(null);
   const [uploadState, uploadAction, uploading] = useActionState<AvatarState, FormData>(
     uploadAvatarAction,
     null,
@@ -59,30 +62,36 @@ export function AccountHeader({
       </span>
       <form
         ref={formRef}
-        action={uploadAction}
+        // Submit wrapper swaps the FormData "avatar" entry with the
+        // compressed file from the ref, sidestepping the DataTransfer
+        // / input.files mutation that's flaky on iOS Safari.
+        action={async (formData) => {
+          if (!preparedAvatarRef.current) return;
+          formData.set(
+            "avatar",
+            preparedAvatarRef.current,
+            preparedAvatarRef.current.name,
+          );
+          return uploadAction(formData);
+        }}
         className="relative flex-shrink-0"
       >
         <input
           ref={fileInputRef}
           type="file"
-          name="avatar"
           accept="image/*"
           className="sr-only"
           onChange={async (e) => {
             const picked = e.target.files?.[0];
-            if (!picked || !fileInputRef.current) return;
-            // Avatar uploads typically come from the same camera roll
-            // as place photos (3-12 MB JPEGs). Compress before
-            // auto-submitting so the server-action body cap doesn't
-            // reject them. Avatars are small in the UI anyway —
-            // 1.5 MB ceiling is generous for a 64-px circle.
+            if (!picked) return;
+            // Avatar uploads come from the same camera roll as place
+            // photos. Compress aggressively — the avatar only ever
+            // renders at 64-px in the UI.
             const { file } = await compressImage(picked, {
               maxSizeMB: 0.5,
               maxWidthOrHeight: 512,
             });
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInputRef.current.files = dt.files;
+            preparedAvatarRef.current = file;
             formRef.current?.requestSubmit();
           }}
         />
