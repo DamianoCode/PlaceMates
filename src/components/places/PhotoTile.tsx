@@ -1,17 +1,19 @@
 "use client";
 
-import { PhotoView } from "react-photo-view";
 import {
   setCoverPhotoAction,
   deletePhotoAction,
 } from "@/app/(app)/places/[id]/actions";
 import { CoverPhotoButton } from "./CoverPhotoButton";
 import { DeletePhotoButton } from "./DeletePhotoButton";
+import { usePhotoOpener } from "./PhotoGallery";
 
 /**
  * Single photo tile in the place detail grid. Visual frame + img +
- * shared cover/delete overlay buttons. The buttons are the same
- * components item tiles use; only the bound server actions differ.
+ * shared cover/delete overlay buttons. Clicking the image (anywhere
+ * outside the floating buttons) opens the lightbox via the gallery
+ * context — the carousel is single-source-of-truth so the same photo
+ * shown in both hero and grid registers exactly once.
  */
 export function PhotoTile({
   photoId,
@@ -24,17 +26,17 @@ export function PhotoTile({
   isCover: boolean;
   canDelete: boolean;
 }) {
+  const { openAt } = usePhotoOpener();
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-      <PhotoView src={url}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          className="h-full w-full cursor-zoom-in object-cover"
-        />
-      </PhotoView>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        onClick={() => openAt(photoId)}
+        className="h-full w-full cursor-zoom-in object-cover"
+      />
       <CoverPhotoButton
         photoId={photoId}
         isCover={isCover}
