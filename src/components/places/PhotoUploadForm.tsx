@@ -30,10 +30,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
   );
   const [preview, setPreview] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
-  const [compressionInfo, setCompressionInfo] = useState<{
-    originalKB: number;
-    compressedKB: number;
-  } | null>(null);
 
   const error = state && "error" in state ? state.error : null;
   const saved = !!(state && "ok" in state && state.ok === true);
@@ -64,7 +60,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     setPreparedFile(null);
     setPreview(null);
     setDims(null);
-    setCompressionInfo(null);
     setCompressing(false);
   }
 
@@ -76,7 +71,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     setPreparedFile(null);
     setPreview(null);
     setDims(null);
-    setCompressionInfo(null);
 
     if (!file) {
       setCompressing(false);
@@ -88,12 +82,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     try {
       const result = await compressImage(file);
       prepared = result.file;
-      if (result.wasCompressed) {
-        setCompressionInfo({
-          originalKB: Math.round(result.originalBytes / 1024),
-          compressedKB: Math.round(result.compressedBytes / 1024),
-        });
-      }
     } catch {
       // Defensive — compressImage already swallows internal errors,
       // but if anything bubbles we still want the picker usable.
@@ -207,12 +195,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
               <X size={16} />
             </button>
           </div>
-          {compressionInfo && (
-            <p className="text-[11px] italic text-muted-foreground">
-              Skompresowano: {compressionInfo.originalKB} KB →{" "}
-              {compressionInfo.compressedKB} KB
-            </p>
-          )}
         </div>
       )}
 
