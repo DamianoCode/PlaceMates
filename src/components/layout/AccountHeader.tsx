@@ -32,6 +32,10 @@ export function AccountHeader({
 
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // The compressed avatar file we'll send up. Stays in a ref because
+  // the only consumer is the form-action wrapper — no React render
+  // cares about its identity.
+  const preparedAvatarRef = useRef<File | null>(null);
   const [uploadState, uploadAction, uploading] = useActionState<AvatarState, FormData>(
     uploadAvatarAction,
     null,
@@ -59,30 +63,39 @@ export function AccountHeader({
       </span>
       <form
         ref={formRef}
-        action={uploadAction}
+        // Submit wrapper so we can swap in the compressed file from
+        // state instead of relying on input.files mutation (which is
+        // flaky on iOS Safari and was breaking the place-photo
+        // uploader). The hidden input only opens the OS picker.
+        action={async (formData) => {
+          if (!preparedAvatarRef.current) return;
+          formData.set(
+            "avatar",
+            preparedAvatarRef.current,
+            preparedAvatarRef.current.name,
+          );
+          return uploadAction(formData);
+        }}
         className="relative flex-shrink-0"
       >
         <input
           ref={fileInputRef}
           type="file"
-          name="avatar"
           accept="image/*"
           className="sr-only"
           onChange={async (e) => {
             const picked = e.target.files?.[0];
-            if (!picked || !fileInputRef.current) return;
+            if (!picked) return;
             // Avatar uploads typically come from the same camera roll
             // as place photos (3-12 MB JPEGs). Compress before
             // auto-submitting so the server-action body cap doesn't
             // reject them. Avatars are small in the UI anyway —
-            // 1.5 MB ceiling is generous for a 64-px circle.
+            // 0.5 MB / 512 px is plenty for a 64-px circle.
             const { file } = await compressImage(picked, {
               maxSizeMB: 0.5,
               maxWidthOrHeight: 512,
             });
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInputRef.current.files = dt.files;
+            preparedAvatarRef.current = file;
             formRef.current?.requestSubmit();
           }}
         />

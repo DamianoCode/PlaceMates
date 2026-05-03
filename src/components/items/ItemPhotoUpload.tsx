@@ -16,11 +16,13 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
     addItemPhotoAction,
     null,
   );
-  const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlRef = useRef<string | null>(null);
 
-  const [dims, setDims] = useState<{ width: number; height: number } | null>(null);
+  const [preparedFile, setPreparedFile] = useState<File | null>(null);
+  const [dims, setDims] = useState<{ width: number; height: number } | null>(
+    null,
+  );
   const [preview, setPreview] = useState<string | null>(null);
   const [compressing, setCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<{
@@ -38,7 +40,6 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
       toast.success("Zdjęcie dodane.");
     }
     prevSaved.current = saved;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved]);
 
   useEffect(() => {
@@ -47,18 +48,30 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
     };
   }, []);
 
-  async function setFile(file: File | null) {
+  function clear() {
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     urlRef.current = null;
+    setPreparedFile(null);
+    setPreview(null);
+    setDims(null);
     setCompressionInfo(null);
+    setCompressing(false);
+  }
+
+  async function handleFilePick(file: File | null) {
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = null;
+    setPreparedFile(null);
+    setPreview(null);
+    setDims(null);
+    setCompressionInfo(null);
+
     if (!file) {
-      setPreview(null);
-      setDims(null);
+      setCompressing(false);
       return;
     }
 
-    // Compress on the client to fit under the Server Action body cap
-    // — same path as PhotoUploadForm; see src/lib/compress-image.ts.
     setCompressing(true);
     let prepared: File;
     try {
@@ -70,24 +83,26 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
           compressedKB: Math.round(result.compressedBytes / 1024),
         });
       }
-    } finally {
+    } catch {
+      toast.error("Nie udało się przetworzyć zdjęcia.");
       setCompressing(false);
-    }
-
-    if (fileInputRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(prepared);
-      fileInputRef.current.files = dt.files;
+      return;
     }
 
     const url = URL.createObjectURL(prepared);
     urlRef.current = url;
-    setPreview(url);
     const probe = new Image();
     probe.onload = () => {
       setDims({ width: probe.naturalWidth, height: probe.naturalHeight });
     };
+    probe.onerror = () => {
+      toast.error("Podgląd niedostępny — spróbuj inny plik.");
+      clear();
+    };
     probe.src = url;
+    setPreview(url);
+    setPreparedFile(prepared);
+    setCompressing(false);
   }
 
   function openPicker(source: "camera" | "gallery") {
@@ -99,36 +114,30 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
     input.click();
   }
 
-  function clear() {
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setFile(null);
+  async function submit(formData: FormData) {
+    if (!preparedFile) return;
+    formData.set("photo", preparedFile, preparedFile.name);
+    return action(formData);
   }
 
-  const hasSelection = !!preview && !!dims;
+  const hasSelection = !!preparedFile && !!preview && !!dims;
 
   return (
-    <form ref={formRef} action={action} className="space-y-3">
+    <form action={submit} className="space-y-3">
       <input type="hidden" name="itemId" value={itemId} />
       <input type="hidden" name="width" value={dims?.width ?? 0} />
       <input type="hidden" name="height" value={dims?.height ?? 0} />
       <input
         ref={fileInputRef}
         type="file"
-        name="photo"
         accept="image/*"
-        required
         className="sr-only"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          void handleFilePick(e.target.files?.[0] ?? null);
+        }}
       />
 
-      {compressing && !hasSelection && (
-        <div className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed bg-card text-xs text-muted-foreground">
-          <Loader2 size={14} className="animate-spin" />
-          Optymalizuję zdjęcie…
-        </div>
-      )}
-
-      {!hasSelection && !compressing ? (
+      {!hasSelection && !compressing && (
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -147,7 +156,16 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
             <span className="text-xs font-medium">Z galerii</span>
           </button>
         </div>
-      ) : hasSelection ? (
+      )}
+
+      {compressing && (
+        <div className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed bg-card text-xs text-muted-foreground">
+          <Loader2 size={14} className="animate-spin" />
+          Optymalizuję zdjęcie…
+        </div>
+      )}
+
+      {hasSelection && (
         <div className="space-y-2">
           <div className="relative overflow-hidden rounded-xl border bg-muted">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -172,7 +190,7 @@ export function ItemPhotoUpload({ itemId }: { itemId: string }) {
             </p>
           )}
         </div>
-      ) : null}
+      )}
 
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
 

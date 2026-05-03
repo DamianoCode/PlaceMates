@@ -10,21 +10,25 @@ import { compressImage } from "@/lib/compress-image";
 type State = { error: string } | { ok: true } | null;
 
 export function PhotoUploadForm({ placeId }: { placeId: string }) {
-  const [state, action, pending] = useActionState<State, FormData>(addPhotoAction, null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [state, action, pending] = useActionState<State, FormData>(
+    addPhotoAction,
+    null,
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   // Hold the active object URL in a ref so we revoke it exactly once
   // — at selection change or on unmount. Revoking *before* the <img>
-  // paints is what caused the broken-icon preview.
+  // paints is what caused the broken-icon preview historically.
   const urlRef = useRef<string | null>(null);
 
-  const [dims, setDims] = useState<{ width: number; height: number } | null>(null);
+  // Compressed file lives entirely in React state; we never try to
+  // mutate input.files (DataTransfer is unreliable on iOS Safari and
+  // costs us a working preview when it silently fails). Form submit
+  // pulls this file via a wrapper around the action below.
+  const [preparedFile, setPreparedFile] = useState<File | null>(null);
+  const [dims, setDims] = useState<{ width: number; height: number } | null>(
+    null,
+  );
   const [preview, setPreview] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  // Phone cameras commonly produce 3-12 MB JPEGs that overshoot the
-  // Next.js Server Action body cap. Compress on the client before
-  // submission and surface progress so the user knows the wait isn't
-  // a freeze.
   const [compressing, setCompressing] = useState(false);
   const [compressionInfo, setCompressionInfo] = useState<{
     originalKB: number;
@@ -34,8 +38,9 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
   const error = state && "error" in state ? state.error : null;
   const saved = !!(state && "ok" in state && state.ok === true);
 
-  // Clear selection after a successful upload so the picker returns to
-  // its empty state and toast the success instead of leaving it inline.
+  // Clear selection after a successful upload so the picker returns
+  // to its empty state and toast the success instead of leaving it
+  // inline.
   const prevSaved = useRef(false);
   useEffect(() => {
     if (saved && !prevSaved.current) {
@@ -43,7 +48,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
       toast.success("Zdjęcie dodane.");
     }
     prevSaved.current = saved;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [saved]);
 
   // Revoke the current blob URL on unmount.
@@ -53,23 +57,32 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     };
   }, []);
 
-  async function setFile(file: File | null) {
-    // Revoke the previous blob before creating a new one.
+  function clearSelection() {
+    if (fileInputRef.current) fileInputRef.current.value = "";
     if (urlRef.current) URL.revokeObjectURL(urlRef.current);
     urlRef.current = null;
+    setPreparedFile(null);
+    setPreview(null);
+    setDims(null);
+    setCompressionInfo(null);
+    setCompressing(false);
+  }
+
+  async function handleFilePick(file: File | null) {
+    // Wipe previous selection up front so the user sees an immediate
+    // state change even before compression finishes.
+    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
+    urlRef.current = null;
+    setPreparedFile(null);
+    setPreview(null);
+    setDims(null);
     setCompressionInfo(null);
 
     if (!file) {
-      setPreview(null);
-      setDims(null);
-      setFileName(null);
+      setCompressing(false);
       return;
     }
 
-    // Compress before everything else so dims, preview and the file
-    // input all reflect the final upload payload. Show a spinner —
-    // re-encoding a 12 MP photo on a low-end phone can easily take
-    // 1-3 seconds.
     setCompressing(true);
     let prepared: File;
     try {
@@ -81,32 +94,32 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
           compressedKB: Math.round(result.compressedBytes / 1024),
         });
       }
-    } finally {
+    } catch {
+      // Defensive — compressImage already swallows internal errors,
+      // but if anything bubbles we still want the picker usable.
+      toast.error("Nie udało się przetworzyć zdjęcia.");
       setCompressing(false);
+      return;
     }
 
-    // Replace the file input's underlying file list with the
-    // compressed version so form submission picks up the smaller
-    // blob (the input still holds the original from the user's
-    // pick). DataTransfer is the cross-browser way to set .files.
-    if (fileInputRef.current) {
-      const dt = new DataTransfer();
-      dt.items.add(prepared);
-      fileInputRef.current.files = dt.files;
-    }
-
+    // Build the preview URL and read dimensions. Done after the await
+    // so React batches a single render with the final values.
     const url = URL.createObjectURL(prepared);
     urlRef.current = url;
-    setPreview(url);
-    setFileName(prepared.name);
-
-    // Read natural dimensions for server-side storage. The image stays
-    // alive in the <img> tag; we do NOT revoke the URL here.
     const probe = new Image();
     probe.onload = () => {
       setDims({ width: probe.naturalWidth, height: probe.naturalHeight });
     };
+    probe.onerror = () => {
+      // The compressed blob can't be decoded — treat the same as a
+      // failed compression so the user can retry with the original.
+      toast.error("Podgląd niedostępny — spróbuj inny plik.");
+      clearSelection();
+    };
     probe.src = url;
+    setPreview(url);
+    setPreparedFile(prepared);
+    setCompressing(false);
   }
 
   function openPicker(source: "camera" | "gallery") {
@@ -118,29 +131,37 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
     input.click();
   }
 
-  function clearSelection() {
-    if (fileInputRef.current) fileInputRef.current.value = "";
-    setFile(null);
+  // Action wrapper: replaces the <input type="file"> entry with the
+  // compressed file from state before delegating to the real action.
+  // This avoids the brittle DataTransfer dance — the file input only
+  // exists to trigger the OS picker; it never carries the upload
+  // payload.
+  async function submit(formData: FormData) {
+    if (!preparedFile) return;
+    formData.set("photo", preparedFile, preparedFile.name);
+    return action(formData);
   }
 
-  const hasSelection = !!preview && !!dims;
+  const hasSelection = !!preparedFile && !!preview && !!dims;
 
   return (
-    <form ref={formRef} action={action} className="space-y-3">
+    <form action={submit} className="space-y-3">
       <input type="hidden" name="placeId" value={placeId} />
       <input type="hidden" name="width" value={dims?.width ?? 0} />
       <input type="hidden" name="height" value={dims?.height ?? 0} />
+      {/* The input only opens the OS picker. The actual upload
+       *  payload comes from React state via the `submit` wrapper. */}
       <input
         ref={fileInputRef}
         type="file"
-        name="photo"
         accept="image/*"
-        required
         className="sr-only"
-        onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          void handleFilePick(e.target.files?.[0] ?? null);
+        }}
       />
 
-      {!hasSelection && (
+      {!hasSelection && !compressing && (
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
@@ -161,7 +182,7 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
         </div>
       )}
 
-      {compressing && !hasSelection && (
+      {compressing && (
         <div className="flex h-14 items-center justify-center gap-2 rounded-xl border border-dashed bg-card text-xs text-muted-foreground">
           <Loader2 size={14} className="animate-spin" />
           Optymalizuję zdjęcie…
@@ -186,9 +207,6 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
               <X size={16} />
             </button>
           </div>
-          {fileName && (
-            <p className="truncate text-xs text-muted-foreground">{fileName}</p>
-          )}
           {compressionInfo && (
             <p className="text-[11px] italic text-muted-foreground">
               Skompresowano: {compressionInfo.originalKB} KB →{" "}
@@ -198,7 +216,11 @@ export function PhotoUploadForm({ placeId }: { placeId: string }) {
         </div>
       )}
 
-      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <Button
         type="submit"
