@@ -107,10 +107,12 @@ export default async function PlaceDetailPage({
       />
 
       <section className="mx-auto max-w-2xl space-y-6 p-4">
-        {/* PhotoGallery wraps both the hero and the photo grid below
-         *  so swipe-between in the lightbox spans the entire set,
-         *  not just the hero strip. */}
-        <PhotoGallery>
+        {/* PhotoGallery owns the carousel state. Both the hero and
+         *  the grid tiles below call openAt(photoId) — the photos
+         *  array passed here is the single source of truth, so the
+         *  same photo clicked from anywhere opens at the same slot
+         *  and the counter never double-counts. */}
+        <PhotoGallery photos={photos.map((p) => ({ id: p.id, url: p.url }))}>
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}

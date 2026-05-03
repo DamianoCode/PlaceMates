@@ -6,13 +6,14 @@ import {
 } from "@/app/(app)/places/[id]/item-actions";
 import { CoverPhotoButton } from "@/components/places/CoverPhotoButton";
 import { DeletePhotoButton } from "@/components/places/DeletePhotoButton";
+import { usePhotoOpener } from "@/components/places/PhotoGallery";
 
 /**
- * Single photo tile in the item detail grid. Manage-surface only:
- * cover toggle + uploader delete. Lightbox-on-click is handled by
- * the hero (`<PhotoHero>`) which already registers every photo with
- * the carousel; wrapping these tiles too would double-count each
- * image (and made "1/2" appear with a single photo).
+ * Single photo tile in the item detail grid. Same shape and shared
+ * overlay buttons as the place `<PhotoTile>` — clicking the image
+ * opens the lightbox through the gallery context (no double-count
+ * with the hero because the photo array upstream is the single
+ * source of truth for the carousel).
  */
 export function ItemPhotoTile({
   photoId,
@@ -25,6 +26,7 @@ export function ItemPhotoTile({
   isCover: boolean;
   canDelete: boolean;
 }) {
+  const { openAt } = usePhotoOpener();
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -32,7 +34,8 @@ export function ItemPhotoTile({
         src={url}
         alt=""
         loading="lazy"
-        className="h-full w-full object-cover"
+        onClick={() => openAt(photoId)}
+        className="h-full w-full cursor-zoom-in object-cover"
       />
       <CoverPhotoButton
         photoId={photoId}

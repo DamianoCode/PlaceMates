@@ -59,9 +59,11 @@ export default async function ItemPage({
         fallbackHref={`/places/${id}`}
       />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
-        {/* PhotoGallery wraps hero + grid so the lightbox swipe
-         *  spans every photo of the item, not just the hero strip. */}
-        <PhotoGallery>
+        {/* PhotoGallery owns the carousel state — hero and grid
+         *  tiles both call openAt(photoId). Photos array is the
+         *  single source of truth so clicks from either surface
+         *  open at the same slot without double-counting. */}
+        <PhotoGallery photos={photos.map((p) => ({ id: p.id, url: p.url }))}>
         <PhotoHero
           photos={photos}
           fallback={

@@ -6,13 +6,14 @@ import {
 } from "@/app/(app)/places/[id]/actions";
 import { CoverPhotoButton } from "./CoverPhotoButton";
 import { DeletePhotoButton } from "./DeletePhotoButton";
+import { usePhotoOpener } from "./PhotoGallery";
 
 /**
- * Single photo tile in the place detail grid. This is the *manage*
- * surface — star (cover) and trash buttons. Lightbox-on-click lives
- * on the hero (`<PhotoHero>`), which already shows every photo as a
- * `<PhotoView>`; wrapping these tiles too would double-register each
- * image in the carousel and made "1/2" appear with a single photo.
+ * Single photo tile in the place detail grid. Visual frame + img +
+ * shared cover/delete overlay buttons. Clicking the image (anywhere
+ * outside the floating buttons) opens the lightbox via the gallery
+ * context — the carousel is single-source-of-truth so the same photo
+ * shown in both hero and grid registers exactly once.
  */
 export function PhotoTile({
   photoId,
@@ -25,6 +26,7 @@ export function PhotoTile({
   isCover: boolean;
   canDelete: boolean;
 }) {
+  const { openAt } = usePhotoOpener();
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -32,7 +34,8 @@ export function PhotoTile({
         src={url}
         alt=""
         loading="lazy"
-        className="h-full w-full object-cover"
+        onClick={() => openAt(photoId)}
+        className="h-full w-full cursor-zoom-in object-cover"
       />
       <CoverPhotoButton
         photoId={photoId}
