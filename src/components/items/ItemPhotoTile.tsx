@@ -1,6 +1,5 @@
 "use client";
 
-import { PhotoView } from "react-photo-view";
 import {
   deleteItemPhotoAction,
   setCoverItemPhotoAction,
@@ -9,10 +8,11 @@ import { CoverPhotoButton } from "@/components/places/CoverPhotoButton";
 import { DeletePhotoButton } from "@/components/places/DeletePhotoButton";
 
 /**
- * Single photo tile in the item detail grid. Same shape and shared
- * overlay buttons as the place `<PhotoTile>` — the only difference is
- * which server actions get bound. Cover toggle controls which photo
- * the item hero promotes; delete is uploader-only.
+ * Single photo tile in the item detail grid. Manage-surface only:
+ * cover toggle + uploader delete. Lightbox-on-click is handled by
+ * the hero (`<PhotoHero>`) which already registers every photo with
+ * the carousel; wrapping these tiles too would double-count each
+ * image (and made "1/2" appear with a single photo).
  */
 export function ItemPhotoTile({
   photoId,
@@ -27,15 +27,13 @@ export function ItemPhotoTile({
 }) {
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-      <PhotoView src={url}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          className="h-full w-full cursor-zoom-in object-cover"
-        />
-      </PhotoView>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={url}
+        alt=""
+        loading="lazy"
+        className="h-full w-full object-cover"
+      />
       <CoverPhotoButton
         photoId={photoId}
         isCover={isCover}
