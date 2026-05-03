@@ -7,6 +7,7 @@ import {
   addItemPhoto,
   createItem,
   deleteItem,
+  deleteItemPhoto,
   deleteItemRating,
   getItemForUser,
   upsertItemRating,
@@ -148,5 +149,25 @@ export async function deleteItemRatingAction(
     revalidatePath(`/places/${item.placeId}`);
     revalidatePath(`/places/${item.placeId}/items/${item.id}`);
   }
+  return { ok: true };
+}
+
+export type DeleteItemPhotoState = { error: string } | { ok: true } | null;
+
+export async function deleteItemPhotoAction(
+  _: DeleteItemPhotoState,
+  formData: FormData,
+): Promise<DeleteItemPhotoState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+
+  const photoId = formData.get("photoId") as string | null;
+  if (!photoId) return { error: "Brak zdjęcia." };
+
+  const result = await deleteItemPhoto(photoId, user.id);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${result.data.placeId}/items/${result.data.itemId}`);
+  revalidatePath(`/places/${result.data.placeId}`);
   return { ok: true };
 }

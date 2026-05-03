@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/card";
 import { ItemRateForm } from "@/components/items/ItemRateForm";
 import { ItemPhotoUpload } from "@/components/items/ItemPhotoUpload";
+import { ItemPhotoTile } from "@/components/items/ItemPhotoTile";
+import { PhotoHero } from "@/components/places/PhotoHero";
 import { StarRating } from "@/components/places/StarRating";
 import { DeleteItemButton } from "@/components/items/DeleteItemButton";
 
@@ -56,32 +58,19 @@ export default async function ItemPage({
         fallbackHref={`/places/${id}`}
       />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
-        {/* Hero gallery — horizontal scroll of photos, or gradient placeholder. */}
-        {photos.length > 0 ? (
-          <div className="flex gap-2 overflow-x-auto no-scrollbar">
-            {photos.map((p) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={p.id}
-                src={p.url}
-                alt=""
-                loading="lazy"
-                className="h-48 w-64 flex-shrink-0 rounded-2xl object-cover"
-              />
-            ))}
-          </div>
-        ) : (
-          <div
-            aria-hidden
-            className="flex h-40 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
-          >
+        {/* Cinematic hero matching the place page — same `<PhotoHero>`,
+         *  with a generic dish icon for the empty state since items
+         *  don't carry a category slug of their own. */}
+        <PhotoHero
+          photos={photos}
+          fallback={
             <UtensilsCrossed
-              size={56}
+              size={72}
               strokeWidth={1.25}
               className="text-primary/60"
             />
-          </div>
-        )}
+          }
+        />
 
         {/* Summary row with big score + stars. */}
         <div className="flex items-end justify-between gap-4">
@@ -164,13 +153,11 @@ export default async function ItemPage({
             {photos.length > 0 && (
               <ul className="grid grid-cols-3 gap-2">
                 {photos.map((p) => (
-                  <li key={p.id} className="aspect-square overflow-hidden rounded-lg">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={p.url}
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover"
+                  <li key={p.id}>
+                    <ItemPhotoTile
+                      photoId={p.id}
+                      url={p.url}
+                      canDelete={p.userId === user.id}
                     />
                   </li>
                 ))}
