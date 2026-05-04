@@ -128,7 +128,10 @@ export async function listPlacesForUser(
          ORDER BY ph2.is_cover DESC, ph2.created_at DESC
          LIMIT 1
       ) ph ON true
-     WHERE ${inArray(places.groupId, groupIds)}
+     -- Hand-rolled IN list against the alias p. Drizzle inArray
+     -- would emit fully-qualified "places"."group_id" which Postgres
+     -- rejects because the FROM clause only exposes the alias.
+     WHERE p.group_id IN (${sql.join(groupIds.map((g) => sql`${g}`), sql`, `)})
            ${bboxExpr}
      LIMIT 5000
   `);
