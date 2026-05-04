@@ -15,7 +15,7 @@ export function PageSkeleton({
 }) {
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/85 px-3 py-2 backdrop-blur">
+      <header className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/85 px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] backdrop-blur">
         <span
           aria-hidden
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground/40"
