@@ -161,7 +161,11 @@ export function MapScreen({
         }}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 top-2 z-10 px-2">
+      {/* Pills sit above the map, but on iOS PWA the system status bar
+       *  paints over the top of the viewport. Push by safe-area-inset-top
+       *  so the pills clear the notch + clock area; +0.5rem keeps the
+       *  same breathing room as before on devices without an inset. */}
+      <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-10 px-2">
         <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/90 p-1 shadow-md backdrop-blur no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
           <FilterPill
             active={!categoryFilter && setFilter === "none"}
