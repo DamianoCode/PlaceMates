@@ -222,6 +222,26 @@ export function MapScreen({
 
       <PlacePreviewSheet
         placeId={selectedPlaceId}
+        // Initial preview lifted from the marker the user just tapped
+        // — sheet renders synchronously with name / category / overall
+        // / photo, no spinner. The query then fills in groupBreakdown
+        // in the background for the rare multi-group canonical.
+        initialPreview={
+          selectedPlaceId
+            ? (() => {
+                const m = places.find((p) => p.id === selectedPlaceId);
+                if (!m) return null;
+                return {
+                  id: m.id,
+                  name: m.name,
+                  categoryName: m.categoryName,
+                  overall: m.overall,
+                  ratingCount: m.ratingCount,
+                  photoUrl: m.photoUrl,
+                };
+              })()
+            : null
+        }
         onClose={() => setSelectedPlaceId(null)}
       />
 
