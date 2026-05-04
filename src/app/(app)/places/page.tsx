@@ -28,7 +28,11 @@ function parseDir(raw: string | undefined): PlacesSortDir {
   return raw === "asc" ? "asc" : "desc";
 }
 function parseSet(raw: string | undefined): PlacesSetFilter | null {
-  return raw === "wishlist" || raw === "favorites" ? raw : null;
+  return raw === "wishlist" ||
+    raw === "favorites" ||
+    raw === "group-wishlist"
+    ? raw
+    : null;
 }
 
 export default async function PlacesPage({
@@ -70,9 +74,11 @@ export default async function PlacesPage({
             ? "Nic do odwiedzenia. Zaznacz miejsce zakładką w nagłówku jego widoku."
             : setFilter === "favorites"
               ? "Brak ulubionych. Zaznacz miejsce serduszkiem w nagłówku jego widoku."
-              : activeCategory
-                ? "Brak miejsc w tej kategorii."
-                : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
+              : setFilter === "group-wishlist"
+                ? "Wasza grupa nie ma jeszcze nic na wspólnej liście do odwiedzenia."
+                : activeCategory
+                  ? "Brak miejsc w tej kategorii."
+                  : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
       </p>
     ) : (
       <PlacesVirtualList cards={cards} />
