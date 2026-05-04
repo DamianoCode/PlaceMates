@@ -1,11 +1,13 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import {
+  categories,
   groupMembers,
   itemPhotos,
   photos,
   placeItems,
   places,
+  ratings,
 } from "@/infra/db/schema";
 import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
 import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
@@ -20,12 +22,33 @@ export type PlaceMarker = {
   id: string;
   name: string;
   categoryId: string;
+  /** Pre-baked from the categories join so the preview sheet can
+   *  render its subtitle synchronously, with no follow-up fetch. */
+  categoryName: string;
   lat: number;
   lng: number;
   canonicalPlaceId: string | null;
+  /** Pre-baked rating aggregate so the preview sheet shows score +
+   *  count instantly on pin tap. Null when the place has no ratings. */
+  overall: number | null;
+  ratingCount: number;
+  /** Cover photo URL (preferred) or newest photo. Null when none. */
+  photoUrl: string | null;
 };
 
-export type PlaceDetail = PlaceMarker & {
+/**
+ * Detail-page payload. Intentionally NOT extending `PlaceMarker` —
+ * the preview fields (categoryName, overall, ratingCount, photoUrl)
+ * are baked into markers for the map sheet but the detail page
+ * fetches richer per-section data of its own.
+ */
+export type PlaceDetail = {
+  id: string;
+  name: string;
+  categoryId: string;
+  lat: number;
+  lng: number;
+  canonicalPlaceId: string | null;
   address: string | null;
   createdAt: Date;
   groupId: string;
@@ -39,7 +62,18 @@ async function userGroupIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-/** Places in user's groups, filtered by bbox (optional). */
+/**
+ * Places in user's groups, filtered by bbox (optional). Each marker
+ * carries enough preview data (name, category, overall, count, photo)
+ * to render the preview sheet synchronously when the pin is tapped —
+ * the previous flow round-tripped /api/places/[id]/preview on every
+ * tap, which felt laggy on 4G mobile (200-500 ms spinner).
+ *
+ * The expensive `groupBreakdown` (per-group aggregates across a
+ * shared canonical) is intentionally NOT included here; it only
+ * matters for ~10% of pins and stays as the lazy follow-up fetch in
+ * the preview sheet.
+ */
 export async function listPlacesForUser(
   userId: string,
   bbox?: BBox,
@@ -49,7 +83,7 @@ export async function listPlacesForUser(
 
   const bboxExpr = bbox
     ? sql`AND ST_Intersects(
-          ${places.location},
+          p.location,
           ST_MakeEnvelope(${bbox.west}, ${bbox.south}, ${bbox.east}, ${bbox.north}, 4326)::geography
         )`
     : sql``;
@@ -58,26 +92,65 @@ export async function listPlacesForUser(
     id: string;
     name: string;
     category_id: string;
+    category_name: string;
     canonical_place_id: string | null;
     lat: number;
     lng: number;
+    avg: string | null;
+    cnt: number;
+    storage_path: string | null;
   }>(sql`
-    SELECT id, name, category_id, canonical_place_id,
-           ST_Y(${places.location}::geometry)::float8 AS lat,
-           ST_X(${places.location}::geometry)::float8 AS lng
-      FROM ${places}
-     WHERE ${inArray(places.groupId, groupIds)}
+    SELECT p.id,
+           p.name,
+           p.category_id,
+           c.name AS category_name,
+           p.canonical_place_id,
+           ST_Y(p.location::geometry)::float8 AS lat,
+           ST_X(p.location::geometry)::float8 AS lng,
+           rs.avg AS avg,
+           COALESCE(rs.cnt, 0)::int AS cnt,
+           ph.storage_path AS storage_path
+      FROM ${places} p
+      JOIN ${categories} c ON c.id = p.category_id
+      -- Rating aggregate per place. LEFT JOIN so unrated places still
+      -- appear in the result.
+      LEFT JOIN LATERAL (
+        SELECT AVG(r.overall) AS avg, COUNT(*)::int AS cnt
+          FROM ${ratings} r
+         WHERE r.place_id = p.id
+      ) rs ON true
+      -- One photo per place: cover-first, newest as tiebreak. LEFT
+      -- JOIN keeps photo-less places visible.
+      LEFT JOIN LATERAL (
+        SELECT ph2.storage_path
+          FROM ${photos} ph2
+         WHERE ph2.place_id = p.id
+         ORDER BY ph2.is_cover DESC, ph2.created_at DESC
+         LIMIT 1
+      ) ph ON true
+     -- Hand-rolled IN list against the alias p. Drizzle inArray
+     -- would emit fully-qualified "places"."group_id" which Postgres
+     -- rejects because the FROM clause only exposes the alias.
+     WHERE p.group_id IN (${sql.join(groupIds.map((g) => sql`${g}`), sql`, `)})
            ${bboxExpr}
      LIMIT 5000
   `);
+
+  const storage = await getStorage();
 
   return rows.map((r) => ({
     id: r.id,
     name: r.name,
     categoryId: r.category_id,
+    categoryName: r.category_name,
     canonicalPlaceId: r.canonical_place_id,
     lat: r.lat,
     lng: r.lng,
+    overall: r.avg !== null ? Math.round(Number(r.avg) * 100) / 100 : null,
+    ratingCount: r.cnt,
+    photoUrl: r.storage_path
+      ? storage.publicUrl(PHOTO_BUCKET, r.storage_path)
+      : null,
   }));
 }
 

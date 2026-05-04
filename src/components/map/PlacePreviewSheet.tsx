@@ -22,23 +22,43 @@ type Preview = {
   groupBreakdown: GroupBreakdownEntry[] | null;
 };
 
+/**
+ * Subset of the preview the parent already has from the marker —
+ * everything needed to render the sheet header without waiting for a
+ * round-trip. `groupBreakdown` is intentionally NOT here because it
+ * lives on the canonical-shared-across-groups path that the marker
+ * SQL doesn't (and shouldn't) compute eagerly.
+ */
+export type InitialPreview = Omit<Preview, "groupBreakdown">;
+
 export function PlacePreviewSheet({
   placeId,
+  initialPreview,
   onClose,
 }: {
   placeId: string | null;
+  initialPreview?: InitialPreview | null;
   onClose: () => void;
 }) {
-  const { data: preview, isLoading } = useQuery({
+  // The marker payload already covers everything the user sees on
+  // first paint. We feed it as `placeholderData` so the sheet renders
+  // synchronously, then the query fills in `groupBreakdown` (and any
+  // server-side updates) once it lands.
+  const placeholder: Preview | undefined = initialPreview
+    ? { ...initialPreview, groupBreakdown: null }
+    : undefined;
+
+  const { data: preview } = useQuery({
     queryKey: ["place-preview", placeId],
     enabled: placeId !== null,
+    placeholderData: placeholder,
     queryFn: async () => {
       if (!placeId) return null;
       try {
         return await fetchJson<Preview>(`/api/places/${placeId}/preview`);
       } catch (err) {
-        // 404 = the place was deleted between the marker render and the
-        // sheet open. Treat as "no preview" instead of an error state.
+        // 404 = the place was deleted between the marker render and
+        // the sheet open. Treat as "no preview" instead of error.
         if (err instanceof HttpError && err.status === 404) return null;
         throw err;
       }
@@ -73,7 +93,7 @@ export function PlacePreviewSheet({
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <h2 className="truncate text-base font-semibold">
-                  {preview?.name ?? (isLoading ? "Ładuję…" : "")}
+                  {preview?.name ?? ""}
                 </h2>
                 <p className="truncate text-xs text-muted-foreground">
                   {preview?.categoryName ?? ""}
