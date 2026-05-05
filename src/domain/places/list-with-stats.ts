@@ -4,6 +4,7 @@ import {
   categories,
   favorites,
   groupMembers,
+  groupWishlist,
   photos,
   places,
   ratings,
@@ -22,6 +23,7 @@ export type PlaceCard = {
   ratingCount: number;
   isWishlisted: boolean;
   isFavorite: boolean;
+  isGroupWishlisted: boolean;
   createdAt: Date;
 };
 
@@ -29,12 +31,16 @@ export type PlacesSortBy = "recent" | "name" | "rating";
 export type PlacesSortDir = "asc" | "desc";
 
 /**
- * "Set" filter — restrict the list to a saved subset (wishlist or
- * favourites). Applied AFTER stats are fetched, so it reuses the same
- * isWishlisted / isFavorite flags the cards already carry. Combines
- * with the category filter (intersection: ulubione restauracje, etc.).
+ * "Set" filter — restrict the list to a saved subset.
+ *   - "wishlist"      → personal "do odwiedzenia"
+ *   - "favorites"     → personal "ulubione"
+ *   - "group-wishlist" → shared with the group ("planujemy razem")
+ *
+ * Applied AFTER stats are fetched, reuses isWishlisted / isFavorite /
+ * isGroupWishlisted flags the cards already carry. Combines with the
+ * category filter (intersection: grupowo do odwiedzenia + restauracje).
  */
-export type PlacesSetFilter = "wishlist" | "favorites";
+export type PlacesSetFilter = "wishlist" | "favorites" | "group-wishlist";
 
 export type ListPlacesOptions = {
   query?: string;
@@ -108,7 +114,7 @@ export async function listPlacesWithStats(
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
 
-  const [statRows, photoRows, wishRows, favRows] = await Promise.all([
+  const [statRows, photoRows, wishRows, favRows, groupWishRows] = await Promise.all([
     db
       .select({
         placeId: ratings.placeId,
@@ -140,6 +146,23 @@ export async function listPlacesWithStats(
       .select({ id: favorites.placeId })
       .from(favorites)
       .where(and(eq(favorites.userId, userId), inArray(favorites.placeId, ids))),
+
+    // Group wishlist entries the user can see (i.e. where they're a
+    // member). The join hop through group_members keeps us honest if
+    // a place ever ends up in a group the user is no longer in.
+    db
+      .select({ id: groupWishlist.placeId })
+      .from(groupWishlist)
+      .innerJoin(
+        groupMembers,
+        eq(groupMembers.groupId, groupWishlist.groupId),
+      )
+      .where(
+        and(
+          eq(groupMembers.userId, userId),
+          inArray(groupWishlist.placeId, ids),
+        ),
+      ),
   ]);
 
   const statsBy = new Map(
@@ -151,6 +174,7 @@ export async function listPlacesWithStats(
   }
   const wishSet = new Set(wishRows.map((r) => r.id));
   const favSet = new Set(favRows.map((r) => r.id));
+  const groupWishSet = new Set(groupWishRows.map((r) => r.id));
 
   const storage = await getStorage();
 
@@ -168,17 +192,20 @@ export async function listPlacesWithStats(
       ratingCount: s?.cnt ?? 0,
       isWishlisted: wishSet.has(r.id),
       isFavorite: favSet.has(r.id),
+      isGroupWishlisted: groupWishSet.has(r.id),
       createdAt: r.createdAt,
     };
   });
 
   // Apply the set filter after stats are merged — cheaper than
-  // adding another join and lets a single SQL pass back the union of
-  // both flags for downstream callers (e.g. PlaceCard icons).
+  // adding another join and lets a single SQL pass back all three
+  // flags for downstream callers (PlaceCard icons + filter pills).
   const filtered = setFilter
-    ? cards.filter((c) =>
-        setFilter === "wishlist" ? c.isWishlisted : c.isFavorite,
-      )
+    ? cards.filter((c) => {
+        if (setFilter === "wishlist") return c.isWishlisted;
+        if (setFilter === "favorites") return c.isFavorite;
+        return c.isGroupWishlisted;
+      })
     : cards;
 
   return sortCards(filtered, sortBy, sortDir);

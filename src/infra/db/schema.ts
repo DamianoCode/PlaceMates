@@ -242,6 +242,34 @@ export const wishlist = pgTable(
   (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
 );
 
+// Shared "do odwiedzenia" list at the GROUP level — every member
+// sees and can edit it. Coexists with the personal `wishlist`
+// (private to one user) so a place can be on either, both, or
+// neither — the two lists answer different questions.
+//
+// Each pin is recorded once per (place, group) — duplicates within
+// the same group collapse via the primary key. `addedBy` lets the
+// UI attribute "added by Asia" without changing who owns the entry.
+export const groupWishlist = pgTable(
+  "group_wishlist",
+  {
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    addedBy: uuid("added_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.placeId, t.groupId] }),
+    index("group_wishlist_group_idx").on(t.groupId),
+  ],
+);
+
 export const favorites = pgTable(
   "favorites",
   {

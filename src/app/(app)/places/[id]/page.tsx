@@ -22,6 +22,7 @@ import { listPhotosForPlace } from "@/domain/photos/service";
 import { listItemsForPlace } from "@/domain/items/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
 import { isFavorite } from "@/domain/favorites/service";
+import { getGroupWishlistEntry } from "@/domain/group-wishlist/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PhotoGallery } from "@/components/places/PhotoGallery";
@@ -31,6 +32,7 @@ import { VisitForm } from "@/components/places/VisitForm";
 import { PhotoUploadForm } from "@/components/places/PhotoUploadForm";
 import { WishlistHeartButton } from "@/components/places/WishlistHeartButton";
 import { FavoriteHeartButton } from "@/components/places/FavoriteHeartButton";
+import { GroupWishlistButton } from "@/components/places/GroupWishlistButton";
 import { ShareRating } from "@/components/places/ShareRating";
 import { PlaceHero } from "@/components/places/PlaceHero";
 import { PhotoTile } from "@/components/places/PhotoTile";
@@ -61,6 +63,7 @@ export default async function PlaceDetailPage({
     myRating,
     wish,
     fav,
+    groupWish,
     canEdit,
     items,
   ] = await Promise.all([
@@ -71,6 +74,7 @@ export default async function PlaceDetailPage({
     getUserRating(id, user.id),
     isOnWishlist(id, user.id),
     isFavorite(id, user.id),
+    getGroupWishlistEntry(id),
     canUserEditPlace(id, user.id),
     listItemsForPlace(id, user.id),
   ]);
@@ -102,6 +106,7 @@ export default async function PlaceDetailPage({
           <div className="flex items-center gap-0.5">
             <FavoriteHeartButton placeId={id} initial={fav} />
             <WishlistHeartButton placeId={id} initial={wish} />
+            <GroupWishlistButton placeId={id} initial={!!groupWish} />
           </div>
         }
       />

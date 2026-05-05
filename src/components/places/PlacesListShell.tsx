@@ -11,6 +11,7 @@ import {
   Heart,
   Loader2,
   Star,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -124,6 +125,20 @@ export function PlacesListShell({
           }
         >
           Ulubione
+        </PillButton>
+        <PillButton
+          active={optimistic.set === "group-wishlist"}
+          icon={<Users size={12} />}
+          onClick={() =>
+            navigate({
+              set:
+                optimistic.set === "group-wishlist"
+                  ? null
+                  : "group-wishlist",
+            })
+          }
+        >
+          Grupowo
         </PillButton>
       </nav>
 

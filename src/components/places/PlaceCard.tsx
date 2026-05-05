@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bookmark, Heart, Star } from "lucide-react";
+import { Bookmark, Heart, Star, Users } from "lucide-react";
 import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats";
 import { CategoryIcon } from "@/components/map/category-icons";
 
@@ -49,6 +49,13 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
                 size={14}
                 className="flex-shrink-0 fill-primary stroke-primary"
                 aria-label="Do odwiedzenia"
+              />
+            )}
+            {place.isGroupWishlisted && (
+              <Users
+                size={14}
+                className="flex-shrink-0 fill-primary/20 stroke-primary"
+                aria-label="Grupowo do odwiedzenia"
               />
             )}
           </div>
