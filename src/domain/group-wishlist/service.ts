@@ -3,6 +3,7 @@ import { db } from "@/infra/db/client";
 import {
   groupMembers,
   groupWishlist,
+  groups,
   places,
   profiles,
 } from "@/infra/db/schema";
@@ -148,4 +149,51 @@ export async function groupWishlistPlaceIdsForUser(
     )
     .where(eq(groupMembers.userId, userId));
   return new Set(rows.map((r) => r.placeId));
+}
+
+/**
+ * Per-group breakdown of group-wishlist place ids for the user.
+ * Returns one entry per group the user is in that has anything on its
+ * shared wishlist; groups with empty wishlists are dropped (the UI uses
+ * `.length >= 2` to decide whether the per-group narrow row is even
+ * worth showing). Powers the map's per-group pill row.
+ */
+export async function groupWishlistByGroupForUser(
+  userId: string,
+): Promise<Array<{ id: string; name: string; placeIds: string[] }>> {
+  const rows = await db
+    .select({
+      placeId: groupWishlist.placeId,
+      groupId: groupWishlist.groupId,
+      groupName: groups.name,
+    })
+    .from(groupWishlist)
+    .innerJoin(
+      groupMembers,
+      eq(groupMembers.groupId, groupWishlist.groupId),
+    )
+    .innerJoin(groups, eq(groups.id, groupWishlist.groupId))
+    .where(eq(groupMembers.userId, userId));
+
+  const byGroup = new Map<
+    string,
+    { name: string; placeIds: Set<string> }
+  >();
+  for (const r of rows) {
+    const existing = byGroup.get(r.groupId);
+    if (existing) existing.placeIds.add(r.placeId);
+    else
+      byGroup.set(r.groupId, {
+        name: r.groupName,
+        placeIds: new Set([r.placeId]),
+      });
+  }
+  return Array.from(byGroup.entries())
+    .map(([id, v]) => ({
+      id,
+      name: v.name,
+      placeIds: Array.from(v.placeIds),
+    }))
+    // Stable alpha order — matches how groups appear on /places.
+    .sort((a, b) => a.name.localeCompare(b.name, "pl"));
 }

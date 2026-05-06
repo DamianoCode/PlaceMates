@@ -52,11 +52,28 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
               />
             )}
             {place.isGroupWishlisted && (
-              <Users
-                size={14}
-                className="flex-shrink-0 fill-primary/20 stroke-primary"
-                aria-label="Grupowo do odwiedzenia"
-              />
+              <span
+                title={
+                  place.groupWishlistedIn.length > 0
+                    ? `Grupowo do odwiedzenia: ${place.groupWishlistedIn
+                        .map((g) => g.name)
+                        .join(", ")}`
+                    : "Grupowo do odwiedzenia"
+                }
+                className="inline-flex flex-shrink-0"
+              >
+                <Users
+                  size={14}
+                  className="fill-primary/20 stroke-primary"
+                  aria-label={
+                    place.groupWishlistedIn.length > 0
+                      ? `Grupowo do odwiedzenia: ${place.groupWishlistedIn
+                          .map((g) => g.name)
+                          .join(", ")}`
+                      : "Grupowo do odwiedzenia"
+                  }
+                />
+              </span>
             )}
           </div>
           <p className="truncate text-xs italic text-muted-foreground">
@@ -65,6 +82,19 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
           {place.address && (
             <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground/80">
               {place.address}
+            </p>
+          )}
+          {/* Multi-group attribution — only renders when the canonical
+           *  has siblings in another of the user's groups. The chip
+           *  signals "this card collapses N places", so the user
+           *  knows why ratings/count look richer than a fresh add. */}
+          {place.availableInGroups.length >= 2 && (
+            <p className="mt-0.5 line-clamp-1 inline-flex items-center gap-1 text-[11px] text-primary/80">
+              <Users size={11} className="flex-shrink-0" />
+              <span className="truncate">
+                W:{" "}
+                {place.availableInGroups.map((g) => g.name).join(" · ")}
+              </span>
             </p>
           )}
         </div>

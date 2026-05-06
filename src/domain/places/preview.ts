@@ -3,6 +3,7 @@ import { db } from "@/infra/db/client";
 import {
   categories,
   groupMembers,
+  groups,
   photos,
   places,
 } from "@/infra/db/schema";
@@ -19,6 +20,11 @@ export type PlacePreview = {
   id: string;
   name: string;
   categoryName: string;
+  /** Owning group of the *clicked* place (the one whose preview was
+   *  requested). Distinct from `groupBreakdown` which spans the shared
+   *  canonical across multiple groups. */
+  groupId: string;
+  groupName: string;
   /** Overall average across every group the user can see for this canonical. */
   overall: number | null;
   ratingCount: number;
@@ -42,9 +48,12 @@ export async function getPlacePreview(
       name: places.name,
       categoryName: categories.name,
       canonicalPlaceId: places.canonicalPlaceId,
+      groupId: places.groupId,
+      groupName: groups.name,
     })
     .from(places)
     .innerJoin(categories, eq(categories.id, places.categoryId))
+    .innerJoin(groups, eq(groups.id, places.groupId))
     .innerJoin(groupMembers, eq(groupMembers.groupId, places.groupId))
     .where(and(eq(places.id, placeId), eq(groupMembers.userId, userId)))
     .limit(1);
@@ -106,6 +115,8 @@ export async function getPlacePreview(
     id: row.id,
     name: row.name,
     categoryName: row.categoryName,
+    groupId: row.groupId,
+    groupName: row.groupName,
     overall: overall !== null ? Math.round(overall * 100) / 100 : null,
     ratingCount: totalCount,
     photoUrl,

@@ -11,7 +11,11 @@ import {
   Users,
 } from "lucide-react";
 import { getAuth } from "@/infra/auth";
-import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
+import {
+  canUserEditPlace,
+  getPlaceForUser,
+  getSharePlaceAvailability,
+} from "@/domain/places/service";
 import { getCategory } from "@/domain/categories/service";
 import {
   getUserRating,
@@ -39,6 +43,7 @@ import { PhotoTile } from "@/components/places/PhotoTile";
 import { StatPill } from "@/components/places/StatPill";
 import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
+import { SharePlaceButton } from "@/components/places/SharePlaceButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
 import { RatingsByGroup } from "@/components/places/RatingsByGroup";
@@ -66,6 +71,7 @@ export default async function PlaceDetailPage({
     groupWish,
     canEdit,
     items,
+    shareAvailability,
   ] = await Promise.all([
     getCategory(place.categoryId),
     listRatingsForPlaceAcrossGroups(id, user.id),
@@ -77,6 +83,7 @@ export default async function PlaceDetailPage({
     getGroupWishlistEntry(id),
     canUserEditPlace(id, user.id),
     listItemsForPlace(id, user.id),
+    getSharePlaceAvailability(id, user.id),
   ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -189,6 +196,12 @@ export default async function PlaceDetailPage({
               <PencilLine size={16} />
               Edytuj
             </Link>
+          )}
+          {shareAvailability && shareAvailability.availableTargets.length > 0 && (
+            <SharePlaceButton
+              placeId={id}
+              targets={shareAvailability.availableTargets}
+            />
           )}
         </div>
 

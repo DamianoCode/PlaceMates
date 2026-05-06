@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import { MapPin, Pin, Search, Sparkles, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -35,20 +35,29 @@ type NearbyHit = {
 };
 
 type Category = { id: string; slug: string; name: string };
-type Group = { id: string; name: string };
+type Group = { id: string; name: string; categories: Category[] };
 
 type Mode = "search" | "pin";
 
 export function NewPlaceForm({
-  categories,
   groups,
   initialPick,
 }: {
-  categories: Category[];
+  /** Each group carries its own category list. Categories may differ
+   *  across groups (per-group + globals), so swapping groups swaps the
+   *  category dropdown's options. */
   groups: Group[];
   /** Pre-selected lat/lng — forces the form to open in "pin" mode. */
   initialPick?: { lat: number; lng: number };
 }) {
+  const [groupId, setGroupId] = useState<string>(groups[0]?.id ?? "");
+  const selectedGroup = groups.find((g) => g.id === groupId) ?? groups[0];
+  // Memoised so the category-reset effect doesn't see a fresh array on
+  // every render and re-trigger needlessly.
+  const categories = useMemo(
+    () => selectedGroup?.categories ?? [],
+    [selectedGroup],
+  );
   const [state, action, pending] = useActionState<CreatePlaceState, FormData>(
     createPlaceAction,
     null,
@@ -71,6 +80,21 @@ export function NewPlaceForm({
   const [categoryId, setCategoryId] = useState<string>("");
   const [dismissedNearby, setDismissedNearby] = useState(false);
   const selectedCategory = categories.find((c) => c.id === categoryId) ?? null;
+
+  // Group switch invalidates the current category pick — the new
+  // group's list may not contain it. Defer with queueMicrotask to
+  // satisfy react-compiler's set-state-in-effect rule.
+  useEffect(() => {
+    if (!categoryId) return;
+    if (categories.some((c) => c.id === categoryId)) return;
+    let abort = false;
+    queueMicrotask(() => {
+      if (!abort) setCategoryId("");
+    });
+    return () => {
+      abort = true;
+    };
+  }, [categories, categoryId]);
 
   // Stash the user's last map camera once on mount and use it as a
   // proximity hint for the search API. Without this Photon/Geoapify
@@ -154,7 +178,7 @@ export function NewPlaceForm({
 
   return (
     <form action={action} className="space-y-5">
-      <input type="hidden" name="groupId" value={groups[0]?.id ?? ""} />
+      <input type="hidden" name="groupId" value={groupId} />
       {picked && (
         <>
           <input type="hidden" name="lat" value={picked.lat} />
@@ -297,6 +321,31 @@ export function NewPlaceForm({
           key={picked?.name ?? ""}
         />
       </div>
+
+      {/* Group picker only shows for multi-group users. Single-group
+       *  flow stays UI-identical to the previous version — the hidden
+       *  groupId input above carries the same value as before. */}
+      {groups.length >= 2 && (
+        <div className="space-y-2">
+          <Label htmlFor="groupSelect">Grupa</Label>
+          <select
+            id="groupSelect"
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            className="field-base h-11"
+          >
+            {groups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Miejsce pojawi się na mapie tej grupy i tylko jej członkowie
+            zobaczą oceny.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="categoryId">Kategoria</Label>

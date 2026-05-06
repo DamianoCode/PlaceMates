@@ -5,6 +5,7 @@ import { listCategoriesForGroup } from "@/domain/categories/service";
 import { listPlacesForUser } from "@/domain/places/service";
 import { wishlistedIds } from "@/domain/wishlist/service";
 import { favoriteIds } from "@/domain/favorites/service";
+import { groupWishlistByGroupForUser } from "@/domain/group-wishlist/service";
 import { MapScreen } from "@/components/map/MapScreen";
 
 type Search = Promise<{
@@ -31,11 +32,12 @@ export default async function MapPage({
 
   const groups = await listUserGroups(user.id);
   const primaryGroupId = groups[0]?.id ?? null;
-  const [cats, places, wishIds, favIds] = await Promise.all([
+  const [cats, places, wishIds, favIds, groupWishByGroup] = await Promise.all([
     primaryGroupId ? listCategoriesForGroup(primaryGroupId) : Promise.resolve([]),
     listPlacesForUser(user.id),
     wishlistedIds(user.id),
     favoriteIds(user.id),
+    groupWishlistByGroupForUser(user.id),
   ]);
 
   // Optional ?lat=&lng=&zoom=&place= deeplink lets /places/[id]
@@ -67,6 +69,7 @@ export default async function MapPage({
       places={places}
       wishlistedIds={Array.from(wishIds)}
       favoriteIds={Array.from(favIds)}
+      groupWishlistByGroup={groupWishByGroup}
       focus={focus}
     />
   );
