@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, X } from "lucide-react";
+import { Star, Users, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchJson, HttpError } from "@/lib/fetch-json";
 
@@ -16,6 +16,8 @@ type Preview = {
   id: string;
   name: string;
   categoryName: string;
+  groupId: string;
+  groupName: string;
   overall: number | null;
   ratingCount: number;
   photoUrl: string | null;
@@ -34,10 +36,17 @@ export type InitialPreview = Omit<Preview, "groupBreakdown">;
 export function PlacePreviewSheet({
   placeId,
   initialPreview,
+  showGroupChip,
   onClose,
 }: {
   placeId: string | null;
   initialPreview?: InitialPreview | null;
+  /**
+   * Render the "W grupie X" chip. Kept off for solo-group users since
+   * the attribution is meaningless there — every place belongs to the
+   * one group, so the chip would just take up space on every preview.
+   */
+  showGroupChip: boolean;
   onClose: () => void;
 }) {
   // The marker payload already covers everything the user sees on
@@ -98,6 +107,15 @@ export function PlacePreviewSheet({
                 <p className="truncate text-xs text-muted-foreground">
                   {preview?.categoryName ?? ""}
                 </p>
+                {showGroupChip && preview?.groupName && (
+                  <span
+                    className="mt-1 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+                    title={`W grupie „${preview.groupName}"`}
+                  >
+                    <Users size={10} />
+                    {preview.groupName}
+                  </span>
+                )}
               </div>
               <button
                 type="button"

@@ -34,7 +34,13 @@ export default async function NewPlacePage({
       </>
     );
   }
-  const cats = await listCategoriesForGroup(groups[0].id);
+  // Load each group's categories up front so the form can switch
+  // groups without an extra round-trip. Categories are per-group
+  // (categories.group_id is nullable for "global" entries plus any
+  // group-specific ones), so the lists may diverge across groups.
+  const categoriesByGroup = await Promise.all(
+    groups.map((g) => listCategoriesForGroup(g.id)),
+  );
 
   const { lat: latRaw, lng: lngRaw } = await searchParams;
   const lat = parseLatLng(latRaw, 90);
@@ -46,8 +52,15 @@ export default async function NewPlacePage({
       <PageHeader title="Dodaj miejsce" fallbackHref="/map" />
       <section className="mx-auto max-w-2xl space-y-4 p-4">
         <NewPlaceForm
-          categories={cats.map((c) => ({ id: c.id, slug: c.slug, name: c.name }))}
-          groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+          groups={groups.map((g, i) => ({
+            id: g.id,
+            name: g.name,
+            categories: categoriesByGroup[i].map((c) => ({
+              id: c.id,
+              slug: c.slug,
+              name: c.name,
+            })),
+          }))}
           initialPick={initialPick}
         />
       </section>

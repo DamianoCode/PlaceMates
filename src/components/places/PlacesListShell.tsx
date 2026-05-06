@@ -21,11 +21,18 @@ import type {
 } from "@/domain/places/list-with-stats";
 
 type Category = { id: string; name: string };
+type GroupOption = { id: string; name: string };
 
 type State = {
   q: string;
   set: PlacesSetFilter | null;
   category: string | null;
+  /**
+   * Active narrowing inside the "Grupowo" set — restricts to a single
+   * group's shared wishlist. Null = union across all user's groups.
+   * Cleared automatically when `set` leaves "group-wishlist".
+   */
+  groupWishlistGroupId: string | null;
   sortBy: PlacesSortBy;
   sortDir: PlacesSortDir;
 };
@@ -60,11 +67,18 @@ export function PlacesListShell({
   state,
   count,
   categories,
+  groupWishlistGroups,
   children,
 }: {
   state: State;
   count: number;
   categories: Category[];
+  /**
+   * Groups the user belongs to. The per-group filter row is only
+   * rendered when the `group-wishlist` set is active AND the user has
+   * ≥2 groups (otherwise there's nothing to choose between).
+   */
+  groupWishlistGroups: GroupOption[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -75,9 +89,16 @@ export function PlacesListShell({
   );
 
   function navigate(update: Partial<State>) {
-    const next = { ...optimistic, ...update };
+    // Leaving the group-wishlist set must clear the per-group narrow,
+    // otherwise an orphan `group=...` would linger in the URL and reapply
+    // the moment the user re-enters the group-wishlist pill.
+    const effective: Partial<State> = { ...update };
+    if (update.set !== undefined && update.set !== "group-wishlist") {
+      effective.groupWishlistGroupId = null;
+    }
+    const next = { ...optimistic, ...effective };
     startTransition(() => {
-      applyOptimistic(update);
+      applyOptimistic(effective);
       router.replace(buildHref(next), { scroll: false });
     });
   }
@@ -164,6 +185,37 @@ export function PlacesListShell({
               }
             >
               {c.name}
+            </PillButton>
+          ))}
+        </nav>
+      )}
+
+      {/* Per-group narrow appears only inside the group-wishlist set —
+       *  the union view is the default for ≥2-group users, and clicking
+       *  a group pill drills down. Solo-group users never see this row. */}
+      {optimistic.set === "group-wishlist" && groupWishlistGroups.length >= 2 && (
+        <nav
+          aria-label="Filtr grupy"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar"
+        >
+          <PillButton
+            active={!optimistic.groupWishlistGroupId}
+            onClick={() => navigate({ groupWishlistGroupId: null })}
+          >
+            Wszystkie grupy
+          </PillButton>
+          {groupWishlistGroups.map((g) => (
+            <PillButton
+              key={g.id}
+              active={optimistic.groupWishlistGroupId === g.id}
+              onClick={() =>
+                navigate({
+                  groupWishlistGroupId:
+                    optimistic.groupWishlistGroupId === g.id ? null : g.id,
+                })
+              }
+            >
+              {g.name}
             </PillButton>
           ))}
         </nav>
@@ -264,6 +316,11 @@ function buildHref(state: State): string {
   if (state.q) params.set("q", state.q);
   if (state.set) params.set("set", state.set);
   if (state.category) params.set("category", state.category);
+  // `group` is only meaningful inside the group-wishlist set — outside
+  // it the param has no consumer, so we drop it to keep URLs clean.
+  if (state.set === "group-wishlist" && state.groupWishlistGroupId) {
+    params.set("group", state.groupWishlistGroupId);
+  }
   if (state.sortBy !== "recent") params.set("sort", state.sortBy);
   if (state.sortDir !== "desc") params.set("dir", state.sortDir);
   const qs = params.toString();

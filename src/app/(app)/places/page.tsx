@@ -17,6 +17,8 @@ type Search = {
   q?: string;
   set?: string;
   category?: string;
+  /** Only honoured when `set=group-wishlist`. Ignored otherwise. */
+  group?: string;
   sort?: string;
   dir?: string;
 };
@@ -43,7 +45,7 @@ export default async function PlacesPage({
   const user = await (await getAuth()).getUser();
   if (!user) redirect("/login");
 
-  const { q, set, category, sort, dir } = await searchParams;
+  const { q, set, category, group, sort, dir } = await searchParams;
   const sortBy = parseSort(sort);
   const sortDir = parseDir(dir);
   const setFilter = parseSet(set);
@@ -57,13 +59,28 @@ export default async function PlacesPage({
   const activeCategory =
     category && cats.some((c) => c.id === category) ? category : null;
 
+  // `group` is only meaningful inside the group-wishlist set, and only
+  // when the user actually belongs to that group (defensive — protects
+  // against a stale URL or a copy/paste from someone else's session).
+  const activeGroupWishlistGroupId =
+    setFilter === "group-wishlist" &&
+    group &&
+    groups.some((g) => g.id === group)
+      ? group
+      : null;
+
   const cards = await listPlacesWithStats(user.id, {
     query: q,
     categoryId: activeCategory ?? undefined,
     setFilter: setFilter ?? undefined,
+    groupWishlistGroupId: activeGroupWishlistGroupId ?? undefined,
     sortBy,
     sortDir,
   });
+
+  const activeGroupName = activeGroupWishlistGroupId
+    ? (groups.find((g) => g.id === activeGroupWishlistGroupId)?.name ?? "")
+    : null;
 
   const list =
     cards.length === 0 ? (
@@ -75,7 +92,9 @@ export default async function PlacesPage({
             : setFilter === "favorites"
               ? "Brak ulubionych. Zaznacz miejsce serduszkiem w nagłówku jego widoku."
               : setFilter === "group-wishlist"
-                ? "Wasza grupa nie ma jeszcze nic na wspólnej liście do odwiedzenia."
+                ? activeGroupName
+                  ? `Grupa „${activeGroupName}" nie ma jeszcze nic na wspólnej liście.`
+                  : "Wasza grupa nie ma jeszcze nic na wspólnej liście do odwiedzenia."
                 : activeCategory
                   ? "Brak miejsc w tej kategorii."
                   : "Brak miejsc. Dodaj pierwsze z poziomu mapy."}
@@ -94,11 +113,13 @@ export default async function PlacesPage({
             q: q ?? "",
             set: setFilter,
             category: activeCategory,
+            groupWishlistGroupId: activeGroupWishlistGroupId,
             sortBy,
             sortDir,
           }}
           count={cards.length}
           categories={cats.map((c) => ({ id: c.id, name: c.name }))}
+          groupWishlistGroups={groups.map((g) => ({ id: g.id, name: g.name }))}
         >
           {list}
         </PlacesListShell>

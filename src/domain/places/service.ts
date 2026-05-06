@@ -1,8 +1,10 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
+import { isNull } from "drizzle-orm";
 import {
   categories,
   groupMembers,
+  groups,
   itemPhotos,
   photos,
   placeItems,
@@ -25,6 +27,14 @@ export type PlaceMarker = {
   /** Pre-baked from the categories join so the preview sheet can
    *  render its subtitle synchronously, with no follow-up fetch. */
   categoryName: string;
+  /**
+   * Owning group — every place lives in exactly one group. Pre-baked
+   * (alongside `groupName`) so the preview sheet can render
+   * "W grupie X" without a follow-up fetch and the multi-group user
+   * can tell at a glance which list they're looking at.
+   */
+  groupId: string;
+  groupName: string;
   lat: number;
   lng: number;
   canonicalPlaceId: string | null;
@@ -93,6 +103,8 @@ export async function listPlacesForUser(
     name: string;
     category_id: string;
     category_name: string;
+    group_id: string;
+    group_name: string;
     canonical_place_id: string | null;
     lat: number;
     lng: number;
@@ -104,6 +116,8 @@ export async function listPlacesForUser(
            p.name,
            p.category_id,
            c.name AS category_name,
+           p.group_id,
+           gr.name AS group_name,
            p.canonical_place_id,
            ST_Y(p.location::geometry)::float8 AS lat,
            ST_X(p.location::geometry)::float8 AS lng,
@@ -112,6 +126,7 @@ export async function listPlacesForUser(
            ph.storage_path AS storage_path
       FROM ${places} p
       JOIN ${categories} c ON c.id = p.category_id
+      JOIN ${groups} gr    ON gr.id = p.group_id
       -- Rating aggregate per place. LEFT JOIN so unrated places still
       -- appear in the result.
       LEFT JOIN LATERAL (
@@ -143,6 +158,8 @@ export async function listPlacesForUser(
     name: r.name,
     categoryId: r.category_id,
     categoryName: r.category_name,
+    groupId: r.group_id,
+    groupName: r.group_name,
     canonicalPlaceId: r.canonical_place_id,
     lat: r.lat,
     lng: r.lng,
@@ -497,6 +514,217 @@ export async function updatePlace(
  * explicitly. Best-effort — if storage removal fails mid-way the DB
  * delete still runs so the user doesn't see an orphaned row.
  */
+export type SharePlaceAvailability = {
+  /** Group the source place belongs to. */
+  currentGroupId: string;
+  /** All groups (user-accessible) that already share this canonical. */
+  groupIdsWithCanonical: string[];
+  /**
+   * User's groups that don't yet have this canonical and are therefore
+   * valid targets for "share to another group". Empty when the user is
+   * in only one group OR every group already has it.
+   */
+  availableTargets: Array<{ id: string; name: string }>;
+};
+
+/**
+ * Resolve which of the user's groups can receive this place via the
+ * "share to another group" action. Reads:
+ *   - source place's group + canonical (auth: user must be member)
+ *   - all groups already sharing that canonical
+ *   - user's other groups → minus the ones that already have it
+ *
+ * Pin-drops without a canonical (shouldn't happen post-migration, but
+ * we're defensive) get an empty target list — no canonical, no dedupe
+ * key, no safe way to share.
+ */
+export async function getSharePlaceAvailability(
+  placeId: string,
+  userId: string,
+): Promise<SharePlaceAvailability | null> {
+  const [src] = await db
+    .select({
+      groupId: places.groupId,
+      canonicalPlaceId: places.canonicalPlaceId,
+    })
+    .from(places)
+    .innerJoin(
+      groupMembers,
+      and(
+        eq(groupMembers.groupId, places.groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .where(eq(places.id, placeId))
+    .limit(1);
+  if (!src) return null;
+
+  // Without a canonical we can't dedupe across groups — bail out.
+  if (!src.canonicalPlaceId) {
+    return {
+      currentGroupId: src.groupId,
+      groupIdsWithCanonical: [src.groupId],
+      availableTargets: [],
+    };
+  }
+
+  const [withCanonical, userGroups] = await Promise.all([
+    db
+      .select({ groupId: places.groupId })
+      .from(places)
+      .where(eq(places.canonicalPlaceId, src.canonicalPlaceId)),
+    db
+      .select({ id: groups.id, name: groups.name })
+      .from(groups)
+      .innerJoin(groupMembers, eq(groupMembers.groupId, groups.id))
+      .where(eq(groupMembers.userId, userId)),
+  ]);
+
+  const occupied = new Set(withCanonical.map((r) => r.groupId));
+  const availableTargets = userGroups
+    .filter((g) => !occupied.has(g.id))
+    .sort((a, b) => a.name.localeCompare(b.name, "pl"));
+
+  return {
+    currentGroupId: src.groupId,
+    groupIdsWithCanonical: Array.from(occupied),
+    availableTargets,
+  };
+}
+
+/**
+ * Copy a place into another of the user's groups, preserving the
+ * canonical link. Ratings, photos, items, visits, wishlist entries
+ * stay tied to the original places.id — sharing creates a sibling
+ * row, not a clone.
+ *
+ * Category mapping: the target group may not have the source row's
+ * exact category id (categories are per-group, with optional globals).
+ * We fall back through:
+ *   1. same category id (works when source is a global category)
+ *   2. target-group category with same slug
+ *   3. global category with same slug
+ *   4. error — caller must add the category in target group first
+ */
+export async function sharePlaceToGroup(
+  placeId: string,
+  targetGroupId: string,
+  userId: string,
+): Promise<Result<{ id: string }>> {
+  // Auth: source membership.
+  const [src] = await db
+    .select({
+      groupId: places.groupId,
+      name: places.name,
+      categoryId: places.categoryId,
+      address: places.address,
+      osmId: places.osmId,
+      canonicalPlaceId: places.canonicalPlaceId,
+      lat: sql<number>`ST_Y(${places.location}::geometry)`,
+      lng: sql<number>`ST_X(${places.location}::geometry)`,
+    })
+    .from(places)
+    .innerJoin(
+      groupMembers,
+      and(
+        eq(groupMembers.groupId, places.groupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .where(eq(places.id, placeId))
+    .limit(1);
+  if (!src) return err("Brak takiego miejsca albo nie należysz do jego grupy.");
+
+  if (src.groupId === targetGroupId) {
+    return err("To miejsce już jest w tej grupie.");
+  }
+  if (!src.canonicalPlaceId) {
+    return err("Tego pin-dropu nie da się udostępnić — brak wspólnego identyfikatora.");
+  }
+
+  // Auth: target membership.
+  const [target] = await db
+    .select({ id: groupMembers.groupId })
+    .from(groupMembers)
+    .where(
+      and(
+        eq(groupMembers.groupId, targetGroupId),
+        eq(groupMembers.userId, userId),
+      ),
+    )
+    .limit(1);
+  if (!target) return err("Nie należysz do grupy docelowej.");
+
+  // Idempotency: target group already has this canonical → nothing to do.
+  const [existing] = await db
+    .select({ id: places.id })
+    .from(places)
+    .where(
+      and(
+        eq(places.groupId, targetGroupId),
+        eq(places.canonicalPlaceId, src.canonicalPlaceId),
+      ),
+    )
+    .limit(1);
+  if (existing) {
+    return ok({ id: existing.id });
+  }
+
+  // Map category to target group. Source row carries categoryId, but
+  // that id may belong to a different group's scoped category — pull
+  // its slug and resolve in the target.
+  const [srcCat] = await db
+    .select({ slug: categories.slug, groupId: categories.groupId })
+    .from(categories)
+    .where(eq(categories.id, src.categoryId))
+    .limit(1);
+  if (!srcCat) return err("Kategoria źródłowa nie istnieje.");
+
+  let mappedCategoryId: string = src.categoryId;
+  if (srcCat.groupId !== null) {
+    // Source is group-scoped — find a same-slug equivalent in target,
+    // or fall back to a global with the same slug.
+    const candidates = await db
+      .select({ id: categories.id, groupId: categories.groupId })
+      .from(categories)
+      .where(
+        and(
+          eq(categories.slug, srcCat.slug),
+          or(
+            eq(categories.groupId, targetGroupId),
+            isNull(categories.groupId),
+          ),
+        ),
+      );
+    // Prefer target-scoped if both exist; globals cover most cases.
+    const targetScoped = candidates.find((c) => c.groupId === targetGroupId);
+    const global = candidates.find((c) => c.groupId === null);
+    const picked = targetScoped ?? global;
+    if (!picked) {
+      return err(
+        "W grupie docelowej nie ma odpowiadającej kategorii. Dodaj ją tam najpierw.",
+      );
+    }
+    mappedCategoryId = picked.id;
+  }
+
+  const [inserted] = await db
+    .insert(places)
+    .values({
+      groupId: targetGroupId,
+      name: src.name,
+      categoryId: mappedCategoryId,
+      location: { lat: Number(src.lat), lng: Number(src.lng) },
+      address: src.address,
+      osmId: src.osmId,
+      canonicalPlaceId: src.canonicalPlaceId,
+      createdBy: userId,
+    })
+    .returning({ id: places.id });
+
+  return ok({ id: inserted.id });
+}
+
 export async function deletePlace(
   placeId: string,
   userId: string,
