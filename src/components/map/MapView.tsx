@@ -36,15 +36,20 @@ const DEFAULT_VIEW: Partial<ViewState> = {
 };
 
 /**
- * Visual state of a place marker — drives the pin colour. Mirrors the
- * card icons (Heart=rose, Bookmark+Users=primary) so the map and the
- * list speak the same colour language.
+ * Visual state of a place marker — drives the pin colour. Three
+ * distinct attachments (fav / personal-wish / group-wish) get three
+ * distinct hues; everything else stays on brand. Hierarchy when a
+ * place hits multiple states: favourite > wishlist > group-wishlist
+ * > default. We pick the strongest emotional signal and let the
+ * card's icon row carry the rest.
  *
- * Hierarchy when a place hits multiple states: favourite > wishlist >
- * default. We pick the strongest emotional signal and let the card's
- * icon row carry the rest.
+ * Why these colours: rose for fav matches the Heart icon used on
+ * cards. Emerald for personal "do odwiedzenia" reads as "go" / a
+ * personal goal. Sky for group "do odwiedzenia" reads as social /
+ * shared planning — distinct from emerald so a multi-tag pin still
+ * communicates which list lit it up.
  */
-type PinState = "favorite" | "wishlist" | "default";
+type PinState = "favorite" | "wishlist" | "group-wishlist" | "default";
 
 function pinClassesFor(state: PinState, active: boolean): string {
   const base =
@@ -55,6 +60,8 @@ function pinClassesFor(state: PinState, active: boolean): string {
       return `${base} ${size} bg-rose-500 text-white${active ? " ring-4 ring-rose-500/30" : ""}`;
     case "wishlist":
       return `${base} ${size} bg-emerald-500 text-white${active ? " ring-4 ring-emerald-500/30" : ""}`;
+    case "group-wishlist":
+      return `${base} ${size} bg-sky-500 text-white${active ? " ring-4 ring-sky-500/30" : ""}`;
     default:
       return `${base} ${size} bg-primary text-primary-foreground${active ? " ring-4 ring-primary/30" : ""}`;
   }
@@ -70,6 +77,7 @@ export function MapView({
   restrictToIds,
   favoriteIdSet,
   wishlistedIdSet,
+  groupWishlistedIdSet,
   onBoundsChange,
   onContextMenu,
   categoriesById,
@@ -87,13 +95,15 @@ export function MapView({
   /** If present, only places with these ids render. */
   restrictToIds?: Set<string>;
   /**
-   * Per-pin colour drivers. When a place id appears in `favoriteIdSet`
-   * its marker turns rose; in `wishlistedIdSet` it turns emerald.
-   * Both undefined keeps every marker on brand colour (legacy
-   * behaviour for embed contexts that don't pass these).
+   * Per-pin colour drivers. Sets are checked in priority order:
+   * `favoriteIdSet` → rose, `wishlistedIdSet` → emerald,
+   * `groupWishlistedIdSet` → sky. All undefined keeps every marker
+   * on brand colour (legacy behaviour for embed contexts that don't
+   * pass these).
    */
   favoriteIdSet?: Set<string>;
   wishlistedIdSet?: Set<string>;
+  groupWishlistedIdSet?: Set<string>;
   /** Fires on moveend with the current visible bounds. */
   onBoundsChange?: (bbox: { west: number; south: number; east: number; north: number }) => void;
   /** Right-click / long-press at lng,lat. Ignored in pick mode. */
@@ -502,7 +512,9 @@ export function MapView({
             ? "favorite"
             : wishlistedIdSet?.has(pin.id)
               ? "wishlist"
-              : "default";
+              : groupWishlistedIdSet?.has(pin.id)
+                ? "group-wishlist"
+                : "default";
           const delay = Math.min(i * MARKER_STAGGER_MS, MARKER_STAGGER_CAP_MS);
           return (
             <Marker
