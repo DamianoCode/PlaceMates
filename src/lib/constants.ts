@@ -34,6 +34,32 @@ export const MARKER_STAGGER_MS = 8;
 /** Hard cap on stagger so a dense viewport never feels slow. */
 export const MARKER_STAGGER_CAP_MS = 240;
 
+// Map clustering ----------------------------------------------------------
+
+/**
+ * Pixel radius used by supercluster when grouping pins. Larger = more
+ * aggressive clustering (more pins collapse together at any given zoom).
+ * 60 px lines up with our marker size (h-9 = 36 px) plus generous
+ * breathing room.
+ */
+export const MAP_CLUSTER_RADIUS_PX = 60;
+
+/**
+ * Minimum pins-in-radius to form a cluster. Below this, individual
+ * markers render even if they overlap. 7 is the empirical sweet spot
+ * for our group-sized datasets — a single small group's lunch spots
+ * stay visible as pins; busy city areas collapse.
+ */
+export const MAP_CLUSTER_MIN_POINTS = 7;
+
+/**
+ * Past this zoom level supercluster stops clustering — every pin
+ * stands alone. 17 ≈ neighbourhood detail; below it we still show
+ * individual markers when there are few; above it we always show
+ * them regardless of density.
+ */
+export const MAP_CLUSTER_MAX_ZOOM = 17;
+
 // Pin-drop POI suggestion -------------------------------------------------
 
 /**

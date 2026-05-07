@@ -188,6 +188,12 @@ export function MapScreen({
         }
         categoryFilter={categoryFilter}
         restrictToIds={activeIdSet ?? undefined}
+        // Per-pin colour drivers — fav pins go rose, wishlist pins go
+        // emerald, others stay on brand. Reusing the same sets we
+        // already build for the set-filter so MapView doesn't have to
+        // re-derive them.
+        favoriteIdSet={favSet}
+        wishlistedIdSet={wishSet}
         selectedPlaceId={selectedPlaceId}
         onSelectPlace={setSelectedPlaceId}
         onBoundsChange={handleBoundsChange}
