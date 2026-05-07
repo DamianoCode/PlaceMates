@@ -43,6 +43,7 @@ import { PhotoTile } from "@/components/places/PhotoTile";
 import { StatPill } from "@/components/places/StatPill";
 import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
+import { QuickVisitButton } from "@/components/places/QuickVisitButton";
 import { SharePlaceButton } from "@/components/places/SharePlaceButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
@@ -102,6 +103,11 @@ export default async function PlaceDetailPage({
   const othersCount = allCrossGroupRatings.filter(
     (r) => r.userId !== user.id,
   ).length;
+
+  // Most recent visit by *this* user — drives QuickVisitButton's three
+  // states (never / today / N days ago). visits is already sorted desc
+  // by visitedAt, so .find takes the most recent in O(1) average.
+  const myLastVisit = visits.find((v) => v.userId === user.id) ?? null;
 
   return (
     <>
@@ -213,15 +219,24 @@ export default async function PlaceDetailPage({
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <RatingForm
+              {/* Filmweb-style "byłem tam" — independent of rating.
+               *  Sits above the dimensions so a one-tap visit is the
+               *  first thing the user can do on this card. */}
+              <QuickVisitButton
                 placeId={id}
-                schema={category.ratingSchema}
-                initial={
-                  myRating
-                    ? { dimensions: myRating.dimensions, note: myRating.note }
-                    : null
-                }
+                myLastVisitedAt={myLastVisit?.visitedAt ?? null}
               />
+              <div className="border-t pt-4">
+                <RatingForm
+                  placeId={id}
+                  schema={category.ratingSchema}
+                  initial={
+                    myRating
+                      ? { dimensions: myRating.dimensions, note: myRating.note }
+                      : null
+                  }
+                />
+              </div>
               <div className="border-t pt-4">
                 <ShareRating
                   placeId={id}
@@ -260,7 +275,7 @@ export default async function PlaceDetailPage({
 
         <RatingsByGroup buckets={ratingsByGroup} currentUserId={user.id} />
 
-        <Card>
+        <Card id="wizyty" className="scroll-mt-20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-xl">
               <Footprints size={18} /> Wizyty

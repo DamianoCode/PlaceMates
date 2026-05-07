@@ -72,6 +72,25 @@ export async function addVisitAction(
   return { ok: true };
 }
 
+/**
+ * One-tap "byłem dzisiaj" — pre-fills today, no note, no form. Sits
+ * above the rating form so a user can record a visit independently
+ * of leaving a review (Filmweb-style "watched without rating").
+ */
+export async function quickVisitAction(
+  placeId: string,
+): Promise<ActionState> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return { error: "Musisz być zalogowany." };
+  if (!placeId) return { error: "Brak identyfikatora miejsca." };
+
+  const result = await addVisit(placeId, user.id, null);
+  if (!result.ok) return { error: result.error };
+
+  revalidatePath(`/places/${placeId}`);
+  return { ok: true };
+}
+
 export async function addPhotoAction(
   _: ActionState,
   formData: FormData,
