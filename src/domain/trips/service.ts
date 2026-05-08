@@ -596,10 +596,13 @@ export async function removeStop(
 }
 
 /**
- * Bulk reorder. We accept the new order as an array of stop ids; any
- * stop in the trip that's missing from the array stays at the tail
- * (defensive — should never happen in practice, but better than
- * silently dropping rows).
+ * Bulk reorder via UNNEST. Earlier version used CASE WHEN ... END
+ * but JS numbers bound by drizzle had ambiguous Postgres types
+ * (sometimes text, sometimes unknown), conflicting with the
+ * integer sort_order column. UNNEST with explicit `::uuid[]` and
+ * `::int[]` array casts removes the ambiguity and is the canonical
+ * Postgres idiom for "update many rows from a parallel-array
+ * payload" — single statement, single round-trip, atomic.
  */
 export async function reorderStops(
   tripId: string,
@@ -610,21 +613,27 @@ export async function reorderStops(
   if (!auth) return err("Nie należysz do tej grupy.");
   if (orderedStopIds.length === 0) return ok(null);
 
-  // Use a single CASE to update all rows in one statement — N rows but
-  // one round-trip. Drizzle doesn't have a clean helper for that; raw
-  // SQL is the cleanest path.
-  const valuesSql = orderedStopIds.map(
-    (id, idx) => sql`WHEN ${id}::uuid THEN ${idx}`,
+  const idArray = sql.join(
+    orderedStopIds.map((id) => sql`${id}`),
+    sql`, `,
+  );
+  const orderArray = sql.join(
+    orderedStopIds.map((_, i) => sql`${i}`),
+    sql`, `,
   );
 
+  // The trip_id filter is belt-and-suspenders: even if the client
+  // sneaks in a stop id from another trip, it won't get re-ordered
+  // because the join row's `ts.trip_id` won't match.
   await db.execute(sql`
-    UPDATE ${tripStops}
-       SET sort_order = CASE id ${sql.join(valuesSql, sql` `)} END
-     WHERE trip_id = ${tripId}
-       AND id IN (${sql.join(
-         orderedStopIds.map((id) => sql`${id}::uuid`),
-         sql`, `,
-       )})
+    UPDATE ${tripStops} ts
+       SET sort_order = v.sort_order
+      FROM unnest(
+        ARRAY[${idArray}]::uuid[],
+        ARRAY[${orderArray}]::int[]
+      ) AS v(id, sort_order)
+     WHERE ts.id = v.id
+       AND ts.trip_id = ${tripId}
   `);
   await db
     .update(trips)
