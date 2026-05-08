@@ -125,17 +125,17 @@ export function TripMapInfoCard({
             )}
 
             <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => prev && onSelect(prev.id)}
                   disabled={!prev}
                   aria-label="Poprzedni stop"
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100"
                 >
-                  <ChevronLeft size={16} />
+                  <ChevronLeft size={20} />
                 </button>
-                <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
+                <span className="min-w-[2.5rem] text-center font-mono text-xs tabular-nums text-muted-foreground/80">
                   {idx + 1} / {stops.length}
                 </span>
                 <button
@@ -143,15 +143,15 @@ export function TripMapInfoCard({
                   onClick={() => next && onSelect(next.id)}
                   disabled={!next}
                   aria-label="Następny stop"
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-30 disabled:active:scale-100"
                 >
-                  <ChevronRight size={16} />
+                  <ChevronRight size={20} />
                 </button>
               </div>
 
               <Link
                 href={`/places/${stop.placeId}`}
-                className="inline-flex h-9 flex-shrink-0 items-center rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+                className="inline-flex h-11 flex-shrink-0 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
               >
                 Szczegóły
               </Link>
