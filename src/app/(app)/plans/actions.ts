@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getAuth } from "@/infra/auth";
 import {
   addStop,
+  addStops,
   createTrip,
   deleteTrip,
   removeStop,
@@ -118,6 +119,23 @@ export async function addStopAction(
   revalidatePath(`/plans/${tripId}`);
   revalidatePath(`/places/${placeId}`);
   revalidatePath("/plans");
+  return result;
+}
+
+export async function addStopsAction(
+  tripId: string,
+  placeIds: string[],
+): Promise<Result<{ added: number; skipped: number }>> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return err("Wymagane zalogowanie.");
+
+  const result = await addStops(tripId, placeIds, user.id);
+  if (!result.ok) return result;
+
+  revalidatePath(`/plans/${tripId}`);
+  revalidatePath("/plans");
+  // Each affected place's "Do planu" affordance might flip.
+  for (const id of placeIds) revalidatePath(`/places/${id}`);
   return result;
 }
 

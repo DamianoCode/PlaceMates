@@ -518,6 +518,137 @@ export async function deleteTrip(
   return ok(null);
 }
 
+export type AddableStopCandidate = {
+  id: string;
+  name: string;
+  categoryName: string;
+  categorySlug: string;
+  address: string | null;
+  photoUrl: string | null;
+};
+
+/**
+ * Places that can still be added to this trip — every place in the
+ * trip's group that isn't already a stop. Powers the AddStopsDrawer
+ * picker. Photo lookup mirrors `listPlacesForUser` (cover-first,
+ * newest-fallback) so visual identity matches the main list.
+ */
+export async function listAddableStopCandidates(
+  tripId: string,
+  userId: string,
+): Promise<AddableStopCandidate[]> {
+  const auth = await userMemberOfTripGroup(tripId, userId);
+  if (!auth) return [];
+
+  const rows = await db.execute<{
+    id: string;
+    name: string;
+    category_name: string;
+    category_slug: string;
+    address: string | null;
+    storage_path: string | null;
+  }>(sql`
+    SELECT p.id,
+           p.name,
+           c.name AS category_name,
+           c.slug AS category_slug,
+           p.address,
+           ph.storage_path AS storage_path
+      FROM ${places} p
+      JOIN categories c ON c.id = p.category_id
+      LEFT JOIN LATERAL (
+        SELECT ph2.storage_path
+          FROM ${photos} ph2
+         WHERE ph2.place_id = p.id
+         ORDER BY ph2.is_cover DESC, ph2.created_at DESC
+         LIMIT 1
+      ) ph ON true
+     WHERE p.group_id = ${auth.tripGroupId}
+       AND NOT EXISTS (
+         SELECT 1 FROM ${tripStops} ts
+          WHERE ts.trip_id = ${tripId}
+            AND ts.place_id = p.id
+       )
+     ORDER BY p.name ASC
+     LIMIT 500
+  `);
+
+  const storage = await getStorage();
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    categoryName: r.category_name,
+    categorySlug: r.category_slug,
+    address: r.address,
+    photoUrl: r.storage_path
+      ? storage.publicUrl(PHOTO_BUCKET, r.storage_path)
+      : null,
+  }));
+}
+
+/**
+ * Bulk-append several places as stops. Same group invariant as
+ * `addStop` (every place must live in the trip's group), idempotent
+ * against existing stops (filters them out before insert), atomic
+ * single-statement insert with sequential sort_order.
+ */
+export async function addStops(
+  tripId: string,
+  placeIds: string[],
+  userId: string,
+): Promise<Result<{ added: number; skipped: number }>> {
+  const auth = await userMemberOfTripGroup(tripId, userId);
+  if (!auth) return err("Nie należysz do tej grupy.");
+  if (placeIds.length === 0) return ok({ added: 0, skipped: 0 });
+
+  // Verify all places exist and live in the trip's group.
+  const placeRows = await db
+    .select({ id: places.id, groupId: places.groupId })
+    .from(places)
+    .where(eq(places.groupId, auth.tripGroupId));
+  const validIds = new Set(
+    placeRows.filter((p) => placeIds.includes(p.id)).map((p) => p.id),
+  );
+  const invalidIds = placeIds.filter((id) => !validIds.has(id));
+  if (invalidIds.length > 0) {
+    return err("Część miejsc nie istnieje albo nie należy do tej grupy.");
+  }
+
+  // Skip places already in the trip — the UNIQUE (trip_id, place_id)
+  // would reject anyway, but skipping keeps the insert cleaner.
+  const existing = await db
+    .select({ placeId: tripStops.placeId })
+    .from(tripStops)
+    .where(eq(tripStops.tripId, tripId));
+  const existingSet = new Set(existing.map((r) => r.placeId));
+  const fresh = placeIds.filter((id) => !existingSet.has(id));
+  const skipped = placeIds.length - fresh.length;
+  if (fresh.length === 0) return ok({ added: 0, skipped });
+
+  // Append at end with sequential sort_order.
+  const [{ next }] = await db.execute<{ next: number }>(sql`
+    SELECT COALESCE(MAX(sort_order) + 1, 0)::int AS next
+      FROM ${tripStops}
+     WHERE trip_id = ${tripId}
+  `);
+  const start = Number(next);
+
+  await db.insert(tripStops).values(
+    fresh.map((placeId, i) => ({
+      tripId,
+      placeId,
+      sortOrder: start + i,
+    })),
+  );
+
+  await db
+    .update(trips)
+    .set({ updatedAt: new Date() })
+    .where(eq(trips.id, tripId));
+
+  return ok({ added: fresh.length, skipped });
+}
+
 export async function addStop(
   tripId: string,
   placeId: string,

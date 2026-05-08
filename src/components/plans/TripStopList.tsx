@@ -17,10 +17,15 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { Route } from "lucide-react";
 import { toast } from "sonner";
+import { AddStopsButton } from "./AddStopsButton";
 import { TripStopRow } from "./TripStopRow";
 import { reorderStopsAction } from "@/app/(app)/plans/actions";
-import type { TripStopView } from "@/domain/trips/service";
+import type {
+  AddableStopCandidate,
+  TripStopView,
+} from "@/domain/trips/service";
 
 /**
  * Drag-drop sortable list of stops. Two design choices worth noting:
@@ -39,9 +44,11 @@ import type { TripStopView } from "@/domain/trips/service";
 export function TripStopList({
   stops,
   tripId,
+  addableCandidates,
 }: {
   stops: TripStopView[];
   tripId: string;
+  addableCandidates: AddableStopCandidate[];
 }) {
   const [, startTransition] = useTransition();
   const [optimistic, applyOptimistic] = useOptimistic<
@@ -108,9 +115,27 @@ export function TripStopList({
 
   if (optimistic.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-        Brak stopów. Dodaj pierwsze miejsce z poziomu jego widoku
-        (przycisk „Do planu&rdquo;) albo edytuj plan poniżej.
+      <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed bg-muted/20 px-6 py-10 text-center">
+        <span
+          aria-hidden
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent text-primary"
+        >
+          <Route size={28} strokeWidth={1.5} />
+        </span>
+        <div className="space-y-1">
+          <p className="font-display text-lg leading-tight">
+            Plan jest pusty
+          </p>
+          <p className="mx-auto max-w-xs text-sm italic text-muted-foreground">
+            Wybierz miejsca z grupy — zaznacz wiele naraz, dodadzą się
+            jako kolejne stopy.
+          </p>
+        </div>
+        <AddStopsButton
+          tripId={tripId}
+          candidates={addableCandidates}
+          variant="hero"
+        />
       </div>
     );
   }
@@ -136,6 +161,17 @@ export function TripStopList({
           ))}
         </ol>
       </SortableContext>
+
+      {/* Always-visible "Dodaj stopy" button at the bottom — keeps
+       *  the affordance discoverable without taking a permanent
+       *  bottom-bar slot. Disabled when there's nothing eligible. */}
+      <div className="pt-2">
+        <AddStopsButton
+          tripId={tripId}
+          candidates={addableCandidates}
+          variant="default"
+        />
+      </div>
     </DndContext>
   );
 }

@@ -1,7 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { CalendarDays, Check, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
-import { getTripForUser } from "@/domain/trips/service";
+import {
+  getTripForUser,
+  listAddableStopCandidates,
+} from "@/domain/trips/service";
 import { isMember, getRole } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { TripActionsBar } from "@/components/plans/TripActionsBar";
@@ -22,9 +25,15 @@ export default async function TripDetailPage({
   // Belt-and-suspenders: getTripForUser already checks membership,
   // but we re-derive role for the delete-button gate. Cheap (one
   // join) and keeps the auth surface explicit on the page.
-  const memberCheck = await isMember(trip.groupId, user.id);
+  const [memberCheck, role, addableCandidates] = await Promise.all([
+    isMember(trip.groupId, user.id),
+    getRole(trip.groupId, user.id),
+    // Pre-fetch the multi-select picker payload so AddStopsDrawer
+    // opens with data ready — avoids a spinner the moment the user
+    // taps "Dodaj stopy".
+    listAddableStopCandidates(id, user.id),
+  ]);
   if (!memberCheck) notFound();
-  const role = await getRole(trip.groupId, user.id);
   const canDelete = trip.createdBy === user.id || role === "owner";
 
   const completedCount = trip.stops.filter(
@@ -110,7 +119,11 @@ export default async function TripDetailPage({
           )}
         </div>
 
-        <TripDetailView stops={trip.stops} tripId={trip.id} />
+        <TripDetailView
+          stops={trip.stops}
+          tripId={trip.id}
+          addableCandidates={addableCandidates}
+        />
       </section>
     </>
   );

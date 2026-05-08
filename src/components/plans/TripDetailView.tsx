@@ -5,7 +5,10 @@ import { List, Map } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TripStopList } from "./TripStopList";
 import { TripMapViewClient } from "./TripMapViewClient";
-import type { TripStopView } from "@/domain/trips/service";
+import type {
+  AddableStopCandidate,
+  TripStopView,
+} from "@/domain/trips/service";
 
 /**
  * Body of the trip detail page — Lista / Mapa toggle plus the
@@ -16,9 +19,11 @@ import type { TripStopView } from "@/domain/trips/service";
 export function TripDetailView({
   stops,
   tripId,
+  addableCandidates,
 }: {
   stops: TripStopView[];
   tripId: string;
+  addableCandidates: AddableStopCandidate[];
 }) {
   const [mode, setMode] = useState<"list" | "map">("list");
 
@@ -47,7 +52,11 @@ export function TripDetailView({
       </div>
 
       {mode === "list" ? (
-        <TripStopList stops={stops} tripId={tripId} />
+        <TripStopList
+          stops={stops}
+          tripId={tripId}
+          addableCandidates={addableCandidates}
+        />
       ) : (
         <TripMapViewClient stops={stops} />
       )}

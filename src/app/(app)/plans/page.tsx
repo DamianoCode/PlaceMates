@@ -34,55 +34,58 @@ export default async function PlansPage() {
     (t) => t.completedCount > 0 && t.completedCount < t.stopCount,
   ).length;
 
+  const groupOptions = groups.map((g) => ({ id: g.id, name: g.name }));
+
   return (
     <>
-      <PageHeader title="Plany" fallbackHref="/me" />
+      <PageHeader
+        title="Plany"
+        fallbackHref="/me"
+        // Icon-only "+ Nowy plan" w trailing slot — usuwa drugi
+        // konkurujący CTA z body i zachowuje spójność z PageHeader
+        // patternem na /places/[id] (FavoriteHeart/Wishlist/etc.).
+        trailing={<NewTripButton groups={groupOptions} variant="icon" />}
+      />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
         {total === 0 ? (
           <EmptyState
             disabled={groups.length === 0}
-            groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+            groups={groupOptions}
           />
         ) : (
           <>
-            {/* Compact stats strip + primary action. Stats use
-             *  monospace tabular numbers for visual rhythm with the
-             *  rest of the app's data displays. */}
-            <div className="flex items-center justify-between gap-3">
-              <dl className="flex items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <div className="flex items-baseline gap-1">
+            {/* Stats strip — pełna szerokość, mono uppercase labels +
+             *  Fraunces display numbers. CTA odjechał do nagłówka. */}
+            <dl className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-xs text-muted-foreground">
+              <div className="flex items-baseline gap-1.5">
+                <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                  Razem
+                </dt>
+                <dd className="font-display text-base text-foreground tabular-nums">
+                  {total}
+                </dd>
+              </div>
+              {inProgress > 0 && (
+                <div className="flex items-baseline gap-1.5">
                   <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
-                    Razem
+                    W toku
                   </dt>
-                  <dd className="font-display text-base text-foreground tabular-nums">
-                    {total}
+                  <dd className="font-display text-base text-primary tabular-nums">
+                    {inProgress}
                   </dd>
                 </div>
-                {inProgress > 0 && (
-                  <div className="flex items-baseline gap-1">
-                    <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
-                      W toku
-                    </dt>
-                    <dd className="font-display text-base text-primary tabular-nums">
-                      {inProgress}
-                    </dd>
-                  </div>
-                )}
-                {archived.length > 0 && (
-                  <div className="flex items-baseline gap-1">
-                    <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
-                      Archiwum
-                    </dt>
-                    <dd className="font-display text-base text-foreground tabular-nums">
-                      {archived.length}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              <NewTripButton
-                groups={groups.map((g) => ({ id: g.id, name: g.name }))}
-              />
-            </div>
+              )}
+              {archived.length > 0 && (
+                <div className="flex items-baseline gap-1.5">
+                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                    Archiwum
+                  </dt>
+                  <dd className="font-display text-base text-foreground tabular-nums">
+                    {archived.length}
+                  </dd>
+                </div>
+              )}
+            </dl>
 
             {active.length > 0 && (
               <Section title="Aktualne">
