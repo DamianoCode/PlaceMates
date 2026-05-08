@@ -5,7 +5,7 @@ import {
   closestCenter,
   DndContext,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -64,12 +64,17 @@ export function TripStopList({
     return out;
   });
 
-  // PointerSensor: 8 px threshold avoids treating taps on the body as
-  // drags. TouchSensor: 200 ms delay before drag activates so a tap
-  // can still pass through to checkbox/edit buttons cleanly on
-  // mobile. KeyboardSensor: full a11y, arrow-key reordering.
+  // Explicit Mouse + Touch sensors so each medium has its own
+  // activation constraint:
+  //   - Mouse: 8 px threshold avoids treating clicks on body as drags.
+  //   - Touch: 200 ms delay distinguishes a deliberate drag from a
+  //     scroll gesture; 8 px tolerance lets the press wobble.
+  // PointerSensor (which handles both via Pointer Events) doesn't
+  // play well with a sibling TouchSensor — Chrome DevTools mobile
+  // emulation in particular ends up with neither sensor activating.
+  // Splitting them gives reliable behaviour everywhere.
   const sensors = useSensors(
-    useSensor(PointerSensor, {
+    useSensor(MouseSensor, {
       activationConstraint: { distance: 8 },
     }),
     useSensor(TouchSensor, {
