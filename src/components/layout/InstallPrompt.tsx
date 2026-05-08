@@ -77,7 +77,7 @@ export function InstallPrompt() {
     <div
       role="dialog"
       aria-label="Zainstaluj aplikację"
-      className="fixed inset-x-3 bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur sm:bottom-4"
+      className="fixed inset-x-3 bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg backdrop-blur"
     >
       <span
         aria-hidden
