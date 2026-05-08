@@ -1,17 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { CalendarDays, X } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
+import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updateTripAction } from "@/app/(app)/plans/actions";
 
 /**
- * Edit dialog for an existing trip — name + date. Group can't be
+ * Bottom-drawer for editing a trip's name + date. Group can't be
  * changed (would orphan stops in a group user might not even be in);
  * if you need a different group, recreate.
+ *
+ * Same Vaul primitive as CreateTripDialog — keeps the modal language
+ * of the app consistent and sidesteps the containing-block trap of
+ * `position: fixed` inside an ancestor with `transform` / `sticky`
+ * (which was breaking the previous absolutely-positioned dialog
+ * when launched from the PageHeader trailing slot).
  */
 export function EditTripDialog({
   open,
@@ -33,19 +40,8 @@ export function EditTripDialog({
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    requestAnimationFrame(() => inputRef.current?.focus());
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // Reset to current values whenever the dialog re-opens — prevents
-  // stale local edits leaking into the next edit session. Deferred
-  // to satisfy react-compiler's set-state-in-effect rule.
+  // Reset to current values whenever the drawer re-opens — prevents
+  // stale local edits leaking into the next edit session.
   useEffect(() => {
     if (!open) return;
     let abort = false;
@@ -61,7 +57,11 @@ export function EditTripDialog({
     };
   }, [open, initialName, initialPlannedFor]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [open]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -86,72 +86,78 @@ export function EditTripDialog({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Edytuj plan"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+    <Drawer.Root
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
       }}
     >
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-          <h2 className="font-display text-lg">Edytuj plan</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Zamknij"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Content
+          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
+          aria-describedby={undefined}
+        >
+          <Drawer.Handle className="my-2.5 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
+
+          <div className="border-b border-border/60 px-5 pb-4">
+            <Drawer.Title className="font-display text-xl leading-tight">
+              Edytuj plan
+            </Drawer.Title>
+            <Drawer.Description className="mt-0.5 text-xs italic text-muted-foreground">
+              Zmień nazwę albo datę. Stopy zostają bez zmian.
+            </Drawer.Description>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4"
           >
-            <X size={18} />
-          </button>
-        </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-trip-name">Nazwa</Label>
+              <Input
+                id="edit-trip-name"
+                ref={inputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={200}
+                required
+              />
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-trip-name">Nazwa</Label>
-            <Input
-              id="edit-trip-name"
-              ref={inputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={200}
-              required
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-trip-date">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays size={14} />
+                  Data (opcjonalnie)
+                </span>
+              </Label>
+              <Input
+                id="edit-trip-date"
+                type="date"
+                value={plannedFor}
+                onChange={(e) => setPlannedFor(e.target.value)}
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="edit-trip-date">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays size={14} />
-                Data (opcjonalnie)
-              </span>
-            </Label>
-            <Input
-              id="edit-trip-date"
-              type="date"
-              value={plannedFor}
-              onChange={(e) => setPlannedFor(e.target.value)}
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={pending}
-            >
-              Anuluj
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Zapisuję…" : "Zapisz"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <div className="mt-auto flex gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={pending}
+                className="flex-1"
+              >
+                Anuluj
+              </Button>
+              <Button type="submit" disabled={pending} className="flex-1">
+                {pending ? "Zapisuję…" : "Zapisz"}
+              </Button>
+            </div>
+          </form>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }
 

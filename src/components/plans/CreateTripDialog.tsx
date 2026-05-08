@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, X } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { toast } from "sonner";
+import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,14 +13,18 @@ import { createTripAction } from "@/app/(app)/plans/actions";
 type Group = { id: string; name: string };
 
 /**
- * Lightweight modal for creating a trip. Reused from two entry points:
- *   - /plans page "Nowy plan" button → no preselected place
- *   - /places/[id] AddToPlanButton "Nowy plan…" → seed firstPlaceId so
- *     the new trip opens with that place already as stop #1
+ * Bottom-drawer for creating a trip. Same Vaul primitive as the
+ * "Do planu" affordance — keeps the modal language of the app
+ * consistent across "create plan" / "edit plan" / "edit stop"
+ * surfaces. Vaul's Portal sidesteps containing-block traps from
+ * any ancestor with `transform` / `position: sticky`, so the
+ * drawer always renders against the viewport.
  *
- * Group picker only renders when the user has 2+ groups. The
- * single-group path stays UI-identical to a frictionless "name +
- * date" dialog.
+ * Two entry points:
+ *   - /plans NewTripButton  (no preselected place, group selector
+ *     visible when user has 2+ groups)
+ *   - /places/[id] AddToPlanButton "Nowy plan…" (firstPlaceId set,
+ *     group locked to the place's group)
  */
 export function CreateTripDialog({
   open,
@@ -32,11 +37,8 @@ export function CreateTripDialog({
   open: boolean;
   onClose: () => void;
   groups: Group[];
-  /** Pre-selects this group; required when user has only one. */
   initialGroupId?: string;
-  /** When set, the new trip starts with this place as stop #1. */
   firstPlaceId?: string;
-  /** Called after successful create with the new trip id. */
   onCreated?: (tripId: string) => void;
 }) {
   const router = useRouter();
@@ -48,21 +50,8 @@ export function CreateTripDialog({
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close on Escape, focus name on open. Defer focus with rAF so the
-  // dialog is mounted in the DOM tree before we try to grab it.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKey);
-    requestAnimationFrame(() => inputRef.current?.focus());
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // Reset form whenever the dialog re-opens — leaving stale state
-  // around between "create another" cycles is confusing. Deferred to
-  // satisfy react-compiler's set-state-in-effect rule.
+  // Reset on open. queueMicrotask satisfies react-compiler's
+  // set-state-in-effect rule.
   useEffect(() => {
     if (!open) return;
     let abort = false;
@@ -77,7 +66,13 @@ export function CreateTripDialog({
     };
   }, [open, initialGroupId, groups]);
 
-  if (!open) return null;
+  // Focus name on open. Vaul handles its own focus trap; we just
+  // pick the first interesting element.
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => inputRef.current?.focus(), 100);
+    return () => clearTimeout(t);
+  }, [open]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,7 +85,6 @@ export function CreateTripDialog({
       toast.error("Wybierz grupę.");
       return;
     }
-
     startTransition(async () => {
       const res = await createTripAction({
         groupId,
@@ -113,95 +107,101 @@ export function CreateTripDialog({
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Nowy plan"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
-      onClick={(e) => {
-        // Click outside the inner card closes — convention from native
-        // alert dialogs.
-        if (e.target === e.currentTarget) onClose();
+    <Drawer.Root
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) onClose();
       }}
     >
-      <div className="w-full max-w-md overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-          <h2 className="font-display text-lg">Nowy plan</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Zamknij"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Content
+          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
+          aria-describedby={undefined}
+        >
+          <Drawer.Handle className="my-2.5 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
+
+          <div className="border-b border-border/60 px-5 pb-4">
+            <Drawer.Title className="font-display text-xl leading-tight">
+              Nowy plan
+            </Drawer.Title>
+            <Drawer.Description className="mt-0.5 text-xs italic text-muted-foreground">
+              {firstPlaceId
+                ? "To miejsce stanie się stopem #1."
+                : "Wycieczka, weekend, wypad — uporządkowane stopy z odhaczaniem."}
+            </Drawer.Description>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4"
           >
-            <X size={18} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4 p-4">
-          <div className="space-y-2">
-            <Label htmlFor="trip-name">Nazwa</Label>
-            <Input
-              id="trip-name"
-              ref={inputRef}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              maxLength={200}
-              required
-              placeholder="np. Sobota w Zamościu"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="trip-date">
-              <span className="inline-flex items-center gap-1.5">
-                <CalendarDays size={14} />
-                Data (opcjonalnie)
-              </span>
-            </Label>
-            <Input
-              id="trip-date"
-              type="date"
-              value={plannedFor}
-              onChange={(e) => setPlannedFor(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Bez daty plan zostanie w „Aktualne&rdquo; do ręcznego archiwum.
-            </p>
-          </div>
-
-          {groups.length >= 2 && (
             <div className="space-y-2">
-              <Label htmlFor="trip-group">Grupa</Label>
-              <select
-                id="trip-group"
-                value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-                className="field-base h-11"
-              >
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
+              <Label htmlFor="create-trip-name">Nazwa</Label>
+              <Input
+                id="create-trip-name"
+                ref={inputRef}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={200}
+                required
+                placeholder="np. Sobota w Zamościu"
+              />
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={pending}
-            >
-              Anuluj
-            </Button>
-            <Button type="submit" disabled={pending}>
-              {pending ? "Tworzę…" : "Stwórz plan"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            <div className="space-y-2">
+              <Label htmlFor="create-trip-date">
+                <span className="inline-flex items-center gap-1.5">
+                  <CalendarDays size={14} />
+                  Data (opcjonalnie)
+                </span>
+              </Label>
+              <Input
+                id="create-trip-date"
+                type="date"
+                value={plannedFor}
+                onChange={(e) => setPlannedFor(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Bez daty plan zostanie w „Aktualne&rdquo; do ręcznego archiwum.
+              </p>
+            </div>
+
+            {groups.length >= 2 && (
+              <div className="space-y-2">
+                <Label htmlFor="create-trip-group">Grupa</Label>
+                <select
+                  id="create-trip-group"
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                  className="field-base h-11"
+                >
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="mt-auto flex gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={pending}
+                className="flex-1"
+              >
+                Anuluj
+              </Button>
+              <Button type="submit" disabled={pending} className="flex-1">
+                {pending ? "Tworzę…" : "Stwórz plan"}
+              </Button>
+            </div>
+          </form>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }

@@ -11,9 +11,10 @@ import {
   NotepadText,
   Pencil,
   Trash2,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Drawer } from "vaul";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/map/category-icons";
 import {
@@ -261,77 +262,91 @@ function EditStopPanel({
     });
   }
 
+  // Vaul Drawer — same primitive as Create / Edit trip dialogs.
+  // Drawer.Portal renders into a top-level container so the
+  // sortable row's CSS `transform` doesn't trap the modal inside
+  // its box (legacy bug with `fixed`-positioned div as a child).
   return (
-    <div
-      role="dialog"
-      aria-label="Edytuj stop"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-4 backdrop-blur-sm sm:items-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+    <Drawer.Root
+      open
+      onOpenChange={(o) => {
+        if (!o) onClose();
       }}
     >
-      <form
-        onSubmit={save}
-        className="w-full max-w-md space-y-3 rounded-2xl border border-border bg-background p-4 shadow-2xl"
-      >
-        <div className="flex items-center justify-between">
-          <h3 className="font-display text-lg">Edytuj stop</h3>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Zamknij"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <X size={18} />
-          </button>
-        </div>
+      <Drawer.Portal>
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Content
+          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
+          aria-describedby={undefined}
+        >
+          <Drawer.Handle className="my-2.5 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
 
-        <div className="space-y-2">
-          <label className="flex items-center gap-1.5 text-sm font-medium">
-            <Clock size={14} />
-            Godzina (opcjonalnie)
-          </label>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="field-base h-11 w-full"
-          />
-        </div>
+          <div className="border-b border-border/60 px-5 pb-4">
+            <Drawer.Title className="font-display text-xl leading-tight">
+              Edytuj stop
+            </Drawer.Title>
+            <Drawer.Description className="mt-0.5 truncate text-xs italic text-muted-foreground">
+              {stop.placeName}
+            </Drawer.Description>
+          </div>
 
-        <div className="space-y-2">
-          <label className="flex items-center gap-1.5 text-sm font-medium">
-            <NotepadText size={14} />
-            Notka (opcjonalnie)
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={1000}
-            placeholder="np. zarezerwować stolik, parkować od tyłu…"
-            className="field-base w-full"
-          />
-        </div>
+          <form
+            onSubmit={save}
+            className="flex flex-1 flex-col gap-4 overflow-y-auto px-5 py-4"
+          >
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-stop-time"
+                className="flex items-center gap-1.5 text-sm font-medium"
+              >
+                <Clock size={14} aria-hidden />
+                Godzina (opcjonalnie)
+              </label>
+              <input
+                id="edit-stop-time"
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="field-base h-11 w-full"
+              />
+            </div>
 
-        <div className="flex justify-end gap-2 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={pending}
-            className="inline-flex h-10 items-center rounded-lg border border-border bg-background px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
-          >
-            Anuluj
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            {pending ? "Zapisuję…" : "Zapisz"}
-          </button>
-        </div>
-      </form>
-    </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="edit-stop-note"
+                className="flex items-center gap-1.5 text-sm font-medium"
+              >
+                <NotepadText size={14} aria-hidden />
+                Notka (opcjonalnie)
+              </label>
+              <textarea
+                id="edit-stop-note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="np. zarezerwować stolik, parkować od tyłu…"
+                className="field-base w-full"
+              />
+            </div>
+
+            <div className="mt-auto flex gap-2 pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={pending}
+                className="flex-1"
+              >
+                Anuluj
+              </Button>
+              <Button type="submit" disabled={pending} className="flex-1">
+                {pending ? "Zapisuję…" : "Zapisz"}
+              </Button>
+            </div>
+          </form>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }
