@@ -109,16 +109,35 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
     [stops],
   );
 
+  // Map height calc: subtract everything that surrounds the map to
+  // keep the info card visible without scrolling. Layout from top:
+  //   PageHeader (~60 px incl. safe-area-top)
+  //   meta band + progress (~64 px)
+  //   toggle + spacing (~52 px)
+  //   section padding y (~32 px)
+  //   BottomNav (60 px) + safe-area-bottom
+  // Plus a 32 px buffer so the card always has breathing room above
+  // BottomNav. min-h ensures the map stays usable on tall pages.
+  const mapHeight =
+    "min-h-[420px] h-[calc(100dvh-280px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]";
+
   if (stops.length === 0) {
     return (
-      <div className="flex h-[calc(100dvh-180px)] items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground">
+      <div
+        className={cn(
+          "flex items-center justify-center rounded-2xl border border-dashed text-sm text-muted-foreground",
+          mapHeight,
+        )}
+      >
         Brak stopów do pokazania na mapie.
       </div>
     );
   }
 
   return (
-    <div className="relative h-[calc(100dvh-180px)] overflow-hidden rounded-2xl border">
+    <div
+      className={cn("relative overflow-hidden rounded-2xl border", mapHeight)}
+    >
       <MapLibreMap
         {...view}
         onMove={(e) => setView(e.viewState)}

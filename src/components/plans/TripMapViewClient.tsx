@@ -10,7 +10,7 @@ const TripMapView = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[calc(100dvh-180px)] w-full animate-pulse rounded-2xl bg-muted" />
+      <div className="min-h-[420px] h-[calc(100dvh-280px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] w-full animate-pulse rounded-2xl bg-muted" />
     ),
   },
 );

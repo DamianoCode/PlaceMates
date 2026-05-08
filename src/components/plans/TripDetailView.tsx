@@ -24,10 +24,13 @@ export function TripDetailView({
 
   return (
     <div className="space-y-3">
+      {/* Segmented control — both halves equal width, single border
+       *  frame around the pair so it reads as one cohesive component
+       *  rather than two loose buttons. */}
       <div
         role="tablist"
         aria-label="Widok planu"
-        className="inline-flex items-center gap-1 rounded-full border border-border/60 bg-background p-1"
+        className="grid grid-cols-2 gap-1 rounded-full border border-border/60 bg-muted/40 p-1"
       >
         <ToggleButton
           active={mode === "list"}
@@ -70,10 +73,10 @@ function ToggleButton({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
+        "inline-flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
-          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
       {icon}

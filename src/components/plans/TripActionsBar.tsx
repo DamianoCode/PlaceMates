@@ -9,10 +9,13 @@ import { deleteTripAction } from "@/app/(app)/plans/actions";
 import { EditTripDialog } from "./EditTripDialog";
 
 /**
- * Edit + delete row for the trip detail page. Edit opens a dialog;
- * delete shows a confirm modal first because losing a planned
- * itinerary by mis-tap is a bad day. After delete we redirect back
- * to /plans.
+ * Compact icon-only action set for the PageHeader trailing slot.
+ * Mirrors the Heart/Bookmark/Users pattern on `/places/[id]` —
+ * keeps trip-level actions close to the title rather than as a
+ * second row of pills competing with the Lista/Mapa toggle.
+ *
+ * Edit opens a dialog, Delete shows a confirm modal first because
+ * losing a planned itinerary by mis-tap is a bad day.
  */
 export function TripActionsBar({
   tripId,
@@ -44,15 +47,14 @@ export function TripActionsBar({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-0.5">
       <button
         type="button"
         onClick={() => setEditing(true)}
         aria-label="Edytuj plan"
-        className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-xs font-medium hover:bg-muted"
+        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
-        <Pencil size={14} />
-        Edytuj
+        <Pencil size={16} />
       </button>
       {canDelete && (
         <button
@@ -60,10 +62,9 @@ export function TripActionsBar({
           onClick={() => setConfirmingDelete(true)}
           disabled={pending}
           aria-label="Usuń plan"
-          className="inline-flex h-9 items-center gap-1.5 rounded-full border border-destructive/30 bg-background px-3 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-60"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
         >
-          <Trash2 size={14} />
-          Usuń
+          <Trash2 size={16} />
         </button>
       )}
 
@@ -81,8 +82,8 @@ export function TripActionsBar({
         title="Usunąć plan?"
         description={
           <>
-            Plan „{tripName}&rdquo; zniknie razem ze wszystkimi stopami. Oceny i
-            zdjęcia miejsc zostają — usuwany jest tylko sam plan.
+            Plan „{tripName}&rdquo; zniknie razem ze wszystkimi stopami.
+            Oceny i zdjęcia miejsc zostają — usuwany jest tylko sam plan.
           </>
         }
         confirmLabel={pending ? "Usuwam…" : "Usuń"}

@@ -36,46 +36,68 @@ export default async function TripDetailPage({
 
   return (
     <>
-      <PageHeader title={trip.name} fallbackHref="/plans" />
-      <section className="mx-auto max-w-2xl space-y-5 p-4">
-        {/* Summary band — date, group attribution, completion. The
-         *  metadata is read-only here; edit lives in the actions bar. */}
-        <div className="space-y-3">
+      <PageHeader
+        title={trip.name}
+        fallbackHref="/plans"
+        // Action icons up top, mirroring the place-detail page's
+        // FavoriteHeart / Wishlist / GroupWishlist trio. Frees the
+        // body for the toggle + map without two competing button
+        // rows fighting for the user's eye.
+        trailing={
+          <TripActionsBar
+            tripId={trip.id}
+            tripName={trip.name}
+            tripPlannedFor={trip.plannedFor}
+            canDelete={canDelete}
+          />
+        }
+      />
+      <section className="mx-auto max-w-2xl space-y-3 p-4">
+        {/* Compact meta band — single inline row of group / date /
+         *  completion counter, separated by middle-dot characters
+         *  (looks more deliberate than space + bullet markup). The
+         *  "all done" check stays as a soft badge on the right. */}
+        <div className="space-y-2">
           <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1">
-                  <Users size={12} />
-                  {trip.groupName}
-                </span>
-                <span className="inline-flex items-center gap-1">
-                  <CalendarDays size={12} />
-                  {trip.plannedFor
-                    ? formatDate(trip.plannedFor)
-                    : "bez daty"}
-                </span>
-                <span className="tabular-nums">
-                  {completedCount}/{total} odhaczone
-                </span>
-              </div>
-              {trip.description && (
-                <p className="mt-2 text-sm italic text-muted-foreground">
-                  {trip.description}
-                </p>
-              )}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <Users size={12} aria-hidden />
+                {trip.groupName}
+              </span>
+              <span aria-hidden className="text-muted-foreground/50">
+                ·
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <CalendarDays size={12} aria-hidden />
+                {trip.plannedFor
+                  ? formatDate(trip.plannedFor)
+                  : "bez daty"}
+              </span>
+              <span aria-hidden className="text-muted-foreground/50">
+                ·
+              </span>
+              <span className="tabular-nums">
+                {completedCount}/{total} odhaczone
+              </span>
             </div>
             {allDone && (
               <span
                 aria-label="Wszystkie stopy ukończone"
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
               >
-                <Check size={16} />
+                <Check size={14} />
               </span>
             )}
           </div>
 
+          {trip.description && (
+            <p className="text-sm italic text-muted-foreground">
+              {trip.description}
+            </p>
+          )}
+
           {total > 0 && (
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
               <div
                 className={
                   "h-full rounded-full transition-all " +
@@ -86,13 +108,6 @@ export default async function TripDetailPage({
               />
             </div>
           )}
-
-          <TripActionsBar
-            tripId={trip.id}
-            tripName={trip.name}
-            tripPlannedFor={trip.plannedFor}
-            canDelete={canDelete}
-          />
         </div>
 
         <TripDetailView stops={trip.stops} tripId={trip.id} />
