@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Route, Sparkles } from "lucide-react";
 import { getAuth } from "@/infra/auth";
 import { listTripsForUser } from "@/domain/trips/service";
 import { listUserGroups } from "@/domain/groups/service";
@@ -10,6 +11,14 @@ import { NewTripButton } from "@/components/plans/NewTripButton";
  * /plans — overview of every trip in the user's groups, split into
  * "Aktualne" (something still to do, deadline in the future or none)
  * and "Archiwalne" (everything done, or planned date already gone).
+ *
+ * Two layouts:
+ *   - empty state: hero CTA centred in the page, decorative Route
+ *     icon, primary "Stwórz pierwszy plan" button. The page title
+ *     in PageHeader already says "Plany" so we don't repeat the
+ *     descriptor — empty surface speaks louder.
+ *   - populated: compact stats strip + the new-plan CTA on the
+ *     right, then sectioned card lists.
  */
 export default async function PlansPage() {
   const user = await (await getAuth()).getUser();
@@ -20,29 +29,61 @@ export default async function PlansPage() {
     listUserGroups(user.id),
   ]);
 
+  const total = active.length + archived.length;
+  const inProgress = active.filter(
+    (t) => t.completedCount > 0 && t.completedCount < t.stopCount,
+  ).length;
+
   return (
     <>
       <PageHeader title="Plany" fallbackHref="/me" />
-      <section className="mx-auto max-w-2xl space-y-6 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Wycieczki, weekendy, wypady — uporządkowane miejsca z odhaczaniem.
-          </p>
-          <NewTripButton
+      <section className="mx-auto max-w-2xl space-y-5 p-4">
+        {total === 0 ? (
+          <EmptyState
+            disabled={groups.length === 0}
             groups={groups.map((g) => ({ id: g.id, name: g.name }))}
           />
-        </div>
-
-        {active.length === 0 && archived.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              {groups.length === 0
-                ? "Najpierw dołącz do grupy."
-                : "Brak planów. Stwórz pierwszy albo dodaj miejsce do nowego planu z poziomu jego widoku."}
-            </p>
-          </div>
         ) : (
           <>
+            {/* Compact stats strip + primary action. Stats use
+             *  monospace tabular numbers for visual rhythm with the
+             *  rest of the app's data displays. */}
+            <div className="flex items-center justify-between gap-3">
+              <dl className="flex items-baseline gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <div className="flex items-baseline gap-1">
+                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                    Razem
+                  </dt>
+                  <dd className="font-display text-base text-foreground tabular-nums">
+                    {total}
+                  </dd>
+                </div>
+                {inProgress > 0 && (
+                  <div className="flex items-baseline gap-1">
+                    <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                      W toku
+                    </dt>
+                    <dd className="font-display text-base text-primary tabular-nums">
+                      {inProgress}
+                    </dd>
+                  </div>
+                )}
+                {archived.length > 0 && (
+                  <div className="flex items-baseline gap-1">
+                    <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                      Archiwum
+                    </dt>
+                    <dd className="font-display text-base text-foreground tabular-nums">
+                      {archived.length}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              <NewTripButton
+                groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+              />
+            </div>
+
             {active.length > 0 && (
               <Section title="Aktualne">
                 {active.map((t) => (
@@ -61,6 +102,49 @@ export default async function PlansPage() {
         )}
       </section>
     </>
+  );
+}
+
+function EmptyState({
+  disabled,
+  groups,
+}: {
+  disabled: boolean;
+  groups: Array<{ id: string; name: string }>;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-5 px-4 py-10 text-center sm:py-16">
+      {/* Decorative icon — soft primary-tinted disc with route glyph
+       *  and a small sparkle accent. Evokes "let's chart a course"
+       *  without being childish. */}
+      <div className="relative">
+        <div
+          aria-hidden
+          className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent"
+        >
+          <Route size={40} className="text-primary" strokeWidth={1.5} />
+        </div>
+        <span
+          aria-hidden
+          className="absolute -right-1 -top-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary/15 text-primary"
+        >
+          <Sparkles size={14} />
+        </span>
+      </div>
+
+      <div className="space-y-1.5">
+        <h2 className="font-display text-2xl leading-tight">
+          {disabled ? "Najpierw dołącz do grupy" : "Brak jeszcze planów"}
+        </h2>
+        <p className="mx-auto max-w-sm text-sm italic leading-relaxed text-muted-foreground">
+          {disabled
+            ? "Plan żyje w grupie — utwórz albo dołącz do jakiejś, żeby zaplanować pierwszą wycieczkę."
+            : "Zaplanuj sobotni wypad, weekendową ucieczkę albo wakacje. Możesz też dodać miejsce do nowego planu z poziomu jego widoku."}
+        </p>
+      </div>
+
+      {!disabled && <NewTripButton groups={groups} />}
+    </div>
   );
 }
 
