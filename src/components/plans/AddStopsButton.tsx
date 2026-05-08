@@ -1,22 +1,41 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Plus, Search, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
+import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { CategoryIcon } from "@/components/map/category-icons";
 import { addStopsAction } from "@/app/(app)/plans/actions";
 import type { AddableStopCandidate } from "@/domain/trips/service";
 
 /**
- * Bulk-add stops to a trip. Vaul drawer with:
- *   - search input filtering by name / category / address
- *   - scrollable list of every place in the trip's group that
- *     isn't already a stop, alphabetical
- *   - tap row → toggles its check; selected rows tinted primary
- *   - sticky bottom CTA "Dodaj N" — disabled at 0
+ * Bulk-add stops to a trip. Vaul drawer with a virtualized,
+ * debounced multi-select picker.
+ *
+ * Performance notes:
+ *   - List is virtualized via `useVirtualizer` (only ~10–15 rows in
+ *     the DOM at once). With 500-item lists the previous all-at-once
+ *     `<ul>.map` had visible jank during typing — now flat regardless
+ *     of group size.
+ *   - Search query is debounced 120 ms via `useDebouncedValue` so a
+ *     fast typer doesn't re-filter on every keystroke; the input
+ *     itself stays uncontrolled-feeling thanks to the immediate
+ *     local state update.
+ *   - Row component is `memo`'d and the toggle callback is
+ *     `useCallback`-stable, so flipping one selection only re-renders
+ *     that one row — not all 500.
  *
  * Adding from /plans/[id] context only — `/places` stays
  * deliberately uncluttered for plain browsing. Multi-select lives
@@ -39,6 +58,9 @@ export function AddStopsButton({
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [query, setQuery] = useState("");
+  // Debounce so a fast typer doesn't trigger 10 filter passes
+  // mid-word. 120 ms feels instant but cuts the work load.
+  const debouncedQuery = useDebouncedValue(query, 120);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   // Reset on open — stale checkbox state from a previous session
@@ -57,23 +79,26 @@ export function AddStopsButton({
   }, [open]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = debouncedQuery.trim().toLowerCase();
     if (!q) return candidates;
     return candidates.filter((c) => {
       const haystack = `${c.name} ${c.categoryName} ${c.address ?? ""}`
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [candidates, query]);
+  }, [candidates, debouncedQuery]);
 
-  function toggle(id: string) {
+  // Stable toggle so memoised rows don't re-render on every
+  // parent render. Read previous Set inside the updater rather
+  // than via closure → no `selected` dep needed.
+  const toggle = useCallback((id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  }, []);
 
   function submit() {
     const ids = Array.from(selected);
@@ -164,83 +189,13 @@ export function AddStopsButton({
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto">
-            {noCandidates ? (
-              <EmptyHint />
-            ) : filtered.length === 0 ? (
-              <p className="px-5 py-10 text-center text-sm italic text-muted-foreground">
-                Nic nie pasuje do „{query}&rdquo;.
-              </p>
-            ) : (
-              <ul className="divide-y divide-border/40">
-                {filtered.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => toggle(c.id)}
-                      className={cn(
-                        "flex w-full items-center gap-3 px-5 py-2.5 text-left transition-colors",
-                        selected.has(c.id)
-                          ? "bg-primary/5 hover:bg-primary/10"
-                          : "hover:bg-accent/40 active:bg-accent",
-                      )}
-                    >
-                      {/* Photo / category fallback — same visual as
-                       *  PlaceCard so picker feels native. */}
-                      {c.photoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={c.photoUrl}
-                          alt=""
-                          loading="lazy"
-                          className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div
-                          aria-hidden
-                          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
-                        >
-                          <CategoryIcon
-                            slug={c.categorySlug}
-                            size={20}
-                            strokeWidth={1.5}
-                            className="text-primary/70"
-                          />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium leading-tight">
-                          {c.name}
-                        </p>
-                        <p className="truncate text-xs italic text-muted-foreground">
-                          {c.categoryName}
-                        </p>
-                        {c.address && (
-                          <p className="truncate text-[11px] text-muted-foreground/80">
-                            {c.address}
-                          </p>
-                        )}
-                      </div>
-                      {/* Custom checkbox — round, primary-tinted when
-                       *  active. Bigger than a native checkbox so it
-                       *  reads from across the row. */}
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                          selected.has(c.id)
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background text-transparent",
-                        )}
-                      >
-                        <Check size={14} />
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <CandidateList
+            candidates={filtered}
+            selected={selected}
+            onToggle={toggle}
+            noCandidates={noCandidates}
+            queryHint={debouncedQuery.trim()}
+          />
 
           {!noCandidates && (
             <div className="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
@@ -264,6 +219,161 @@ export function AddStopsButton({
     </Drawer.Root>
   );
 }
+
+// Virtualized list — separate component so its render cycle
+// doesn't drag the rest of the drawer header / footer with it on
+// every scroll tick.
+function CandidateList({
+  candidates,
+  selected,
+  onToggle,
+  noCandidates,
+  queryHint,
+}: {
+  candidates: AddableStopCandidate[];
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+  noCandidates: boolean;
+  queryHint: string;
+}) {
+  const parentRef = useRef<HTMLDivElement | null>(null);
+  const virtualizer = useVirtualizer({
+    count: candidates.length,
+    getScrollElement: () => parentRef.current,
+    // Each row is ~76 px (h-12 image + py-2.5 + 3 lines of text up
+    // to address). 80 is a slight over-estimate to avoid jumpy
+    // remeasure during fast scroll; the virtualizer will measure
+    // actual heights via measureElement.
+    estimateSize: () => 80,
+    overscan: 6,
+  });
+
+  if (noCandidates) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <EmptyHint />
+      </div>
+    );
+  }
+
+  if (candidates.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <p className="px-5 py-10 text-center text-sm italic text-muted-foreground">
+          Nic nie pasuje do „{queryHint}&rdquo;.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div ref={parentRef} className="flex-1 overflow-y-auto">
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          position: "relative",
+        }}
+      >
+        {virtualizer.getVirtualItems().map((virtualRow) => {
+          const c = candidates[virtualRow.index];
+          return (
+            <div
+              key={c.id}
+              ref={virtualizer.measureElement}
+              data-index={virtualRow.index}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <CandidateRow
+                candidate={c}
+                selected={selected.has(c.id)}
+                onToggle={onToggle}
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Memoised so toggling one selection only re-renders that row.
+// Receives a stable `onToggle` callback from the parent (useCallback
+// with no deps reads previous state via the setter callback form).
+const CandidateRow = memo(function CandidateRow({
+  candidate,
+  selected,
+  onToggle,
+}: {
+  candidate: AddableStopCandidate;
+  selected: boolean;
+  onToggle: (id: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(candidate.id)}
+      className={cn(
+        "flex w-full items-center gap-3 border-b border-border/40 px-5 py-2.5 text-left transition-colors",
+        selected
+          ? "bg-primary/5 hover:bg-primary/10"
+          : "hover:bg-accent/40 active:bg-accent",
+      )}
+    >
+      {candidate.photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={candidate.photoUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
+        />
+      ) : (
+        <div
+          aria-hidden
+          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
+        >
+          <CategoryIcon
+            slug={candidate.categorySlug}
+            size={20}
+            strokeWidth={1.5}
+            className="text-primary/70"
+          />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium leading-tight">
+          {candidate.name}
+        </p>
+        <p className="truncate text-xs italic text-muted-foreground">
+          {candidate.categoryName}
+        </p>
+        {candidate.address && (
+          <p className="truncate text-[11px] text-muted-foreground/80">
+            {candidate.address}
+          </p>
+        )}
+      </div>
+      <span
+        aria-hidden
+        className={cn(
+          "flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+          selected
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border bg-background text-transparent",
+        )}
+      >
+        <Check size={14} />
+      </span>
+    </button>
+  );
+});
 
 function EmptyHint() {
   return (
