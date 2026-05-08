@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { InstallPrompt } from "@/components/layout/InstallPrompt";
+import { NetworkStatusBanner } from "@/components/pwa/NetworkStatusBanner";
+import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
 import { getAuth } from "@/infra/auth";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -15,6 +17,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       <div className="flex-1">{children}</div>
       <BottomNav />
       <InstallPrompt />
+      <NetworkStatusBanner />
+      <ServiceWorkerRegistration />
     </div>
   );
 }
