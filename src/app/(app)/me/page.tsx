@@ -1,5 +1,6 @@
 import Link from "next/link";
 import {
+  CalendarRange,
   ChevronRight,
   Globe,
   Palette,
@@ -66,7 +67,14 @@ export default async function MePage() {
              *  Ulubione + Do odwiedzenia are now filter pills on
              *  /places — both navigation duplicates removed.
              *  "Publiczne opinie" stays here as a less-frequent
-             *  destination that doesn't earn a tab. */}
+             *  destination that doesn't earn a tab. Plany ląduje
+             *  tutaj zamiast w BottomNav póki feature dojrzewa. */}
+            <NavRow
+              href="/plans"
+              icon={<CalendarRange size={18} className="text-primary" />}
+              title="Plany"
+              subtitle="Wycieczki i wypady z odhaczaniem stopów"
+            />
             <NavRow
               href="/discover"
               icon={<Globe size={18} className="text-primary" />}

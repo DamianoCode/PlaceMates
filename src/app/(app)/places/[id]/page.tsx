@@ -27,6 +27,7 @@ import { listItemsForPlace } from "@/domain/items/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
 import { isFavorite } from "@/domain/favorites/service";
 import { getGroupWishlistEntry } from "@/domain/group-wishlist/service";
+import { addablePlansForPlace } from "@/domain/trips/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PhotoGallery } from "@/components/places/PhotoGallery";
@@ -44,6 +45,7 @@ import { StatPill } from "@/components/places/StatPill";
 import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
 import { SharePlaceButton } from "@/components/places/SharePlaceButton";
+import { AddToPlanButton } from "@/components/plans/AddToPlanButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
 import { RatingsByGroup } from "@/components/places/RatingsByGroup";
@@ -72,6 +74,7 @@ export default async function PlaceDetailPage({
     canEdit,
     items,
     shareAvailability,
+    planAvailability,
   ] = await Promise.all([
     getCategory(place.categoryId),
     listRatingsForPlaceAcrossGroups(id, user.id),
@@ -84,6 +87,7 @@ export default async function PlaceDetailPage({
     canUserEditPlace(id, user.id),
     listItemsForPlace(id, user.id),
     getSharePlaceAvailability(id, user.id),
+    addablePlansForPlace(id, user.id),
   ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -201,6 +205,15 @@ export default async function PlaceDetailPage({
             <SharePlaceButton
               placeId={id}
               targets={shareAvailability.availableTargets}
+            />
+          )}
+          {planAvailability.groupId && (
+            <AddToPlanButton
+              placeId={id}
+              groupId={planAvailability.groupId}
+              groupName={planAvailability.groupName}
+              candidates={planAvailability.candidates}
+              alreadyIn={planAvailability.alreadyIn}
             />
           )}
         </div>

@@ -50,6 +50,13 @@
       "when": 1777920000000,
       "tag": "0006_group_wishlist",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1778236099750,
+      "tag": "0007_trips",
+      "breakpoints": true
     }
   ]
 }
