@@ -76,7 +76,7 @@ export function SharePlaceButton({
         onClick={() => share(t.id, t.name)}
         disabled={pending}
         aria-label={`Udostępnij miejsce do grupy ${t.name}`}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
+        className="inline-flex h-11 flex-shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
       >
         <Share2 size={16} />
         {pending ? "Udostępniam…" : `Udostępnij do „${t.name}"`}
@@ -85,7 +85,7 @@ export function SharePlaceButton({
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex-shrink-0">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

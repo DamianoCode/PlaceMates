@@ -28,7 +28,7 @@ export function NavigateButton({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`Nawiguj do ${label}`}
-      className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      className="inline-flex h-11 flex-shrink-0 items-center gap-2 rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
     >
       <Navigation size={16} />
       Nawiguj

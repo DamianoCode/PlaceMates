@@ -356,3 +356,81 @@ export const publicShares = pgTable("public_shares", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
 });
+
+// Trip planner ----------------------------------------------------------
+//
+// A trip is a group-owned, ordered itinerary of places to visit. Stops
+// can be marked as "completed" by any group member while the trip is
+// underway — supports the "checking off as we go" UX.
+//
+// Lifecycle is implicit: a trip is "active" if it has any uncompleted
+// stops AND (no planned date OR planned date is in the future). Past
+// trips with everything done land in the archive section. We don't
+// keep an explicit status field because every transition can be
+// reconstructed from `completed_at` + `planned_for`.
+
+export const trips = pgTable(
+  "trips",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    description: text("description"),
+    /** Optional target date — NULL means "open-ended planning". */
+    plannedFor: timestamp("planned_for", { mode: "date", withTimezone: false }),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("trips_group_idx").on(t.groupId, t.plannedFor)],
+);
+
+export const tripStops = pgTable(
+  "trip_stops",
+  {
+    /**
+     * Own surrogate id rather than a composite (trip_id, place_id) PK.
+     * Drag-drop reorder bulk-updates `sort_order` and an optimistic
+     * client-side reshuffle is far easier when each row has a stable
+     * id that doesn't depend on its content.
+     */
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    placeId: uuid("place_id")
+      .notNull()
+      .references(() => places.id, { onDelete: "cascade" }),
+    /**
+     * Position within the trip. Sparse on purpose — bulk reorders
+     * rewrite the whole sequence, so we don't need fractional indices
+     * (yet). Ints are easier to reason about in optimistic UI.
+     */
+    sortOrder: integer("sort_order").notNull(),
+    /** Optional time-of-day for this stop ("11:30 — kawa u Boska"). */
+    plannedAtTime: text("planned_at_time"),
+    /** Free-form note for this stop. */
+    note: text("note"),
+    /**
+     * Group-level completion. Any member can toggle. NULL = pending,
+     * timestamp = "we did this stop". `completedBy` keeps attribution
+     * for the UI ("Asia odhaczyła") without needing to dig through
+     * activity logs.
+     */
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    completedBy: uuid("completed_by").references(() => profiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("trip_stops_trip_idx").on(t.tripId, t.sortOrder),
+    // A place can't appear twice in the same trip — would confuse the
+    // "checking off" UX (which one am I marking?).
+    uniqueIndex("trip_stops_trip_place_uk").on(t.tripId, t.placeId),
+  ],
+);

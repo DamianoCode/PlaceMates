@@ -62,11 +62,11 @@ export default async function MePage() {
             <CardTitle className="font-display text-xl">Odkrywaj</CardTitle>
           </CardHeader>
           <CardContent className="divide-y">
-            {/* Ranking jumped to BottomNav as its own tab, and
-             *  Ulubione + Do odwiedzenia are now filter pills on
-             *  /places — both navigation duplicates removed.
-             *  "Publiczne opinie" stays here as a less-frequent
-             *  destination that doesn't earn a tab. */}
+            {/* Ranking + Plany trafiły do BottomNav jako własne
+             *  zakładki, Ulubione + Do odwiedzenia są filter pillsami
+             *  na /places. "Publiczne opinie" zostaje tutaj jako
+             *  rzadziej-odwiedzana destynacja która nie zarabia
+             *  na slot w BottomNav. */}
             <NavRow
               href="/discover"
               icon={<Globe size={18} className="text-primary" />}

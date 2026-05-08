@@ -27,6 +27,7 @@ import { listItemsForPlace } from "@/domain/items/service";
 import { isOnWishlist } from "@/domain/wishlist/service";
 import { isFavorite } from "@/domain/favorites/service";
 import { getGroupWishlistEntry } from "@/domain/group-wishlist/service";
+import { addablePlansForPlace } from "@/domain/trips/service";
 import { getExistingShareSlug } from "@/domain/sharing/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { PhotoGallery } from "@/components/places/PhotoGallery";
@@ -44,6 +45,7 @@ import { StatPill } from "@/components/places/StatPill";
 import { VisitList } from "@/components/places/VisitList";
 import { NavigateButton } from "@/components/places/NavigateButton";
 import { SharePlaceButton } from "@/components/places/SharePlaceButton";
+import { AddToPlanButton } from "@/components/plans/AddToPlanButton";
 import { ItemCard } from "@/components/items/ItemCard";
 import { CreateItemForm } from "@/components/items/CreateItemForm";
 import { RatingsByGroup } from "@/components/places/RatingsByGroup";
@@ -72,6 +74,7 @@ export default async function PlaceDetailPage({
     canEdit,
     items,
     shareAvailability,
+    planAvailability,
   ] = await Promise.all([
     getCategory(place.categoryId),
     listRatingsForPlaceAcrossGroups(id, user.id),
@@ -84,6 +87,7 @@ export default async function PlaceDetailPage({
     canUserEditPlace(id, user.id),
     listItemsForPlace(id, user.id),
     getSharePlaceAvailability(id, user.id),
+    addablePlansForPlace(id, user.id),
   ]);
   const shareSlug = myRating ? await getExistingShareSlug(myRating.id) : null;
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -166,43 +170,79 @@ export default async function PlaceDetailPage({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-muted/30 p-3 text-sm">
-          <MapPin size={16} className="flex-shrink-0 text-muted-foreground" />
-          <div className="min-w-0 flex-1">
-            {place.address ? (
-              <p className="break-words">{place.address}</p>
-            ) : (
-              <p className="text-muted-foreground">Bez adresu</p>
-            )}
-            <p className="text-xs tabular-nums text-muted-foreground">
-              {place.lat.toFixed(5)}, {place.lng.toFixed(5)}
-            </p>
-          </div>
-          <NavigateButton lat={place.lat} lng={place.lng} label={place.name} />
-          <Link
-            href={`/map?lat=${place.lat.toFixed(6)}&lng=${place.lng.toFixed(6)}&zoom=18&place=${id}`}
-            aria-label="Pokaż na mapie"
-            className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
-          >
-            <MapIcon size={16} />
-            Na mapie
-          </Link>
-          {canEdit && (
-            <Link
-              href={`/places/${id}/edit`}
-              aria-label="Edytuj miejsce"
-              className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
+        {/* Lokalizacja — info na górze, akcje w osobnym scrollowanym
+         *  rzędzie. Stary układ wrzucał wszystko w `flex flex-wrap`,
+         *  na małych ekranach buttony skakały i hierarchia była
+         *  rozmyta. Teraz adres jest dominujący a actions sit w
+         *  poziomym scroll z mask-fade na krawędziach (jak filter
+         *  pillsy na mapie). */}
+        <div className="overflow-hidden rounded-2xl border bg-muted/30">
+          <div className="flex items-start gap-3 px-4 pt-4 pb-3">
+            <span
+              aria-hidden
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
             >
-              <PencilLine size={16} />
-              Edytuj
-            </Link>
-          )}
-          {shareAvailability && shareAvailability.availableTargets.length > 0 && (
-            <SharePlaceButton
-              placeId={id}
-              targets={shareAvailability.availableTargets}
-            />
-          )}
+              <MapPin size={16} />
+            </span>
+            <div className="min-w-0 flex-1 space-y-0.5">
+              {place.address ? (
+                <p className="break-words text-sm leading-snug">
+                  {place.address}
+                </p>
+              ) : (
+                <p className="text-sm italic text-muted-foreground">
+                  Bez adresu
+                </p>
+              )}
+              <p className="font-mono text-[11px] tabular-nums text-muted-foreground/80">
+                {place.lat.toFixed(5)}°N · {place.lng.toFixed(5)}°E
+              </p>
+            </div>
+          </div>
+
+          <div className="border-t border-border/40">
+            <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-3 no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+              <NavigateButton
+                lat={place.lat}
+                lng={place.lng}
+                label={place.name}
+              />
+              <Link
+                href={`/map?lat=${place.lat.toFixed(6)}&lng=${place.lng.toFixed(6)}&zoom=18&place=${id}`}
+                aria-label="Pokaż na mapie"
+                className="inline-flex h-11 flex-shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
+              >
+                <MapIcon size={16} />
+                Na mapie
+              </Link>
+              {canEdit && (
+                <Link
+                  href={`/places/${id}/edit`}
+                  aria-label="Edytuj miejsce"
+                  className="inline-flex h-11 flex-shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted"
+                >
+                  <PencilLine size={16} />
+                  Edytuj
+                </Link>
+              )}
+              {shareAvailability &&
+                shareAvailability.availableTargets.length > 0 && (
+                  <SharePlaceButton
+                    placeId={id}
+                    targets={shareAvailability.availableTargets}
+                  />
+                )}
+              {planAvailability.groupId && (
+                <AddToPlanButton
+                  placeId={id}
+                  groupId={planAvailability.groupId}
+                  groupName={planAvailability.groupName}
+                  candidates={planAvailability.candidates}
+                  alreadyIn={planAvailability.alreadyIn}
+                />
+              )}
+            </div>
+          </div>
         </div>
 
         {category && (
