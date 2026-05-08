@@ -1,9 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Calendar, Check, Plus } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  ChevronRight,
+  Plus,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
+import { Drawer } from "vaul";
 import { addStopAction } from "@/app/(app)/plans/actions";
 import { CreateTripDialog } from "./CreateTripDialog";
 
@@ -11,14 +18,20 @@ type Trip = { id: string; name: string; plannedFor: Date | null };
 type AlreadyIn = { id: string; name: string };
 
 /**
- * Dropdown affordance on /places/[id] — pick an existing plan to
- * append this place to, or open CreateTripDialog seeded with this
- * place as stop #1. Mirrors the SharePlaceButton pattern so users
- * recognize the interaction.
+ * Bottom drawer affordance on /places/[id] for adding the current
+ * place to one of the user's group trips. Replaces the earlier
+ * dropdown-tooltip — that pattern looked cramped on small screens
+ * and clipped near the viewport edge.
  *
- * Hidden when the user has no eligible plans AND can't create one
- * (e.g., not in the place's group at all — though that path is
- * already gated upstream).
+ * Layout philosophy:
+ *   - Big tap targets (h-14 rows) for one-thumb operation.
+ *   - "Already in" entries shown muted with a check, not enabled —
+ *     idempotency cue without re-doing the action.
+ *   - Sticky footer with the "Nowy plan…" CTA so it's always
+ *     reachable regardless of how many trips exist.
+ *
+ * Built on Vaul (Drawer) — swipe-to-dismiss, focus trap, scroll lock
+ * out of the box. Same primitive as NearbyImportSheet.
  */
 export function AddToPlanButton({
   placeId,
@@ -30,36 +43,13 @@ export function AddToPlanButton({
   placeId: string;
   groupId: string;
   groupName: string;
-  /** Plans the user could add this place to. */
   candidates: Trip[];
-  /** Plans this place is already part of — shown disabled with check. */
   alreadyIn: AlreadyIn[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Pointer-down outside + Escape close. Same vanilla wiring as
-  // SharePlaceButton — no popover lib for one menu.
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!containerRef.current) return;
-      if (containerRef.current.contains(e.target as Node)) return;
-      setOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   function addToTrip(trip: Trip) {
     startTransition(async () => {
@@ -74,104 +64,137 @@ export function AddToPlanButton({
     });
   }
 
-  // Nothing useful to do? Hide entirely. Edge case: place's group has
-  // no trips and the user wants to create one — we still want to
-  // render to provide that path. So only hide if alreadyIn covers
-  // *every* possible plan AND there's no candidate to add to.
-  if (candidates.length === 0 && alreadyIn.length === 0) {
-    // Nothing yet — show the button anyway so user can create from here.
-  }
+  const empty = candidates.length === 0 && alreadyIn.length === 0;
 
   return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        disabled={pending}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="inline-flex h-11 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
+    <>
+      <Drawer.Root
+        open={open}
+        onOpenChange={setOpen}
       >
-        <Plus size={16} />
-        {pending ? "Dodaję…" : "Do planu"}
-      </button>
-
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-30 mt-1 min-w-[14rem] overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg"
-        >
-          {candidates.length > 0 && (
-            <>
-              <p className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Do planu
-              </p>
-              <ul>
-                {candidates.map((t) => (
-                  <li key={t.id}>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => addToTrip(t)}
-                      disabled={pending}
-                      className="flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground disabled:opacity-60"
-                    >
-                      <Calendar
-                        size={14}
-                        className="mt-0.5 flex-shrink-0 text-muted-foreground"
-                        aria-hidden
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{t.name}</span>
-                        {t.plannedFor && (
-                          <span className="block text-[11px] text-muted-foreground">
-                            {formatShortDate(t.plannedFor)}
-                          </span>
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {alreadyIn.length > 0 && (
-            <>
-              <p className="border-t border-border/60 px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                Już w planach
-              </p>
-              <ul>
-                {alreadyIn.map((t) => (
-                  <li key={t.id}>
-                    <span className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                      <Check
-                        size={14}
-                        className="flex-shrink-0 text-emerald-600"
-                        aria-hidden
-                      />
-                      <span className="truncate">{t.name}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
+        <Drawer.Trigger asChild>
           <button
             type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              setCreating(true);
-            }}
-            className="flex w-full items-center gap-2 border-t border-border/60 bg-muted/30 px-3 py-2.5 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            disabled={pending}
+            className="inline-flex h-11 flex-shrink-0 items-center gap-1.5 rounded-full border border-border bg-background px-4 text-sm font-medium hover:bg-muted disabled:opacity-60"
           >
-            <Plus size={14} />
-            Nowy plan…
+            <Plus size={16} />
+            {pending ? "Dodaję…" : "Do planu"}
           </button>
-        </div>
-      )}
+        </Drawer.Trigger>
+
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+          <Drawer.Content
+            className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
+            aria-describedby={undefined}
+          >
+            <Drawer.Handle className="my-2.5 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
+
+            <div className="border-b border-border/60 px-5 pb-4">
+              <Drawer.Title className="font-display text-xl leading-tight">
+                Do planu
+              </Drawer.Title>
+              <Drawer.Description className="mt-0.5 text-xs italic text-muted-foreground">
+                {empty
+                  ? `Brak planów w „${groupName}". Stwórz pierwszy.`
+                  : `Wybierz plan w „${groupName}" lub stwórz nowy.`}
+              </Drawer.Description>
+            </div>
+
+            <div className="flex-1 overflow-y-auto">
+              {candidates.length > 0 && (
+                <Section title="Aktualne plany">
+                  <ul className="divide-y divide-border/40">
+                    {candidates.map((t) => (
+                      <li key={t.id}>
+                        <button
+                          type="button"
+                          onClick={() => addToTrip(t)}
+                          disabled={pending}
+                          className="flex h-14 w-full items-center gap-3 px-5 text-left transition-colors hover:bg-accent/50 active:bg-accent disabled:opacity-60"
+                        >
+                          <span
+                            aria-hidden
+                            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary"
+                          >
+                            <CalendarDays size={16} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium leading-tight">
+                              {t.name}
+                            </span>
+                            {t.plannedFor && (
+                              <span className="block text-xs text-muted-foreground">
+                                {formatDate(t.plannedFor)}
+                              </span>
+                            )}
+                          </span>
+                          <ChevronRight
+                            size={16}
+                            className="flex-shrink-0 text-muted-foreground"
+                            aria-hidden
+                          />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {alreadyIn.length > 0 && (
+                <Section title="Już dodane do" muted>
+                  <ul className="divide-y divide-border/40">
+                    {alreadyIn.map((t) => (
+                      <li key={t.id}>
+                        <span className="flex h-14 w-full items-center gap-3 px-5 text-muted-foreground">
+                          <span
+                            aria-hidden
+                            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          >
+                            <Check size={16} />
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-sm">
+                            {t.name}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </Section>
+              )}
+
+              {empty && (
+                <div className="flex flex-col items-center gap-3 px-5 py-10 text-center">
+                  <span
+                    aria-hidden
+                    className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"
+                  >
+                    <Sparkles size={20} />
+                  </span>
+                  <p className="text-sm text-muted-foreground">
+                    To miejsce trafi jako pierwszy stop w nowym planie.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setCreating(true);
+                }}
+                className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-sm font-medium text-primary-foreground shadow-sm shadow-primary/30 transition-transform hover:bg-primary/90 active:scale-[0.98]"
+              >
+                <Plus size={16} />
+                Nowy plan
+              </button>
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       <CreateTripDialog
         open={creating}
@@ -184,12 +207,37 @@ export function AddToPlanButton({
           router.push(`/plans/${tripId}`);
         }}
       />
+    </>
+  );
+}
+
+function Section({
+  title,
+  muted = false,
+  children,
+}: {
+  title: string;
+  muted?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="py-3">
+      <h3
+        className={
+          "px-5 pb-1.5 font-mono text-[10px] uppercase tracking-[0.2em] " +
+          (muted ? "text-muted-foreground/60" : "text-muted-foreground")
+        }
+      >
+        {title}
+      </h3>
+      {children}
     </div>
   );
 }
 
-function formatShortDate(d: Date): string {
+function formatDate(d: Date): string {
   return d.toLocaleDateString("pl", {
+    weekday: "short",
     day: "numeric",
     month: "short",
     year:
