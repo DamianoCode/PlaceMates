@@ -1,7 +1,7 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import MapLibreMap, {
   Layer,
   Marker,
@@ -13,6 +13,8 @@ import type { Map as MLMap, LngLatBoundsLike } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { Check } from "lucide-react";
 import { getMapStyle } from "@/components/map/map-style";
+import { cn } from "@/lib/utils";
+import { TripMapInfoCard } from "./TripMapInfoCard";
 import type { TripStopView } from "@/domain/trips/service";
 
 /**
@@ -36,6 +38,33 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
   );
   const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
   const fitDoneRef = useRef(false);
+
+  // Selected pin — drives the bottom info card and the highlighted
+  // marker. Local to the map view because it doesn't matter outside
+  // (list view doesn't need a "selection"). Cleared when the user
+  // dismisses the card or taps blank map.
+  const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+
+  const selectStop = useCallback(
+    (stopId: string) => {
+      setSelectedStopId(stopId);
+      const target = stops.find((s) => s.id === stopId);
+      if (target && mapInstance) {
+        // Fly to the picked pin so it's centred and on top of the
+        // info card. Keep current zoom so the user's mental map of
+        // the route stays consistent.
+        mapInstance.flyTo({
+          center: [target.placeLng, target.placeLat],
+          zoom: Math.max(mapInstance.getZoom(), 14),
+          duration: 350,
+          // Offset the centre upward so the pin sits above the info
+          // card overlay rather than under it.
+          offset: [0, -60],
+        });
+      }
+    },
+    [stops, mapInstance],
+  );
 
   // Auto-fit on mount when there are 2+ stops. Single stop already has
   // its lat/lng via initialView. Re-fit isn't a goal — once user pans,
@@ -94,6 +123,7 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
         {...view}
         onMove={(e) => setView(e.viewState)}
         onLoad={(e) => setMapInstance(e.target)}
+        onClick={() => setSelectedStopId(null)}
         style={{ width: "100%", height: "100%" }}
         mapStyle={style}
         attributionControl={{ compact: true }}
@@ -121,28 +151,51 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
 
         {stops.map((s, i) => {
           const completed = s.completedAt !== null;
+          const active = selectedStopId === s.id;
           return (
             <Marker
               key={s.id}
               longitude={s.placeLng}
               latitude={s.placeLat}
               anchor="center"
+              onClick={(e) => {
+                // Marker click bubbles to the map's onClick which
+                // would clear the selection — stop it.
+                e.originalEvent.stopPropagation();
+                selectStop(s.id);
+              }}
             >
               <span
                 aria-label={`${i + 1}. ${s.placeName}${completed ? " (ukończone)" : ""}`}
-                className={
-                  "flex h-9 w-9 items-center justify-center rounded-full border-2 border-white text-sm font-semibold shadow-md " +
-                  (completed
+                className={cn(
+                  "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out",
+                  // Active pin grows + ring so it visually pops out
+                  // of the route. Pending vs completed colour stays
+                  // the same as before so the UI rhymes with the
+                  // list view's number badge.
+                  active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
+                  completed
                     ? "bg-emerald-500 text-white"
-                    : "bg-primary text-primary-foreground")
-                }
+                    : "bg-primary text-primary-foreground",
+                  active &&
+                    (completed
+                      ? "ring-4 ring-emerald-500/30"
+                      : "ring-4 ring-primary/30"),
+                )}
               >
-                {completed ? <Check size={16} /> : i + 1}
+                {completed ? <Check size={active ? 20 : 16} /> : i + 1}
               </span>
             </Marker>
           );
         })}
       </MapLibreMap>
+
+      <TripMapInfoCard
+        stops={stops}
+        selectedStopId={selectedStopId}
+        onSelect={selectStop}
+        onClose={() => setSelectedStopId(null)}
+      />
     </div>
   );
 }

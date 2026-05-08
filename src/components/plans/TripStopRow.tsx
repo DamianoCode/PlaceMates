@@ -4,7 +4,15 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Check, Clock, GripVertical, NotepadText, Pencil, Trash2, X } from "lucide-react";
+import {
+  Check,
+  Clock,
+  GripVertical,
+  NotepadText,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/map/category-icons";
@@ -16,13 +24,18 @@ import {
 import type { TripStopView } from "@/domain/trips/service";
 
 /**
- * One stop in the trip. Three interaction surfaces:
- *   - drag handle (only when pending — completed stops freeze)
- *   - completion checkbox (toggles green ring + cross-out look)
- *   - inline edit popover for time + note
+ * One stop in the trip — redesigned as a "ticket" card:
+ *   - vertical rail on the left edge doubles as the drag handle.
+ *     Bigger tap target than a tiny grip icon, and the rail
+ *     visually evokes the perforated edge of a paper ticket
+ *     (intentional vibe with the trip-planning theme)
+ *   - number badge front-and-centre, Fraunces display
+ *   - completion check stays as the prominent right-side toggle
+ *   - edit + delete demoted to a thin footer row so they don't
+ *     compete with the primary "we did this" action
  *
- * Position number comes from the parent's running counter — passing
- * sort_order would force a re-fetch every time the list reorders.
+ * Completed stops gain a soft emerald tint and are frozen from
+ * reorder (drag rail loses its grip cursor).
  */
 export function TripStopRow({
   stop,
@@ -30,15 +43,12 @@ export function TripStopRow({
   tripId,
 }: {
   stop: TripStopView;
-  /** 1-indexed slot in the visible order. */
   position: number;
   tripId: string;
 }) {
   const [pending, startTransition] = useTransition();
   const [editing, setEditing] = useState(false);
 
-  // dnd-kit hooks. listeners go on the drag handle (not the whole row)
-  // so a tap on the body doesn't accidentally start a drag.
   const {
     attributes,
     listeners,
@@ -48,8 +58,6 @@ export function TripStopRow({
     isDragging,
   } = useSortable({
     id: stop.id,
-    // Completed stops can't be reordered — freezes the historical
-    // sequence so a "we did it" record stays trustworthy.
     disabled: stop.completedAt !== null,
   });
 
@@ -79,13 +87,16 @@ export function TripStopRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-stretch gap-2 rounded-2xl border bg-card p-3 transition-opacity",
-        isDragging && "opacity-50",
-        isCompleted && "bg-muted/30",
+        "group relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all",
+        isDragging && "z-10 opacity-60 shadow-lg ring-2 ring-primary/40",
+        isCompleted &&
+          "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/15",
       )}
     >
-      {/* Drag handle — visible only when reorderable. Disabled stops
-       *  still need the slot for layout consistency. */}
+      {/* Drag rail — full-height vertical strip on the left. Bigger
+       *  tap target (28 px wide) than a tiny grip icon. On completed
+       *  stops the rail tints emerald and disables interaction so the
+       *  historical ordering stays trustworthy. */}
       <button
         type="button"
         aria-label="Przeciągnij, by zmienić kolejność"
@@ -93,42 +104,43 @@ export function TripStopRow({
         {...listeners}
         disabled={isCompleted}
         className={cn(
-          "flex w-6 cursor-grab items-center justify-center text-muted-foreground/60 hover:text-muted-foreground active:cursor-grabbing",
-          isCompleted && "cursor-not-allowed opacity-30",
+          "absolute inset-y-0 left-0 flex w-7 touch-none items-center justify-center transition-colors",
+          isCompleted
+            ? "cursor-not-allowed bg-emerald-500/10 text-emerald-600/40 dark:text-emerald-400/40"
+            : "cursor-grab bg-primary/10 text-primary/60 hover:bg-primary/15 hover:text-primary active:cursor-grabbing",
         )}
       >
-        <GripVertical size={16} />
+        <GripVertical size={14} aria-hidden />
       </button>
 
-      {/* Position badge — 1-indexed visual order. */}
-      <span
-        aria-hidden
-        className={cn(
-          "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border-2 border-white text-sm font-semibold tabular-nums shadow-sm",
-          isCompleted
-            ? "bg-emerald-500 text-white"
-            : "bg-primary text-primary-foreground",
-        )}
-      >
-        {isCompleted ? <Check size={16} /> : position}
-      </span>
+      <div className="flex items-start gap-3 py-3 pl-10 pr-3">
+        {/* Number badge — Fraunces display, oversized for an
+         *  editorial feel. Completed swaps to a check glyph. */}
+        <span
+          aria-hidden
+          className={cn(
+            "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-white font-display text-lg font-semibold tabular-nums shadow-sm",
+            isCompleted
+              ? "bg-emerald-500 text-white"
+              : "bg-primary text-primary-foreground",
+          )}
+        >
+          {isCompleted ? <Check size={20} /> : position}
+        </span>
 
-      {/* Place body — name + category + optional time/note. The link
-       *  lets the user jump to the place's full detail without
-       *  leaving trip context (back button works). */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1 pt-0.5">
           <Link
             href={`/places/${stop.placeId}`}
             className={cn(
-              "min-w-0 flex-1",
-              isCompleted && "text-muted-foreground line-through decoration-1",
+              "block min-w-0",
+              isCompleted &&
+                "text-muted-foreground line-through decoration-1 decoration-muted-foreground/40",
             )}
           >
             <h4 className="truncate font-display text-base leading-tight">
               {stop.placeName}
             </h4>
-            <p className="flex items-center gap-1 truncate text-xs italic text-muted-foreground">
+            <p className="mt-0.5 flex items-center gap-1 truncate text-xs italic text-muted-foreground">
               <CategoryIcon
                 slug={stop.placeCategorySlug}
                 size={12}
@@ -138,63 +150,72 @@ export function TripStopRow({
               {stop.placeCategoryName}
             </p>
           </Link>
+
+          {(stop.plannedAtTime || stop.note) && (
+            <div className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
+              {stop.plannedAtTime && (
+                <p className="inline-flex items-center gap-1">
+                  <Clock size={11} aria-hidden />
+                  <span className="font-mono tabular-nums">
+                    {stop.plannedAtTime}
+                  </span>
+                </p>
+              )}
+              {stop.note && <p className="line-clamp-2 italic">{stop.note}</p>}
+            </div>
+          )}
+
+          {isCompleted && stop.completedByDisplayName && (
+            <p className="mt-1.5 text-xs italic text-emerald-700 dark:text-emerald-400">
+              Odhaczone — {stop.completedByDisplayName}
+            </p>
+          )}
         </div>
 
-        {(stop.plannedAtTime || stop.note) && (
-          <div className="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
-            {stop.plannedAtTime && (
-              <p className="inline-flex items-center gap-1">
-                <Clock size={11} />
-                <span className="tabular-nums">{stop.plannedAtTime}</span>
-              </p>
-            )}
-            {stop.note && (
-              <p className="line-clamp-2 italic">{stop.note}</p>
-            )}
-          </div>
-        )}
-
-        {isCompleted && stop.completedByDisplayName && (
-          <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-            Odhaczone — {stop.completedByDisplayName}
-          </p>
-        )}
-      </div>
-
-      {/* Actions column: complete toggle, edit, delete. Stacked
-       *  vertically on the right so they don't compete with the body. */}
-      <div className="flex flex-col items-center gap-1">
+        {/* Primary action: complete toggle. Top-aligned with the
+         *  number badge so the eye lands on it as the "what to do
+         *  next" affordance. */}
         <button
           type="button"
           onClick={toggleCompleted}
           disabled={pending}
           aria-label={isCompleted ? "Cofnij odhaczenie" : "Odhacz stop"}
+          aria-pressed={isCompleted}
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
+            "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",
             isCompleted
-              ? "border-emerald-500 bg-emerald-500 text-white hover:bg-emerald-600"
-              : "border-border bg-background text-muted-foreground hover:border-emerald-500 hover:text-emerald-600",
+              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 hover:bg-emerald-600"
+              : "border-border bg-background text-muted-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30",
             pending && "opacity-60",
           )}
         >
-          <Check size={14} />
+          <Check size={18} />
         </button>
+      </div>
+
+      {/* Secondary actions footer — visually demoted with smaller
+       *  type and a muted strip. Keeps the primary card body
+       *  uncluttered while still giving instant access to edit /
+       *  delete without an overflow menu hop. */}
+      <div className="flex items-center justify-end gap-1 border-t border-border/40 bg-muted/20 px-3 py-1.5">
         <button
           type="button"
-          onClick={() => setEditing((v) => !v)}
+          onClick={() => setEditing(true)}
           aria-label="Edytuj stop"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
         >
-          <Pencil size={12} />
+          <Pencil size={11} aria-hidden />
+          Edytuj
         </button>
         <button
           type="button"
           onClick={deleteStop}
           disabled={pending}
           aria-label="Usuń stop"
-          className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
         >
-          <Trash2 size={12} />
+          <Trash2 size={11} aria-hidden />
+          Usuń
         </button>
       </div>
 
@@ -244,7 +265,7 @@ function EditStopPanel({
     <div
       role="dialog"
       aria-label="Edytuj stop"
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/40 p-4 backdrop-blur-sm sm:items-center"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
