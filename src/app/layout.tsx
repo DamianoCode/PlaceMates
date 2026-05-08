@@ -33,11 +33,21 @@ export const metadata: Metadata = {
   appleWebApp: {
     title: "PlaceMates",
     capable: true,
+    // black-translucent draws content under the iOS status bar so
+    // viewport-fit=cover + safe-area insets handle the notch
+    // properly (instead of leaving a black strip up top).
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: "/icons/icon.svg",
-    apple: "/icons/icon.svg",
+    icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+    ],
+    // iOS Safari ignores SVG home-screen icons and falls back to a
+    // grey rounded screenshot when no PNG is provided. The 180×180
+    // PNG at /apple-touch-icon.png is the size iOS picks first.
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
 };
 

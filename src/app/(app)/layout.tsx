@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { InstallPrompt } from "@/components/layout/InstallPrompt";
 import { getAuth } from "@/infra/auth";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -13,6 +14,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col pb-[calc(60px+env(safe-area-inset-bottom))]">
       <div className="flex-1">{children}</div>
       <BottomNav />
+      <InstallPrompt />
     </div>
   );
 }
