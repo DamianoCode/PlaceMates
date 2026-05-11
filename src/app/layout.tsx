@@ -61,6 +61,19 @@ export const viewport: Viewport = {
   ],
 };
 
+// Pull the Supabase storage hostname out of the URL so we can
+// preconnect to it. First photo on any page would otherwise pay
+// DNS + TLS + TCP cost before the byte stream even starts.
+const supabaseStorageHost = (() => {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return null;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return null;
+  }
+})();
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -72,6 +85,19 @@ export default function RootLayout({
       className={`${outfit.variable} ${fraunces.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Warm the connection to Supabase storage before the first
+         *  photo request. Saves DNS + TLS handshake (typically
+         *  100–300 ms on mobile) when the page actually renders a
+         *  photo. crossOrigin required because storage URLs are
+         *  cross-origin to our domain. */}
+        {supabaseStorageHost && (
+          <>
+            <link rel="preconnect" href={supabaseStorageHost} crossOrigin="" />
+            <link rel="dns-prefetch" href={supabaseStorageHost} />
+          </>
+        )}
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
           <QueryProvider>

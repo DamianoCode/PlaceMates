@@ -64,6 +64,13 @@
       "when": 1778248975940,
       "tag": "0008_push",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1778492352416,
+      "tag": "0009_hot_path_indexes",
+      "breakpoints": true
     }
   ]
 }

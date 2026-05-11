@@ -239,7 +239,13 @@ export const wishlist = pgTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
+  (t) => [
+    primaryKey({ columns: [t.placeId, t.userId] }),
+    // Hot path: `wishlistedIds(userId)` filters by user. The PK
+    // starts with place_id so a pure `WHERE user_id` query can't
+    // use it — fell back to seq scan before this index.
+    index("wishlist_user_idx").on(t.userId),
+  ],
 );
 
 // Shared "do odwiedzenia" list at the GROUP level — every member
@@ -281,7 +287,12 @@ export const favorites = pgTable(
       .references(() => profiles.id, { onDelete: "cascade" }),
     addedAt: timestamp("added_at", { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [primaryKey({ columns: [t.placeId, t.userId] })],
+  (t) => [
+    primaryKey({ columns: [t.placeId, t.userId] }),
+    // Same pattern as wishlist — `favoriteIds(userId)` needs a
+    // user-leading index since PK starts with place_id.
+    index("favorites_user_idx").on(t.userId),
+  ],
 );
 
 // Menu-like items (dishes, products, services) tied to a place. Every
@@ -492,5 +503,9 @@ export const tripStops = pgTable(
     // A place can't appear twice in the same trip — would confuse the
     // "checking off" UX (which one am I marking?).
     uniqueIndex("trip_stops_trip_place_uk").on(t.tripId, t.placeId),
+    // Reverse lookup: `tripsContainingPlace(placeId)` for the
+    // /places/[id] "in plans" affordance. The unique above starts
+    // with trip_id so it can't serve a pure WHERE place_id query.
+    index("trip_stops_place_idx").on(t.placeId),
   ],
 );
