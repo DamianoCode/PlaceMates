@@ -1,9 +1,11 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
 import { createPlace, deletePlace, updatePlace } from "@/domain/places/service";
+import { pushPlaceCreated } from "@/infra/push/events";
 import { CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 
 export type CreatePlaceState =
@@ -38,6 +40,16 @@ export async function createPlaceAction(
 
   revalidatePath("/map");
   revalidatePath("/places");
+  // Fire-and-forget push to other group members. Must run before
+  // the redirect — redirect() throws so anything after is dead code.
+  after(() =>
+    pushPlaceCreated(
+      user.id,
+      result.data.id,
+      parsed.data.groupId,
+      parsed.data.name,
+    ),
+  );
   redirect(`/places/${result.data.id}`);
 }
 

@@ -389,6 +389,66 @@ export const trips = pgTable(
   (t) => [index("trips_group_idx").on(t.groupId, t.plannedFor)],
 );
 
+// Push notifications -----------------------------------------------------
+//
+// One row per (user, browser/device). The Web Push protocol delivers
+// to a unique `endpoint` per subscription; if the user reinstalls the
+// PWA or revokes permission and grants again, we'll get a fresh
+// subscription with a new endpoint and add another row. Old/dead
+// endpoints get pruned when web-push returns 404/410.
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    /** Base64url-encoded public key from PushSubscription.getKey('p256dh'). */
+    p256dh: text("p256dh").notNull(),
+    /** Base64url-encoded auth secret from PushSubscription.getKey('auth'). */
+    auth: text("auth").notNull(),
+    /** UA string at time of subscribe — handy for "Twoje urządzenia"
+     *  display in /me later. Optional. */
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // Same endpoint shouldn't appear twice for the same user.
+    // Different users CAN share an endpoint in theory (browser
+    // re-cycling), but in practice it never happens — push services
+    // mint a new endpoint per subscription.
+    uniqueIndex("push_subscriptions_user_endpoint_uk").on(
+      t.userId,
+      t.endpoint,
+    ),
+    index("push_subscriptions_user_idx").on(t.userId),
+  ],
+);
+
+/**
+ * Per-user notification preferences. Separate from `profiles` so the
+ * mirrored auth.users trigger doesn't have to know about it. One row
+ * per user; missing row = all defaults (everything on).
+ */
+export const notificationPrefs = pgTable("notification_prefs", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => profiles.id, { onDelete: "cascade" }),
+  /** Ktoś z grupy ocenił miejsce, które user dodał. */
+  rating: boolean("rating").notNull().default(true),
+  /** Ktoś z grupy odhaczył stop w wspólnym planie. */
+  stopCompleted: boolean("stop_completed").notNull().default(true),
+  /** Ktoś z grupy dodał nowe miejsce. */
+  newPlace: boolean("new_place").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const tripStops = pgTable(
   "trip_stops",
   {
