@@ -1,9 +1,15 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
 import { bootstrapProfileAndGroup } from "@/domain/auth/bootstrap";
-import { LoginInput, RegisterInput } from "@/lib/validation/auth";
+import {
+  ForgotPasswordInput,
+  LoginInput,
+  RegisterInput,
+  ResetPasswordInput,
+} from "@/lib/validation/auth";
 
 export type FormState = { error: string } | { ok: true } | null;
 
@@ -67,4 +73,58 @@ export async function signOutAction() {
   const auth = await getAuth();
   await auth.signOut();
   redirect("/login");
+}
+
+export async function forgotPasswordAction(
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = ForgotPasswordInput.safeParse({
+    email: formData.get("email"),
+  });
+  if (!parsed.success) {
+    return { error: "Niepoprawny e-mail." };
+  }
+
+  // Build redirect URL — the magic link in the email lands on
+  // /auth/callback which exchanges the code and forwards to `next`.
+  // `origin` from the request header so we work on prod + preview
+  // deployments without hard-coding the domain.
+  const reqHeaders = await headers();
+  const origin =
+    reqHeaders.get("origin") ??
+    (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000");
+  const redirectTo = `${origin}/auth/callback?next=/reset-password`;
+
+  const auth = await getAuth();
+  await auth.requestPasswordReset(parsed.data.email, redirectTo);
+  // Always return ok — see provider impl for why (anti-enumeration).
+  return { ok: true };
+}
+
+export async function resetPasswordAction(
+  _: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const parsed = ResetPasswordInput.safeParse({
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    return {
+      error:
+        parsed.error.issues[0]?.message ??
+        "Hasło musi mieć min. 8 znaków i powtórzenie musi się zgadzać.",
+    };
+  }
+
+  const auth = await getAuth();
+  // Session is set by the magic-link callback before we get here.
+  // updateUser({password}) uses the active session — no need for
+  // current password verification, the recent magic-link auth is
+  // proof enough.
+  const result = await auth.updatePassword(parsed.data.password);
+  if (!result.ok) return { error: result.error };
+
+  redirect("/map");
 }
