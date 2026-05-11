@@ -1,5 +1,6 @@
 "use server";
 
+import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { getAuth } from "@/infra/auth";
 import {
@@ -13,6 +14,7 @@ import {
   updateStop,
   updateTrip,
 } from "@/domain/trips/service";
+import { pushStopCompleted } from "@/infra/push/events";
 import { err, type Result } from "@/domain/result";
 
 /**
@@ -180,6 +182,9 @@ export async function toggleStopCompletedAction(
 
   revalidatePath(`/plans/${tripId}`);
   revalidatePath("/plans");
+  // Fire-and-forget push to other group members. `after` keeps the
+  // serverless instance alive past response without adding latency.
+  after(() => pushStopCompleted(user.id, stopId, result.data.completed));
   return result;
 }
 

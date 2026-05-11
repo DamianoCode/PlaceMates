@@ -15,17 +15,25 @@ import {
 import { getAuth } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
 import { getProfile } from "@/domain/profile/service";
+import { getNotificationPrefs } from "@/domain/push/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AccountHeader } from "@/components/layout/AccountHeader";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { CreateGroupForm } from "@/components/groups/CreateGroupForm";
 import { GroupListItem } from "@/components/groups/GroupListItem";
+import { PushNotificationsCard } from "@/components/push/PushNotificationsCard";
 
 export default async function MePage() {
   const user = await (await getAuth()).getUser();
-  const [groups, profile] = user
-    ? await Promise.all([listUserGroups(user.id), getProfile(user.id)])
-    : [[], null];
+  const [groups, profile, notificationPrefs] = user
+    ? await Promise.all([
+        listUserGroups(user.id),
+        getProfile(user.id),
+        getNotificationPrefs(user.id),
+      ])
+    : [[], null, { rating: true, stopCompleted: true, newPlace: true }];
+
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 
   return (
     <>
@@ -75,6 +83,13 @@ export default async function MePage() {
             />
           </CardContent>
         </Card>
+
+        {user && (
+          <PushNotificationsCard
+            initialPrefs={notificationPrefs}
+            vapidPublicKey={vapidPublicKey}
+          />
+        )}
 
         <Card>
           <CardHeader>
