@@ -41,6 +41,14 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/auth") ||
     path.startsWith("/share") ||
     path.startsWith("/join") ||
+    // Password recovery flow — both pages must be reachable without
+    // a session. `/forgot-password` jest entry point (zapomniałeś
+    // hasła, NIE jesteś zalogowany), a `/reset-password` ląduje
+    // tam user z maila (sesja niby ustawiona przez /auth/callback,
+    // ale gdy link wygasł albo user wszedł ręcznie — strona sama
+    // obsługuje brak sesji friendly toastem).
+    path === "/forgot-password" ||
+    path === "/reset-password" ||
     path === "/";
 
   if (!user && !isPublic) {
