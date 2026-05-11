@@ -3,6 +3,7 @@ import { AlertCircle } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { GoogleButton } from "@/components/auth/GoogleButton";
+import { HashErrorBanner } from "@/components/auth/HashErrorBanner";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { WebViewNotice } from "@/components/auth/WebViewNotice";
 import { detectWebView } from "@/lib/webview";
@@ -73,6 +74,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         }
       >
         {webView && <WebViewNotice kind={webView} />}
+        {/* Two error channels: server-rendered `?error=` (OAuth
+         *  callback failures) and client-side `#error=` from URL
+         *  fragment (magic-link expiration, Supabase access_denied
+         *  etc.). Hash isn't sent to server so we need a client
+         *  banner to surface it. */}
+        <HashErrorBanner />
         {errMsg && (
           <div
             role="alert"
