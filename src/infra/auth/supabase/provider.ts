@@ -1,5 +1,10 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js";
-import type { AuthProvider, AuthUser, SignInResult } from "../provider";
+import type {
+  AuthProvider,
+  AuthUser,
+  SignInResult,
+  SimpleResult,
+} from "../provider";
 
 function toAuthUser(u: User): AuthUser {
   const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
@@ -59,6 +64,26 @@ export function createSupabaseAuthProvider(
 
     async signOut() {
       await client.auth.signOut();
+    },
+
+    async requestPasswordReset(email, redirectTo): Promise<SimpleResult> {
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      // We deliberately don't propagate "user not found" — would let
+      // anyone enumerate registered emails. Just log and return ok.
+      if (error) {
+        console.error("[auth] resetPasswordForEmail failed:", error.message);
+      }
+      return { ok: true };
+    },
+
+    async updatePassword(newPassword): Promise<SimpleResult> {
+      const { error } = await client.auth.updateUser({ password: newPassword });
+      if (error) {
+        return { ok: false, error: error.message };
+      }
+      return { ok: true };
     },
   };
 }

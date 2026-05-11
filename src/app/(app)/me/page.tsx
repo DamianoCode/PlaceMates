@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   ChevronRight,
   Globe,
+  KeyRound,
   Palette,
   Users as UsersIcon,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { CreateGroupForm } from "@/components/groups/CreateGroupForm";
 import { GroupListItem } from "@/components/groups/GroupListItem";
 import { PushNotificationsCard } from "@/components/push/PushNotificationsCard";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 
 export default async function MePage() {
   const user = await (await getAuth()).getUser();
@@ -89,6 +91,24 @@ export default async function MePage() {
             initialPrefs={notificationPrefs}
             vapidPublicKey={vapidPublicKey}
           />
+        )}
+
+        {user && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 font-display text-xl">
+                <KeyRound size={18} /> Bezpieczeństwo
+              </CardTitle>
+              <CardDescription>
+                Zmień hasło logowania. Sesje na innych urządzeniach
+                pozostają aktywne — wyloguj się tam ręcznie, jeśli to
+                istotne.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChangePasswordForm />
+            </CardContent>
+          </Card>
         )}
 
         <Card>
