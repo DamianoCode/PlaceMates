@@ -18,7 +18,15 @@ import MapLibreMap, {
 import type { Map as MLMap, LngLatBoundsLike } from "maplibre-gl";
 import { useTheme } from "next-themes";
 import { useQuery } from "@tanstack/react-query";
-import { Bike, Car, Check, Clock, Footprints, Route as RouteIcon } from "lucide-react";
+import {
+  Bike,
+  Car,
+  Check,
+  Clock,
+  Footprints,
+  Loader2,
+  Route as RouteIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-json";
 import { getMapStyle } from "@/components/map/map-style";
@@ -122,7 +130,7 @@ export function TripMapView({
   // re-mounted component might fire before props settle, sending
   // `/api/trips/undefined/route` and hitting an "invalid uuid"
   // 500 on the server.
-  const { data: routeRes } = useQuery({
+  const { data: routeRes, isFetching: routeFetching } = useQuery({
     queryKey: ["trip-route", tripId, profile, stops.length],
     enabled: stops.length >= 2 && Boolean(tripId),
     queryFn: () =>
@@ -133,6 +141,10 @@ export function TripMapView({
   });
 
   const route = routeRes?.ok ? routeRes : null;
+  // Show "wyznaczam trasę…" only when we're actively fetching AND
+  // don't have a cached route to display. With route in hand we
+  // serve it instantly while a background refetch happens silently.
+  const routeLoading = routeFetching && !route && stops.length >= 2;
 
   const selectStop = useCallback(
     (stopId: string) => {
@@ -256,6 +268,11 @@ export function TripMapView({
               </span>
             </span>
           </div>
+        ) : routeLoading ? (
+          <span className="inline-flex items-center gap-1.5 px-2 text-[11px] italic text-muted-foreground">
+            <Loader2 size={12} className="animate-spin" aria-hidden />
+            Wyznaczam trasę…
+          </span>
         ) : stops.length >= 2 ? (
           <span className="px-2 text-[11px] italic text-muted-foreground/70">
             Trasa niedostępna
@@ -265,7 +282,11 @@ export function TripMapView({
 
       <div
         className={cn(
-          "relative overflow-hidden rounded-2xl border",
+          // bg-muted fallback widoczny zanim MapLibre zacznie
+          // rysować tiles (lub gdy fail). Bez tego dark-mode pusty
+          // canvas pokazywał całkowicie czarne pole — wyglądało
+          // jak crash mapy.
+          "relative overflow-hidden rounded-2xl border bg-muted",
           mapHeight,
         )}
       >
