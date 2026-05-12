@@ -175,6 +175,32 @@ export function TripMapView({
     [stops, mapInstance],
   );
 
+  // MapLibre measures container size at init time. When we mount
+  // inside a toggle (user clicked Mapa after Lista was rendered),
+  // the canvas can come up sized 0×0 even though the wrapper has
+  // its proper height — auto-resize observer sometimes misses the
+  // first paint. Symptom: empty map until hard refresh.
+  //
+  // Force resize after a frame (layout settles) AND wire a
+  // ResizeObserver on the parent container so any later size
+  // changes (mode toggle, dvh recalc on virtual keyboard, etc.)
+  // get picked up too.
+  useEffect(() => {
+    if (!mapInstance) return;
+    // Initial nudge — rAF defers past the mount paint so the
+    // container DOM has its real height by the time we measure.
+    const raf = requestAnimationFrame(() => mapInstance.resize());
+
+    const container = mapInstance.getContainer();
+    const observer = new ResizeObserver(() => mapInstance.resize());
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [mapInstance]);
+
   useEffect(() => {
     if (!mapInstance || fitDoneRef.current) return;
     if (stops.length < 2) {
