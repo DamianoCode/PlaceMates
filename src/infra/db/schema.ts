@@ -486,6 +486,14 @@ export const tripRoutes = pgTable(
     geometry: jsonb("geometry").$type<GeoJSON.LineString>().notNull(),
     distanceM: integer("distance_m").notNull(),
     durationS: integer("duration_s").notNull(),
+    /** Per-stop-pair leg stats from ORS. segments[i] = route from
+     *  stop i to stop i+1. Used by TripMapInfoCard to show
+     *  "Od poprzedniego: 3.2 km · 8 min" for each stop. Empty
+     *  array for legacy rows from before this column existed. */
+    segments: jsonb("segments")
+      .$type<Array<{ distanceM: number; durationS: number }>>()
+      .notNull()
+      .default([]),
     computedAt: timestamp("computed_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

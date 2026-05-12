@@ -17,6 +17,7 @@ const VALID_PROFILES: ReadonlyArray<RoutingProfile> = [
   "driving-car",
   "cycling-regular",
   "foot-walking",
+  "foot-hiking",
 ];
 
 export async function GET(
@@ -59,6 +60,7 @@ export async function GET(
     geometry: route.geometry,
     distanceM: route.distanceM,
     durationS: route.durationS,
+    segments: route.segments,
   });
 }
 

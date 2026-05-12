@@ -48,6 +48,7 @@ export async function getOrComputeRoute(
         geometry: cached.geometry,
         distanceM: cached.distanceM,
         durationS: cached.durationS,
+        segments: cached.segments,
       };
     }
     // Stale → fall through to recompute. We don't delete here;
@@ -78,6 +79,7 @@ export async function getOrComputeRoute(
         geometry: cached.geometry,
         distanceM: cached.distanceM,
         durationS: cached.durationS,
+        segments: cached.segments,
       };
     }
     return null;
@@ -92,6 +94,7 @@ export async function getOrComputeRoute(
       geometry: result.geometry,
       distanceM: result.distanceM,
       durationS: result.durationS,
+      segments: result.segments,
     })
     .onConflictDoUpdate({
       target: [tripRoutes.tripId, tripRoutes.profile],
@@ -99,6 +102,7 @@ export async function getOrComputeRoute(
         geometry: result.geometry,
         distanceM: result.distanceM,
         durationS: result.durationS,
+        segments: result.segments,
         computedAt: new Date(),
       },
     });

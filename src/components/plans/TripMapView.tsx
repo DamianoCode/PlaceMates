@@ -25,6 +25,7 @@ import {
   Clock,
   Footprints,
   Loader2,
+  Mountain,
   Route as RouteIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,7 +46,13 @@ import type { TripStopView } from "@/domain/trips/service";
  * actual road-following route.
  */
 
-type RoutingProfile = "driving-car" | "cycling-regular" | "foot-walking";
+type RoutingProfile =
+  | "driving-car"
+  | "cycling-regular"
+  | "foot-walking"
+  | "foot-hiking";
+
+type RouteSegment = { distanceM: number; durationS: number };
 
 type RouteResponse =
   | {
@@ -53,6 +60,7 @@ type RouteResponse =
       geometry: GeoJSON.LineString;
       distanceM: number;
       durationS: number;
+      segments: RouteSegment[];
     }
   | { ok: false; reason: string };
 
@@ -64,6 +72,11 @@ const PROFILE_OPTIONS: ReadonlyArray<{
   { value: "driving-car", label: "Auto", icon: Car },
   { value: "cycling-regular", label: "Rower", icon: Bike },
   { value: "foot-walking", label: "Pieszo", icon: Footprints },
+  // foot-hiking — ORS profile dla szlaków górskich. Preferuje
+  // unpaved/hiking trails, akceptuje większe nachylenia. Carto
+  // basemap szlaków nie pokazuje (do tego trzeba waymarkedtrails
+  // overlay), ale router uwzględnia je przy wyznaczaniu trasy.
+  { value: "foot-hiking", label: "Szlak", icon: Mountain },
 ];
 
 const PROFILE_STORAGE_KEY = "pm.trip.routing-profile";
@@ -360,6 +373,9 @@ export function TripMapView({
           selectedStopId={selectedStopId}
           onSelect={selectStop}
           onClose={() => setSelectedStopId(null)}
+          // Per-stop leg stats — info card pokazuje "Od poprzedniego:
+          // 3.2 km · 8 min" dla każdego stopu poza pierwszym.
+          segments={route?.segments ?? []}
         />
       </div>
     </div>

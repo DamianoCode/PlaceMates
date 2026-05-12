@@ -25,12 +25,21 @@ import "server-only";
 export type RoutingProfile =
   | "driving-car"
   | "cycling-regular"
-  | "foot-walking";
+  | "foot-walking"
+  | "foot-hiking";
+
+export type RouteSegment = {
+  distanceM: number;
+  durationS: number;
+};
 
 export type RouteResult = {
   geometry: GeoJSON.LineString;
   distanceM: number;
   durationS: number;
+  /** Per-stop-pair legs. segments[i] = route from stop i to i+1.
+   *  Length always equals stops.length - 1 when present. */
+  segments: RouteSegment[];
 };
 
 const ORS_BASE = "https://api.openrouteservice.org/v2/directions";
@@ -79,6 +88,10 @@ export async function callORS(
         geometry: GeoJSON.LineString;
         properties: {
           summary: { distance: number; duration: number };
+          segments?: Array<{
+            distance: number;
+            duration: number;
+          }>;
         };
       }>;
     };
@@ -86,10 +99,21 @@ export async function callORS(
     const feature = data.features?.[0];
     if (!feature?.geometry || !feature.properties?.summary) return null;
 
+    // ORS returns one segment per stop-pair (legs[i] = stop i → i+1).
+    // Map to our shape with rounded ints — millisecond precision
+    // doesn't matter for "8 min" display.
+    const segments: RouteSegment[] = (
+      feature.properties.segments ?? []
+    ).map((s) => ({
+      distanceM: Math.round(s.distance),
+      durationS: Math.round(s.duration),
+    }));
+
     return {
       geometry: feature.geometry,
       distanceM: Math.round(feature.properties.summary.distance),
       durationS: Math.round(feature.properties.summary.duration),
+      segments,
     };
   } catch (err) {
     // Network down, DNS, timeout — log and fall back.
