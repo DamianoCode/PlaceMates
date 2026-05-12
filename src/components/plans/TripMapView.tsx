@@ -116,11 +116,15 @@ export function TripMapView({
   }, []);
 
   // Routing fetch — only when there are 2+ stops (single stop has
-  // no route). 5-minute staleTime so panning the map doesn't keep
-  // refetching on every focus.
+  // no route) AND we actually have a tripId. The `!!tripId` guard
+  // is defensive: with React Query + dynamic-imported component,
+  // there's a small window during HMR / hot-reload where the
+  // re-mounted component might fire before props settle, sending
+  // `/api/trips/undefined/route` and hitting an "invalid uuid"
+  // 500 on the server.
   const { data: routeRes } = useQuery({
     queryKey: ["trip-route", tripId, profile, stops.length],
-    enabled: stops.length >= 2,
+    enabled: stops.length >= 2 && Boolean(tripId),
     queryFn: () =>
       fetchJson<RouteResponse>(
         `/api/trips/${tripId}/route?profile=${profile}`,

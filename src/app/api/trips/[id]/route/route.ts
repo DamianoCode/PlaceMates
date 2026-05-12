@@ -29,6 +29,17 @@ export async function GET(
   }
 
   const { id } = await params;
+  // UUID v4/v7 length+format sanity check — without it a stale
+  // client (HMR mid-edit, prop chain glitch) can request
+  // /api/trips/undefined/route and trigger a Postgres "invalid
+  // input syntax for type uuid" 500 instead of a clean 400.
+  if (!isUuid(id)) {
+    return NextResponse.json(
+      { ok: false, reason: "invalid_trip_id" },
+      { status: 400 },
+    );
+  }
+
   const raw = req.nextUrl.searchParams.get("profile") ?? "driving-car";
   if (!VALID_PROFILES.includes(raw as RoutingProfile)) {
     return NextResponse.json(
@@ -49,4 +60,11 @@ export async function GET(
     distanceM: route.distanceM,
     durationS: route.durationS,
   });
+}
+
+/** Loose UUID format check — accepts any 8-4-4-4-12 hex layout
+ *  regardless of version digit. Cheap, no regex pre-compile cost
+ *  worth abstracting. */
+function isUuid(s: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 }
