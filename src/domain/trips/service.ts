@@ -6,6 +6,7 @@ import {
   photos,
   places,
   profiles,
+  tripRoutes,
   trips,
   tripStops,
 } from "@/infra/db/schema";
@@ -645,6 +646,8 @@ export async function addStops(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Stop set changed → invalidate cached routes across profiles.
+  await db.delete(tripRoutes).where(eq(tripRoutes.tripId, tripId));
 
   return ok({ added: fresh.length, skipped });
 }
@@ -694,6 +697,9 @@ export async function addStop(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Stop set changed → cached routes are stale across every
+  // profile, drop them all. Re-fetch happens lazily on next view.
+  await db.delete(tripRoutes).where(eq(tripRoutes.tripId, tripId));
 
   return ok({ id: inserted.id });
 }
@@ -723,6 +729,8 @@ export async function removeStop(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, row.tripId));
+  // Stop set changed → invalidate cached routes.
+  await db.delete(tripRoutes).where(eq(tripRoutes.tripId, row.tripId));
   return ok(null);
 }
 
@@ -770,6 +778,8 @@ export async function reorderStops(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Reorder changes route geometry — invalidate caches.
+  await db.delete(tripRoutes).where(eq(tripRoutes.tripId, tripId));
   return ok(null);
 }
 

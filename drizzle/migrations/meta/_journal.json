@@ -71,6 +71,13 @@
       "when": 1778492352416,
       "tag": "0009_hot_path_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1778591481473,
+      "tag": "0010_trip_routes",
+      "breakpoints": true
     }
   ]
 }

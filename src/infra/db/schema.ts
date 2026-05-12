@@ -460,6 +460,39 @@ export const notificationPrefs = pgTable("notification_prefs", {
     .notNull(),
 });
 
+// Routing cache ----------------------------------------------------------
+//
+// Materialized routes from OpenRouteService — one row per
+// (trip, profile). Recomputed when stops change (reorder / add /
+// remove → cache invalidated explicitly). TTL 7 days as belt-and-
+// suspenders in case some mutation path forgets to invalidate
+// (e.g., place location edited via /places/[id]/edit doesn't yet
+// know about trip routes; the staleness corrects itself within a
+// week).
+//
+// One trip can have multiple cached profiles (auto/bike/walking) —
+// composite PK rather than a surrogate id keeps upserts trivial.
+
+export const tripRoutes = pgTable(
+  "trip_routes",
+  {
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trips.id, { onDelete: "cascade" }),
+    /** ORS profile slug: 'driving-car' | 'cycling-regular' | 'foot-walking'. */
+    profile: text("profile").notNull(),
+    /** GeoJSON LineString returned by ORS — JSONB so PostGIS isn't
+     *  needed for read-only display. */
+    geometry: jsonb("geometry").$type<GeoJSON.LineString>().notNull(),
+    distanceM: integer("distance_m").notNull(),
+    durationS: integer("duration_s").notNull(),
+    computedAt: timestamp("computed_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.tripId, t.profile] })],
+);
+
 export const tripStops = pgTable(
   "trip_stops",
   {
