@@ -54,8 +54,13 @@ export async function callORS(
       method: "POST",
       headers: {
         Authorization: key,
-        "Content-Type": "application/json",
-        Accept: "application/json",
+        // `application/geo+json` jest content-typem zwracanym przez
+        // /geojson endpoint. Wcześniej wysyłaliśmy tylko
+        // `application/json` co ORS odrzucał z 406
+        // "OUTPUT_FORMAT_NOT_SUPPORTED" (code 2007) — endpoint
+        // serwuje geo+json ale my deklarujemy że nie akceptujemy.
+        Accept: "application/geo+json, application/json",
+        "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify({ coordinates: coords }),
       // Always fresh — cache lives at our DB layer, not in fetch
