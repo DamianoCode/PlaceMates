@@ -67,22 +67,11 @@ function pinClassesFor(state: PinState, active: boolean): string {
   }
 }
 
-export function MapView({
-  initial,
-  onPick,
-  initialPick,
-  onSelectPlace,
-  selectedPlaceId,
-  categoryFilter,
-  restrictToIds,
-  favoriteIdSet,
-  wishlistedIdSet,
-  groupWishlistedIdSet,
-  onBoundsChange,
-  onContextMenu,
-  categoriesById,
-  places: placesProp,
-}: {
+/** Props MapView jako nazwany typ — `MapViewClient` re-eksportuje go
+ *  i używa do jawnego propagowania, bo `ComponentProps<typeof
+ *  dynamicallyImported>` gubi inferencję typu (zwraca `{}`), co
+ *  przepuściłoby zerwanie propsów w build. */
+export type MapViewProps = {
   initial?: Partial<ViewState>;
   /** When set, the map is in "pick a location" mode — tap sets pin. */
   onPick?: (lnglat: { lng: number; lat: number }) => void;
@@ -112,7 +101,24 @@ export function MapView({
   categoriesById?: Map<string, { slug: string }>;
   /** Server-fed places. When provided, MapView skips its own fetch. */
   places?: PlacePin[];
-}) {
+};
+
+export function MapView({
+  initial,
+  onPick,
+  initialPick,
+  onSelectPlace,
+  selectedPlaceId,
+  categoryFilter,
+  restrictToIds,
+  favoriteIdSet,
+  wishlistedIdSet,
+  groupWishlistedIdSet,
+  onBoundsChange,
+  onContextMenu,
+  categoriesById,
+  places: placesProp,
+}: MapViewProps) {
   // When the parent supplies places (preferred — server-fetched, always
   // fresh after router.refresh()), we use those directly. Otherwise fall
   // back to a TanStack Query fetch so the component stays embeddable.

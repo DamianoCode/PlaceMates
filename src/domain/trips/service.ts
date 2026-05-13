@@ -11,6 +11,7 @@ import {
 } from "@/infra/db/schema";
 import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
 import { err, ok, type Result } from "../result";
+import { invalidateTripRoutes } from "./routing";
 
 /**
  * Trip (itinerary) domain. A trip belongs to a group; any group
@@ -645,6 +646,8 @@ export async function addStops(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Stop set changed → invalidate cached routes across profiles.
+  await invalidateTripRoutes(tripId);
 
   return ok({ added: fresh.length, skipped });
 }
@@ -694,6 +697,9 @@ export async function addStop(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Stop set changed → cached routes are stale across every
+  // profile, drop them all. Re-fetch happens lazily on next view.
+  await invalidateTripRoutes(tripId);
 
   return ok({ id: inserted.id });
 }
@@ -723,6 +729,8 @@ export async function removeStop(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, row.tripId));
+  // Stop set changed → invalidate cached routes.
+  await invalidateTripRoutes(row.tripId);
   return ok(null);
 }
 
@@ -770,6 +778,8 @@ export async function reorderStops(
     .update(trips)
     .set({ updatedAt: new Date() })
     .where(eq(trips.id, tripId));
+  // Reorder changes route geometry — invalidate caches.
+  await invalidateTripRoutes(tripId);
   return ok(null);
 }
 

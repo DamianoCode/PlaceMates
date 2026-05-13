@@ -1,7 +1,13 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import MapLibreMap, {
   Layer,
   Marker,
@@ -11,23 +17,77 @@ import MapLibreMap, {
 } from "react-map-gl/maplibre";
 import type { Map as MLMap, LngLatBoundsLike } from "maplibre-gl";
 import { useTheme } from "next-themes";
-import { Check } from "lucide-react";
-import { getMapStyle } from "@/components/map/map-style";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Bike,
+  Car,
+  Check,
+  Clock,
+  Footprints,
+  Loader2,
+  Mountain,
+  Route as RouteIcon,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchJson } from "@/lib/fetch-json";
+import { getMapStyle } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
 import type { TripStopView } from "@/domain/trips/service";
 
 /**
- * Map mode for the trip detail page. Renders:
- *   - numbered circular pins per stop (completed = emerald + check
- *     glyph; pending = primary + position number)
- *   - polyline connecting stops in order (just lat→lng→lat — no
- *     road routing for v1; that needs OSRM and isn't worth the
- *     setup yet)
- *   - auto-fit bounds on first render so the user sees the whole
- *     trip without panning
+ * Map mode for the trip detail page. Three layers:
+ *   - numbered pins per stop (existing)
+ *   - LineString geometry from OpenRouteService (cached server-side)
+ *   - profile selector pills + total distance/duration in header
+ *
+ * Routing falls back gracefully: if ORS unreachable or key missing,
+ * we draw the legacy dashed straight-line polyline. Distance/
+ * duration vanish in that case — they're meaningless without an
+ * actual road-following route.
  */
-export function TripMapView({ stops }: { stops: TripStopView[] }) {
+
+type RoutingProfile =
+  | "driving-car"
+  | "cycling-regular"
+  | "foot-walking"
+  | "foot-hiking";
+
+type RouteSegment = { distanceM: number; durationS: number };
+
+type RouteResponse =
+  | {
+      ok: true;
+      geometry: GeoJSON.LineString;
+      distanceM: number;
+      durationS: number;
+      segments: RouteSegment[];
+    }
+  | { ok: false; reason: string };
+
+const PROFILE_OPTIONS: ReadonlyArray<{
+  value: RoutingProfile;
+  label: string;
+  icon: typeof Car;
+}> = [
+  { value: "driving-car", label: "Auto", icon: Car },
+  { value: "cycling-regular", label: "Rower", icon: Bike },
+  { value: "foot-walking", label: "Pieszo", icon: Footprints },
+  // foot-hiking — ORS profile dla szlaków górskich. Preferuje
+  // unpaved/hiking trails, akceptuje większe nachylenia. Carto
+  // basemap szlaków nie pokazuje (do tego trzeba waymarkedtrails
+  // overlay), ale router uwzględnia je przy wyznaczaniu trasy.
+  { value: "foot-hiking", label: "Szlak", icon: Mountain },
+];
+
+const PROFILE_STORAGE_KEY = "pm.trip.routing-profile";
+
+export function TripMapView({
+  stops,
+  tripId,
+}: {
+  stops: TripStopView[];
+  tripId: string;
+}) {
   const { resolvedTheme } = useTheme();
   const style = useMemo(
     () => getMapStyle(resolvedTheme === "dark"),
@@ -39,26 +99,75 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
   const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
   const fitDoneRef = useRef(false);
 
-  // Selected pin — drives the bottom info card and the highlighted
-  // marker. Local to the map view because it doesn't matter outside
-  // (list view doesn't need a "selection"). Cleared when the user
-  // dismisses the card or taps blank map.
+  // Selected pin drives bottom info card. Local state — outside of
+  // map mode this concept doesn't exist.
   const [selectedStopId, setSelectedStopId] = useState<string | null>(null);
+
+  // Routing profile — persisted to localStorage so the user's
+  // preference (e.g., "Rower") survives between sessions.
+  const [profile, setProfile] = useState<RoutingProfile>("driving-car");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let abort = false;
+    queueMicrotask(() => {
+      if (abort) return;
+      try {
+        const stored = window.localStorage.getItem(
+          PROFILE_STORAGE_KEY,
+        ) as RoutingProfile | null;
+        if (stored && PROFILE_OPTIONS.some((p) => p.value === stored)) {
+          setProfile(stored);
+        }
+      } catch {
+        /* private mode, quota — ignore */
+      }
+    });
+    return () => {
+      abort = true;
+    };
+  }, []);
+
+  const setProfileAndPersist = useCallback((next: RoutingProfile) => {
+    setProfile(next);
+    try {
+      window.localStorage.setItem(PROFILE_STORAGE_KEY, next);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Routing fetch — only when there are 2+ stops (single stop has
+  // no route) AND we actually have a tripId. The `!!tripId` guard
+  // is defensive: with React Query + dynamic-imported component,
+  // there's a small window during HMR / hot-reload where the
+  // re-mounted component might fire before props settle, sending
+  // `/api/trips/undefined/route` and hitting an "invalid uuid"
+  // 500 on the server.
+  const { data: routeRes, isFetching: routeFetching } = useQuery({
+    queryKey: ["trip-route", tripId, profile, stops.length],
+    enabled: stops.length >= 2 && Boolean(tripId),
+    queryFn: () =>
+      fetchJson<RouteResponse>(
+        `/api/trips/${tripId}/route?profile=${profile}`,
+      ),
+    staleTime: 5 * 60_000,
+  });
+
+  const route = routeRes?.ok ? routeRes : null;
+  // Show "wyznaczam trasę…" only when we're actively fetching AND
+  // don't have a cached route to display. With route in hand we
+  // serve it instantly while a background refetch happens silently.
+  const routeLoading = routeFetching && !route && stops.length >= 2;
 
   const selectStop = useCallback(
     (stopId: string) => {
       setSelectedStopId(stopId);
       const target = stops.find((s) => s.id === stopId);
       if (target && mapInstance) {
-        // Fly to the picked pin so it's centred and on top of the
-        // info card. Keep current zoom so the user's mental map of
-        // the route stays consistent.
         mapInstance.flyTo({
           center: [target.placeLng, target.placeLat],
           zoom: Math.max(mapInstance.getZoom(), 14),
           duration: 350,
-          // Offset the centre upward so the pin sits above the info
-          // card overlay rather than under it.
           offset: [0, -60],
         });
       }
@@ -66,9 +175,32 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
     [stops, mapInstance],
   );
 
-  // Auto-fit on mount when there are 2+ stops. Single stop already has
-  // its lat/lng via initialView. Re-fit isn't a goal — once user pans,
-  // we let them stay where they are.
+  // MapLibre measures container size at init time. When we mount
+  // inside a toggle (user clicked Mapa after Lista was rendered),
+  // the canvas can come up sized 0×0 even though the wrapper has
+  // its proper height — auto-resize observer sometimes misses the
+  // first paint. Symptom: empty map until hard refresh.
+  //
+  // Force resize after a frame (layout settles) AND wire a
+  // ResizeObserver on the parent container so any later size
+  // changes (mode toggle, dvh recalc on virtual keyboard, etc.)
+  // get picked up too.
+  useEffect(() => {
+    if (!mapInstance) return;
+    // Initial nudge — rAF defers past the mount paint so the
+    // container DOM has its real height by the time we measure.
+    const raf = requestAnimationFrame(() => mapInstance.resize());
+
+    const container = mapInstance.getContainer();
+    const observer = new ResizeObserver(() => mapInstance.resize());
+    observer.observe(container);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      observer.disconnect();
+    };
+  }, [mapInstance]);
+
   useEffect(() => {
     if (!mapInstance || fitDoneRef.current) return;
     if (stops.length < 2) {
@@ -86,40 +218,44 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
     fitDoneRef.current = true;
   }, [mapInstance, stops]);
 
-  // GeoJSON for the polyline. Only meaningful with 2+ stops; below
-  // that we render nothing for the line layer (Source still mounts to
-  // keep the layer config stable).
-  const lineGeoJson = useMemo<GeoJSON.FeatureCollection>(
-    () => ({
+  // GeoJSON for the line. Real route from ORS if we have it,
+  // otherwise the legacy dashed straight-line fallback.
+  const lineGeoJson = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (stops.length < 2) {
+      return { type: "FeatureCollection", features: [] };
+    }
+    if (route) {
+      return {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { routed: true },
+            geometry: route.geometry,
+          },
+        ],
+      };
+    }
+    // Fallback straight line.
+    return {
       type: "FeatureCollection",
-      features:
-        stops.length >= 2
-          ? [
-              {
-                type: "Feature",
-                properties: {},
-                geometry: {
-                  type: "LineString",
-                  coordinates: stops.map((s) => [s.placeLng, s.placeLat]),
-                },
-              },
-            ]
-          : [],
-    }),
-    [stops],
-  );
+      features: [
+        {
+          type: "Feature",
+          properties: { routed: false },
+          geometry: {
+            type: "LineString",
+            coordinates: stops.map((s) => [s.placeLng, s.placeLat]),
+          },
+        },
+      ],
+    };
+  }, [stops, route]);
 
-  // Map height calc: subtract everything that surrounds the map to
-  // keep the info card visible without scrolling. Layout from top:
-  //   PageHeader (~60 px incl. safe-area-top)
-  //   meta band + progress (~64 px)
-  //   toggle + spacing (~52 px)
-  //   section padding y (~32 px)
-  //   BottomNav (60 px) + safe-area-bottom
-  // Plus a 32 px buffer so the card always has breathing room above
-  // BottomNav. min-h ensures the map stays usable on tall pages.
+  // Map height calc — matches the previous version, just adjusted
+  // for the new header bar (~44 px tighter than before).
   const mapHeight =
-    "min-h-[420px] h-[calc(100dvh-280px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]";
+    "min-h-[380px] h-[calc(100dvh-330px-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))]";
 
   if (stops.length === 0) {
     return (
@@ -135,93 +271,190 @@ export function TripMapView({ stops }: { stops: TripStopView[] }) {
   }
 
   return (
-    <div
-      className={cn("relative overflow-hidden rounded-2xl border", mapHeight)}
-    >
-      <MapLibreMap
-        {...view}
-        onMove={(e) => setView(e.viewState)}
-        onLoad={(e) => setMapInstance(e.target)}
-        onClick={() => setSelectedStopId(null)}
-        style={{ width: "100%", height: "100%" }}
-        mapStyle={style}
-        attributionControl={{ compact: true }}
-      >
-        <NavigationControl position="top-right" />
-
-        <Source id="trip-line" type="geojson" data={lineGeoJson}>
-          <Layer
-            id="trip-line-layer"
-            type="line"
-            paint={{
-              // Maplibre paint expressions don't resolve CSS vars, so
-              // we hard-code an amber that reads close to our brand
-              // primary on both light and dark themes. Dashed pattern
-              // signals "planned route" vs the solid lines OSM
-              // basemap reserves for actual roads.
-              "line-color": "#f59e0b",
-              "line-width": 3,
-              "line-opacity": 0.75,
-              "line-dasharray": [0.5, 1.5],
-            }}
-            layout={{ "line-cap": "round", "line-join": "round" }}
-          />
-        </Source>
-
-        {stops.map((s, i) => {
-          const completed = s.completedAt !== null;
-          const active = selectedStopId === s.id;
-          return (
-            <Marker
-              key={s.id}
-              longitude={s.placeLng}
-              latitude={s.placeLat}
-              anchor="center"
-              onClick={(e) => {
-                // Marker click bubbles to the map's onClick which
-                // would clear the selection — stop it.
-                e.originalEvent.stopPropagation();
-                selectStop(s.id);
-              }}
-            >
-              <span
-                aria-label={`${i + 1}. ${s.placeName}${completed ? " (ukończone)" : ""}`}
-                className={cn(
-                  "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out",
-                  // Active pin grows + ring so it visually pops out
-                  // of the route. Pending vs completed colour stays
-                  // the same as before so the UI rhymes with the
-                  // list view's number badge.
-                  active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
-                  completed
-                    ? "bg-emerald-500 text-white"
-                    : "bg-primary text-primary-foreground",
-                  active &&
-                    (completed
-                      ? "ring-4 ring-emerald-500/30"
-                      : "ring-4 ring-primary/30"),
-                )}
-              >
-                {completed ? <Check size={active ? 20 : 16} /> : i + 1}
+    <div className="space-y-2">
+      {/* Header bar: profile pills + total distance/duration.
+       *  Distance/duration only meaningful when ORS returned a
+       *  real route — straight-line fallback hides the stats
+       *  (would be misleading "as the crow flies"). */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-full border border-border/60 bg-muted/30 px-1.5 py-1.5">
+        <div
+          role="tablist"
+          aria-label="Profil trasy"
+          className="flex items-center gap-1"
+        >
+          {PROFILE_OPTIONS.map((opt) => (
+            <ProfilePill
+              key={opt.value}
+              active={profile === opt.value}
+              onClick={() => setProfileAndPersist(opt.value)}
+              icon={<opt.icon size={12} />}
+              label={opt.label}
+            />
+          ))}
+        </div>
+        {route ? (
+          <div className="flex items-center gap-3 px-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1">
+              <RouteIcon size={11} aria-hidden />
+              <span className="font-mono tabular-nums">
+                {formatDistance(route.distanceM)}
               </span>
-            </Marker>
-          );
-        })}
-      </MapLibreMap>
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Clock size={11} aria-hidden />
+              <span className="font-mono tabular-nums">
+                {formatDuration(route.durationS)}
+              </span>
+            </span>
+          </div>
+        ) : routeLoading ? (
+          <span className="inline-flex items-center gap-1.5 px-2 text-[11px] italic text-muted-foreground">
+            <Loader2 size={12} className="animate-spin" aria-hidden />
+            Wyznaczam trasę…
+          </span>
+        ) : stops.length >= 2 ? (
+          <span className="px-2 text-[11px] italic text-muted-foreground/70">
+            Trasa niedostępna
+          </span>
+        ) : null}
+      </div>
 
-      <TripMapInfoCard
-        stops={stops}
-        selectedStopId={selectedStopId}
-        onSelect={selectStop}
-        onClose={() => setSelectedStopId(null)}
-      />
+      <div
+        className={cn(
+          // bg-muted fallback widoczny zanim MapLibre zacznie
+          // rysować tiles (lub gdy fail). Bez tego dark-mode pusty
+          // canvas pokazywał całkowicie czarne pole — wyglądało
+          // jak crash mapy.
+          "relative overflow-hidden rounded-2xl border bg-muted",
+          mapHeight,
+        )}
+      >
+        <MapLibreMap
+          {...view}
+          onMove={(e) => setView(e.viewState)}
+          onLoad={(e) => setMapInstance(e.target)}
+          onClick={() => setSelectedStopId(null)}
+          style={{ width: "100%", height: "100%" }}
+          mapStyle={style}
+          attributionControl={{ compact: true }}
+        >
+          <NavigationControl position="top-right" />
+
+          <Source id="trip-line" type="geojson" data={lineGeoJson}>
+            <Layer
+              id="trip-line-layer"
+              type="line"
+              paint={{
+                "line-color": "#b8613a",
+                // Routed line is solid 4 px; straight-line
+                // fallback is dashed 3 px so the visual difference
+                // tells the user "this isn't an actual road route".
+                "line-width": route ? 4 : 3,
+                "line-opacity": route ? 0.85 : 0.65,
+                ...(route
+                  ? {}
+                  : { "line-dasharray": [0.5, 1.5] as unknown as number[] }),
+              }}
+              layout={{ "line-cap": "round", "line-join": "round" }}
+            />
+          </Source>
+
+          {stops.map((s, i) => {
+            const completed = s.completedAt !== null;
+            const active = selectedStopId === s.id;
+            return (
+              <Marker
+                key={s.id}
+                longitude={s.placeLng}
+                latitude={s.placeLat}
+                anchor="center"
+                onClick={(e) => {
+                  e.originalEvent.stopPropagation();
+                  selectStop(s.id);
+                }}
+              >
+                <span
+                  aria-label={`${i + 1}. ${s.placeName}${completed ? " (ukończone)" : ""}`}
+                  className={cn(
+                    "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out",
+                    active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
+                    completed
+                      ? "bg-emerald-500 text-white"
+                      : "bg-primary text-primary-foreground",
+                    active &&
+                      (completed
+                        ? "ring-4 ring-emerald-500/30"
+                        : "ring-4 ring-primary/30"),
+                  )}
+                >
+                  {completed ? <Check size={active ? 20 : 16} /> : i + 1}
+                </span>
+              </Marker>
+            );
+          })}
+        </MapLibreMap>
+
+        <TripMapInfoCard
+          stops={stops}
+          selectedStopId={selectedStopId}
+          onSelect={selectStop}
+          onClose={() => setSelectedStopId(null)}
+          // Per-stop leg stats — info card pokazuje "Od poprzedniego:
+          // 3.2 km · 8 min" dla każdego stopu poza pierwszym.
+          segments={route?.segments ?? []}
+        />
+      </div>
     </div>
   );
 }
 
+function ProfilePill({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors",
+        active
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-background hover:text-foreground",
+      )}
+    >
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function formatDistance(meters: number): string {
+  if (meters < 1000) return `${meters} m`;
+  const km = meters / 1000;
+  return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 function initialView(stops: TripStopView[]): Partial<ViewState> {
   if (stops.length === 0) {
-    // Warsaw fallback — same default as the main map.
     return { longitude: 21.0122, latitude: 52.2297, zoom: 6 };
   }
   if (stops.length === 1) {
@@ -231,8 +464,6 @@ function initialView(stops: TripStopView[]): Partial<ViewState> {
       zoom: 13,
     };
   }
-  // Multi-stop: zoom out enough to see all; auto-fit takes over after
-  // mount once the map has its container size.
   const lngs = stops.map((s) => s.placeLng);
   const lats = stops.map((s) => s.placeLat);
   return {

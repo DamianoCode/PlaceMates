@@ -1,6 +1,6 @@
 "use client";
 
-import { useOptimistic, useTransition } from "react";
+import { useId, useOptimistic, useTransition } from "react";
 import {
   closestCenter,
   DndContext,
@@ -51,6 +51,12 @@ export function TripStopList({
   addableCandidates: AddableStopCandidate[];
 }) {
   const [, startTransition] = useTransition();
+  // Stable id for DndContext — without it dnd-kit assigns IDs from
+  // a global counter which differs between SSR pass and client
+  // hydration (server gets DndDescribedBy-0, client increments to
+  // -1 because the prior render was nuked). React's useId is
+  // identical across both passes, kills the hydration mismatch.
+  const dndId = useId();
   const [optimistic, applyOptimistic] = useOptimistic<
     TripStopView[],
     string[]
@@ -142,6 +148,7 @@ export function TripStopList({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}

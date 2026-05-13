@@ -58,7 +58,7 @@ export function TripDetailView({
           addableCandidates={addableCandidates}
         />
       ) : (
-        <TripMapViewClient stops={stops} />
+        <TripMapViewClient stops={stops} tripId={tripId} />
       )}
     </div>
   );

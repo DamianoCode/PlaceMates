@@ -1,10 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Clock, X } from "lucide-react";
+import {
+  ArrowDownRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  X,
+} from "lucide-react";
 import { CategoryIcon } from "@/components/map/category-icons";
 import { cn } from "@/lib/utils";
 import type { TripStopView } from "@/domain/trips/service";
+
+type RouteSegment = { distanceM: number; durationS: number };
 
 /**
  * Floating info card overlaid at the bottom of the trip map. Shows
@@ -23,11 +32,16 @@ export function TripMapInfoCard({
   selectedStopId,
   onSelect,
   onClose,
+  segments,
 }: {
   stops: TripStopView[];
   selectedStopId: string | null;
   onSelect: (stopId: string) => void;
   onClose: () => void;
+  /** Per-stop-pair leg stats from ORS. segments[i] = stop i → i+1.
+   *  Empty array when no route is available (single stop, ORS
+   *  unreachable, profile didn't include segments yet). */
+  segments: RouteSegment[];
 }) {
   if (selectedStopId === null) return null;
 
@@ -38,6 +52,9 @@ export function TripMapInfoCard({
   const prev = idx > 0 ? stops[idx - 1] : null;
   const next = idx < stops.length - 1 ? stops[idx + 1] : null;
   const completed = stop.completedAt !== null;
+  // Leg from prev stop to this one. segments[i-1] gives the route
+  // arriving AT stop i (segment i-1 is from stop i-1 to stop i).
+  const legFromPrev = prev && idx - 1 < segments.length ? segments[idx - 1] : null;
 
   return (
     <div
@@ -118,6 +135,20 @@ export function TripMapInfoCard({
               </button>
             </div>
 
+            {legFromPrev && (
+              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/80">
+                <ArrowDownRight size={11} aria-hidden />
+                <span>Od poprzedniego:</span>
+                <span className="font-mono tabular-nums">
+                  {formatDistance(legFromPrev.distanceM)}
+                </span>
+                <span aria-hidden>·</span>
+                <span className="font-mono tabular-nums">
+                  {formatDuration(legFromPrev.durationS)}
+                </span>
+              </p>
+            )}
+
             {stop.note && (
               <p className="mt-1 line-clamp-2 text-xs italic text-muted-foreground">
                 {stop.note}
@@ -161,4 +192,22 @@ export function TripMapInfoCard({
       </div>
     </div>
   );
+}
+
+// Duplicated from TripMapView — not worth a shared util just yet
+// (two callers, three lines each). Pull into lib/format.ts if we
+// add a third caller.
+function formatDistance(meters: number): string {
+  if (meters < 1000) return `${meters} m`;
+  const km = meters / 1000;
+  return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
