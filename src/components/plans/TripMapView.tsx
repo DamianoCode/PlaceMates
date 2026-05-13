@@ -33,6 +33,7 @@ import { fetchJson } from "@/lib/fetch-json";
 import { formatDistance, formatDuration } from "@/lib/format-route";
 import { getMapStyle } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
+import type { RoutingProfile } from "@/infra/routing/ors";
 import type { TripStopView } from "@/domain/trips/service";
 
 /**
@@ -46,12 +47,6 @@ import type { TripStopView } from "@/domain/trips/service";
  * duration vanish in that case — they're meaningless without an
  * actual road-following route.
  */
-
-type RoutingProfile =
-  | "driving-car"
-  | "cycling-regular"
-  | "foot-walking"
-  | "foot-hiking";
 
 type RouteSegment = { distanceM: number; durationS: number };
 

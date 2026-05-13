@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getAuth } from "@/infra/auth";
 import { getOrComputeRoute } from "@/domain/trips/routing";
-import type { RoutingProfile } from "@/infra/routing/ors";
+import { isRoutingProfile } from "@/infra/routing/ors";
 
 /**
  * GET /api/trips/[id]/route?profile=driving-car
@@ -12,13 +12,6 @@ import type { RoutingProfile } from "@/infra/routing/ors";
  * is unreachable, or the user can't access the trip — client falls
  * back to a straight-line polyline in those cases.
  */
-
-const VALID_PROFILES: ReadonlyArray<RoutingProfile> = [
-  "driving-car",
-  "cycling-regular",
-  "foot-walking",
-  "foot-hiking",
-];
 
 export async function GET(
   req: NextRequest,
@@ -42,13 +35,13 @@ export async function GET(
   }
 
   const raw = req.nextUrl.searchParams.get("profile") ?? "driving-car";
-  if (!VALID_PROFILES.includes(raw as RoutingProfile)) {
+  if (!isRoutingProfile(raw)) {
     return NextResponse.json(
       { ok: false, reason: "invalid_profile" },
       { status: 400 },
     );
   }
-  const profile = raw as RoutingProfile;
+  const profile = raw;
 
   const route = await getOrComputeRoute(id, profile, user.id);
   if (!route) {

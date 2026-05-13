@@ -11,6 +11,7 @@ import {
   Route as RouteIcon,
   Sparkles,
   TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
@@ -23,12 +24,64 @@ import {
   reorderStopsAction,
 } from "@/app/(app)/plans/actions";
 import type { OptimizationPreview } from "@/domain/trips/optimization";
+import type { RoutingProfile } from "@/infra/routing/ors";
 
-type RoutingProfile =
-  | "driving-car"
-  | "cycling-regular"
-  | "foot-walking"
-  | "foot-hiking";
+type SavingsStats = {
+  /** Dodatnia = krócej; ujemna = dłużej; null = brak danych. */
+  distanceDeltaM: number | null;
+  durationDeltaS: number | null;
+  proposedDistanceM: number | null;
+  proposedDurationS: number | null;
+  currentDistanceM: number | null;
+  currentDurationS: number | null;
+  /** Co najmniej jeden wymiar pokazuje oszczędność (>0). */
+  anySaving: boolean;
+  /** Co najmniej jeden wymiar pokazuje regresję (<0). */
+  anyWorse: boolean;
+};
+
+/** Centralna kalkulacja diffu — używana zarówno w UI (StatsDiff,
+ *  CTA label) jak i w toast po Apply. Wszystkie miejsca które chcą
+ *  „o ile krócej" muszą przejść przez tę funkcję, żeby progi (>0)
+ *  i interpretacja braku danych były spójne. */
+function computeSavings(preview: OptimizationPreview): SavingsStats {
+  const proposedDistanceM =
+    preview.proposedDistanceM > 0 ? preview.proposedDistanceM : null;
+  const proposedDurationS =
+    preview.proposedDurationS > 0 ? preview.proposedDurationS : null;
+  const currentDistanceM =
+    preview.currentDistanceM !== null && preview.currentDistanceM > 0
+      ? preview.currentDistanceM
+      : null;
+  const currentDurationS =
+    preview.currentDurationS !== null && preview.currentDurationS > 0
+      ? preview.currentDurationS
+      : null;
+
+  const distanceDeltaM =
+    proposedDistanceM !== null && currentDistanceM !== null
+      ? currentDistanceM - proposedDistanceM
+      : null;
+  const durationDeltaS =
+    proposedDurationS !== null && currentDurationS !== null
+      ? currentDurationS - proposedDurationS
+      : null;
+
+  return {
+    distanceDeltaM,
+    durationDeltaS,
+    proposedDistanceM,
+    proposedDurationS,
+    currentDistanceM,
+    currentDurationS,
+    anySaving:
+      (distanceDeltaM !== null && distanceDeltaM > 0) ||
+      (durationDeltaS !== null && durationDeltaS > 0),
+    anyWorse:
+      (distanceDeltaM !== null && distanceDeltaM < 0) ||
+      (durationDeltaS !== null && durationDeltaS < 0),
+  };
+}
 
 const PROFILE_OPTIONS: ReadonlyArray<{
   value: RoutingProfile;
@@ -160,21 +213,30 @@ function OptimizeDrawer({
         toast.error(res.error);
         return;
       }
-      // Komunikat z liczbą oszczędności — tylko gdy mamy oba stats
-      // poprawnie (> 0). Defensywnie chroni przed sytuacją gdzie
-      // proposedDistance to 0 (degeneracja) i policzylibyśmy
-      // „zaoszczędzone" jako pełen current distance, co byłoby
-      // mylące.
-      const savedM =
-        preview.currentDistanceM !== null &&
-        preview.currentDistanceM > 0 &&
-        preview.proposedDistanceM > 0
-          ? preview.currentDistanceM - preview.proposedDistanceM
-          : null;
-      if (savedM !== null && savedM > 0) {
-        toast.success(
-          `Zoptymalizowano — krócej o ${formatDistance(savedM)}.`,
-        );
+      // Toast formułowany na podstawie kierunku każdego wymiaru.
+      // Mixed („krócej dystans / dłużej czas") pokazujemy oba człony
+      // — userowi należy się prawda nawet po kliknięciu „Zastosuj
+      // mimo to".
+      const stats = computeSavings(preview);
+      const parts: string[] = [];
+      if (stats.distanceDeltaM !== null && stats.distanceDeltaM > 0) {
+        parts.push(`krócej o ${formatDistance(stats.distanceDeltaM)}`);
+      } else if (
+        stats.distanceDeltaM !== null &&
+        stats.distanceDeltaM < 0
+      ) {
+        parts.push(`dłużej o ${formatDistance(-stats.distanceDeltaM)}`);
+      }
+      if (stats.durationDeltaS !== null && stats.durationDeltaS > 0) {
+        parts.push(`krócej o ${formatDuration(stats.durationDeltaS)}`);
+      } else if (
+        stats.durationDeltaS !== null &&
+        stats.durationDeltaS < 0
+      ) {
+        parts.push(`dłużej o ${formatDuration(-stats.durationDeltaS)}`);
+      }
+      if (parts.length > 0) {
+        toast.success(`Zoptymalizowano — ${parts.join(", ")}.`);
       } else {
         toast.success("Zapisano nową kolejność.");
       }
@@ -283,6 +345,8 @@ function OptimizeDrawer({
                       </>
                     ) : preview.unchanged ? (
                       "Bez zmian"
+                    ) : computeSavings(preview).anyWorse ? (
+                      "Zastosuj mimo to"
                     ) : (
                       "Zastosuj"
                     )}
@@ -425,108 +489,174 @@ function PreviewResult({ preview }: { preview: OptimizationPreview }) {
 }
 
 function StatsDiff({ preview }: { preview: OptimizationPreview }) {
-  // Traktuj proposedDistance jako "dostępny" tylko gdy > 0. VROOM
-  // bez `options.g: true` zwracałby 0 — guard zostawiamy nawet po
-  // fixie po stronie clienta na wypadek edge case'ów (np. degeneracja
-  // do pojedynczego punktu po dedupie). To samo dla current — jeśli
-  // ORS directions nie dał statów, nie udajemy diffa.
-  const hasProposedDistance = preview.proposedDistanceM > 0;
-  const hasProposedDuration = preview.proposedDurationS > 0;
-  const hasCurrentDistance =
-    preview.currentDistanceM !== null && preview.currentDistanceM > 0;
-  const hasCurrentDuration =
-    preview.currentDurationS !== null && preview.currentDurationS > 0;
+  const stats = computeSavings(preview);
+  const {
+    distanceDeltaM,
+    durationDeltaS,
+    proposedDistanceM,
+    proposedDurationS,
+    currentDistanceM,
+    currentDurationS,
+    anySaving,
+    anyWorse,
+  } = stats;
 
-  // Oszczędności liczone niezależnie dla dystansu i czasu — pozwala
-  // pokazać sensowny diff nawet gdy jeden z wymiarów jest niedostępny
-  // (defense in depth: gdyby VROOM kiedyś przestał zwracać distance
-  // mimo `g: true`, dalej widzimy „Krócej o X min").
-  const savedM =
-    hasProposedDistance && hasCurrentDistance
-      ? (preview.currentDistanceM as number) - preview.proposedDistanceM
+  // Procent oszczędności obliczamy tylko dla dystansu i tylko gdy
+  // oba (current > 0 i delta > 0) — % dla czasu mniej intuicyjny
+  // (user łatwiej rozumie „6 min mniej" niż „-25%").
+  const savedDistancePct =
+    distanceDeltaM !== null && distanceDeltaM > 0 && currentDistanceM !== null
+      ? Math.round((distanceDeltaM / currentDistanceM) * 100)
       : null;
-  const savedS =
-    hasProposedDuration && hasCurrentDuration
-      ? (preview.currentDurationS as number) - preview.proposedDurationS
-      : null;
-  const savedPct =
-    savedM !== null && savedM > 0 && (preview.currentDistanceM as number) > 0
-      ? Math.round(
-          (savedM / (preview.currentDistanceM as number)) * 100,
-        )
-      : null;
-
-  const anySaving = (savedM !== null && savedM > 0) || (savedS !== null && savedS > 0);
-  const anyWorse = (savedM !== null && savedM < 0) || (savedS !== null && savedS < 0);
 
   return (
     <div className="space-y-2 rounded-2xl border bg-card p-4">
-      {(hasCurrentDistance || hasCurrentDuration) && (
-        <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-          <span>Aktualna</span>
-          <span className="font-mono tabular-nums">
-            {hasCurrentDistance && (
-              <>{formatDistance(preview.currentDistanceM as number)}</>
-            )}
-            {hasCurrentDistance && hasCurrentDuration && (
-              <span aria-hidden> · </span>
-            )}
-            {hasCurrentDuration && (
-              <>{formatDuration(preview.currentDurationS as number)}</>
-            )}
-          </span>
+      {(currentDistanceM !== null || currentDurationS !== null) && (
+        <StatLine label="Aktualna" muted distance={currentDistanceM} duration={currentDurationS} />
+      )}
+      <StatLine
+        label="Po optymalizacji"
+        emphasized
+        distance={proposedDistanceM}
+        duration={proposedDurationS}
+      />
+
+      {/* Diff: jeden wiersz na wymiar, każdy z własnym kolorem i
+       *  ikoną. Mixed (np. krócej w km, dłużej w min) widoczne wprost
+       *  — nie zatajamy regresji za pozytywnym agregatem. */}
+      {(distanceDeltaM !== null || durationDeltaS !== null) && (
+        <div className="space-y-1 border-t border-border/60 pt-2">
+          {distanceDeltaM !== null && distanceDeltaM !== 0 && (
+            <DeltaLine
+              kind={distanceDeltaM > 0 ? "saving" : "worse"}
+              label={
+                distanceDeltaM > 0
+                  ? "Krócej o"
+                  : "Dłużej o"
+              }
+              value={formatDistance(Math.abs(distanceDeltaM))}
+              pct={
+                distanceDeltaM > 0 && savedDistancePct !== null
+                  ? `-${savedDistancePct}%`
+                  : null
+              }
+            />
+          )}
+          {durationDeltaS !== null && durationDeltaS !== 0 && (
+            <DeltaLine
+              kind={durationDeltaS > 0 ? "saving" : "worse"}
+              label={
+                durationDeltaS > 0
+                  ? "Krócej o"
+                  : "Dłużej o"
+              }
+              value={formatDuration(Math.abs(durationDeltaS))}
+            />
+          )}
         </div>
       )}
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium text-foreground">Po optymalizacji</span>
-        <span className="font-mono font-semibold tabular-nums">
-          {hasProposedDistance && (
-            <>{formatDistance(preview.proposedDistanceM)}</>
-          )}
-          {hasProposedDistance && hasProposedDuration && (
-            <span aria-hidden> · </span>
-          )}
-          {hasProposedDuration && (
-            <>{formatDuration(preview.proposedDurationS)}</>
-          )}
-          {!hasProposedDistance && !hasProposedDuration && (
-            <span className="italic text-muted-foreground">brak danych</span>
-          )}
-        </span>
-      </div>
-      {anySaving && (
-        <div className="flex items-center gap-2 border-t border-border/60 pt-2 text-sm text-emerald-700 dark:text-emerald-400">
-          <TrendingDown size={14} aria-hidden />
-          <span>
-            Krócej o{" "}
-            {savedM !== null && savedM > 0 && (
-              <strong className="font-semibold">
-                {formatDistance(savedM)}
-              </strong>
-            )}
-            {savedM !== null && savedM > 0 && savedS !== null && savedS > 0 && (
-              <span> · </span>
-            )}
-            {savedS !== null && savedS > 0 && (
-              <strong className="font-semibold">
-                {formatDuration(savedS)}
-              </strong>
-            )}
-            {savedPct !== null && savedPct > 0 && (
-              <span className="text-emerald-700/80 dark:text-emerald-400/80">
-                {" "}
-                (-{savedPct}%)
-              </span>
-            )}
-          </span>
-        </div>
-      )}
+
+      {/* Komunikat tylko gdy obie metryki regresja albo brak savings.
+       *  W mixed (jeden wymiar lepszy, drugi gorszy) nie wyświetlamy —
+       *  DeltaLine'y same tłumaczą sytuację. */}
       {!anySaving && anyWorse && (
         <div className="border-t border-border/60 pt-2 text-xs italic text-muted-foreground">
-          Proponowana trasa nie jest krótsza, ale została przepuszczona
-          przez optymalizator — możesz mimo wszystko zastosować.
+          Proponowana trasa nie jest krótsza — możesz mimo wszystko
+          zastosować, jeśli wolisz tę kolejność.
         </div>
       )}
+    </div>
+  );
+}
+
+/** Pojedynczy wiersz „Aktualna / Po optymalizacji". Hopuje brak
+ *  jednego z wymiarów (np. distance niedostępny) — nie renderuje
+ *  separatora wtedy. */
+function StatLine({
+  label,
+  distance,
+  duration,
+  muted = false,
+  emphasized = false,
+}: {
+  label: string;
+  distance: number | null;
+  duration: number | null;
+  muted?: boolean;
+  emphasized?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-between gap-3 text-sm",
+        muted && "text-muted-foreground",
+      )}
+    >
+      <span className={emphasized ? "font-medium text-foreground" : ""}>
+        {label}
+      </span>
+      <span
+        className={cn(
+          "font-mono tabular-nums",
+          emphasized && "font-semibold",
+        )}
+      >
+        {distance !== null && <>{formatDistance(distance)}</>}
+        {distance !== null && duration !== null && (
+          <span aria-hidden> · </span>
+        )}
+        {duration !== null && <>{formatDuration(duration)}</>}
+        {distance === null && duration === null && (
+          <span className="italic text-muted-foreground">brak danych</span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+/** Wiersz różnicy per wymiar. `kind` decyduje o kolorze i ikonie. */
+function DeltaLine({
+  kind,
+  label,
+  value,
+  pct,
+}: {
+  kind: "saving" | "worse";
+  label: string;
+  value: string;
+  pct?: string | null;
+}) {
+  const isSaving = kind === "saving";
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 text-sm",
+        isSaving
+          ? "text-emerald-700 dark:text-emerald-400"
+          : "text-amber-700 dark:text-amber-400",
+      )}
+    >
+      {isSaving ? (
+        <TrendingDown size={14} aria-hidden />
+      ) : (
+        <TrendingUp size={14} aria-hidden />
+      )}
+      <span>
+        {label}{" "}
+        <strong className="font-semibold">{value}</strong>
+        {pct && (
+          <span
+            className={cn(
+              "ml-1",
+              isSaving
+                ? "text-emerald-700/80 dark:text-emerald-400/80"
+                : "text-amber-700/80 dark:text-amber-400/80",
+            )}
+          >
+            ({pct})
+          </span>
+        )}
+      </span>
     </div>
   );
 }

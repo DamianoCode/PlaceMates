@@ -2,6 +2,7 @@ import "server-only";
 
 import { callORSOptimization } from "@/infra/routing/ors-optimization";
 import type { RoutingProfile } from "@/infra/routing/ors";
+import { createFailureCooldown } from "@/infra/routing/failure-cooldown";
 import { err, ok, type Result } from "../result";
 import { getOrComputeRoute } from "./routing";
 import { getTripForUser, type TripStopView } from "./service";
@@ -34,33 +35,10 @@ import { getTripForUser, type TripStopView } from "./service";
  * `/optimization` nie blokował wyświetlania trasy w Mapa.
  */
 
-const FAIL_COOLDOWN_MS = 60_000;
-
-const optimizationFailures = new Map<string, number>();
+const optimizationCooldown = createFailureCooldown();
 
 function failureKey(tripId: string, profile: RoutingProfile): string {
   return `${tripId}:${profile}`;
-}
-
-function isInOptimizationCooldown(
-  tripId: string,
-  profile: RoutingProfile,
-): boolean {
-  const key = failureKey(tripId, profile);
-  const at = optimizationFailures.get(key);
-  if (at === undefined) return false;
-  if (Date.now() - at > FAIL_COOLDOWN_MS) {
-    optimizationFailures.delete(key);
-    return false;
-  }
-  return true;
-}
-
-function markOptimizationFailure(
-  tripId: string,
-  profile: RoutingProfile,
-): void {
-  optimizationFailures.set(failureKey(tripId, profile), Date.now());
 }
 
 export type ProposedStop = {
@@ -138,7 +116,7 @@ export async function previewOptimizedTripOrder(
   }
 
   // Failure cooldown — nie waliśmy w padający endpoint co request.
-  if (isInOptimizationCooldown(tripId, profile)) {
+  if (optimizationCooldown.isInCooldown(failureKey(tripId, profile))) {
     return err(
       "Optymalizator chwilowo niedostępny. Spróbuj ponownie za chwilę.",
     );
@@ -157,23 +135,40 @@ export async function previewOptimizedTripOrder(
   ]);
 
   if (!result) {
-    markOptimizationFailure(tripId, profile);
+    optimizationCooldown.mark(failureKey(tripId, profile));
     return err(
       "Nie udało się obliczyć optymalnej trasy. ORS jest chwilowo niedostępny.",
     );
   }
 
   // Wyczyść flag failure — endpoint żyje.
-  optimizationFailures.delete(failureKey(tripId, profile));
+  optimizationCooldown.clear(failureKey(tripId, profile));
 
   // Zbuduj pełną proponowaną sekwencję: [completed…, anchor (jeśli z
   // pending), …optimized jobs].
-  const optimizedJobs: TripStopView[] = result.orderedJobIds
-    .map((id) => jobIdToStop.get(id))
-    .filter((s): s is TripStopView => Boolean(s));
+  //
+  // Iterujemy ręcznie z Setem `seen` zamiast `.map().filter(Boolean)`:
+  // filter Boolean ukryłby duplikat (każde get() trafia, więc nic nie
+  // wycina), a `optimizedJobs.length` zgadzałoby się z `jobsStops.length`
+  // mimo że ten sam stop byłby w wyniku dwa razy, a inny brakowałby.
+  // Bardzo nieprawdopodobne że VROOM zwróci duplikat, ale guard kosztuje
+  // 3 linie i daje pewność.
+  const optimizedJobs: TripStopView[] = [];
+  const seen = new Set<number>();
+  for (const jobId of result.orderedJobIds) {
+    if (seen.has(jobId)) {
+      return err("Optymalizator zwrócił zduplikowany stop.");
+    }
+    seen.add(jobId);
+    const stop = jobIdToStop.get(jobId);
+    if (!stop) {
+      return err("Optymalizator zwrócił nieznany stop.");
+    }
+    optimizedJobs.push(stop);
+  }
   if (optimizedJobs.length !== jobsStops.length) {
-    // VROOM zwrócił mismatch — caller (ORS client) już wykrył,
-    // tutaj defensywne. Nie powinniśmy się tu znaleźć.
+    // VROOM dał poprawne id-y ale w innej liczbie niż wysłaliśmy.
+    // ORS client już to wykrywa, ale defense in depth.
     return err("Optymalizator zwrócił niespójną kolejność stopów.");
   }
 

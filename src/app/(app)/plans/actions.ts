@@ -18,16 +18,9 @@ import {
   previewOptimizedTripOrder,
   type OptimizationPreview,
 } from "@/domain/trips/optimization";
-import type { RoutingProfile } from "@/infra/routing/ors";
+import { isRoutingProfile, type RoutingProfile } from "@/infra/routing/ors";
 import { pushStopCompleted } from "@/infra/push/events";
 import { err, type Result } from "@/domain/result";
-
-const VALID_ROUTING_PROFILES: ReadonlyArray<RoutingProfile> = [
-  "driving-car",
-  "cycling-regular",
-  "foot-walking",
-  "foot-hiking",
-];
 
 /**
  * Server actions for the trip planner. Each one auths the user and
@@ -200,7 +193,7 @@ export async function previewOptimizeOrderAction(
   const user = await (await getAuth()).getUser();
   if (!user) return err("Wymagane zalogowanie.");
 
-  if (!VALID_ROUTING_PROFILES.includes(profile)) {
+  if (!isRoutingProfile(profile)) {
     return err("Niepoprawny profil trasowania.");
   }
 
