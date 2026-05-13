@@ -57,6 +57,7 @@ export default async function TripDetailPage({
             tripId={trip.id}
             tripName={trip.name}
             tripPlannedFor={trip.plannedFor}
+            stopCount={trip.stops.length}
             canDelete={canDelete}
           />
         }

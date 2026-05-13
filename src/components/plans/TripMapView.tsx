@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-json";
+import { formatDistance, formatDuration } from "@/lib/format-route";
 import { getMapStyle } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
 import type { TripStopView } from "@/domain/trips/service";
@@ -436,21 +437,6 @@ function ProfilePill({
       {label}
     </button>
   );
-}
-
-function formatDistance(meters: number): string {
-  if (meters < 1000) return `${meters} m`;
-  const km = meters / 1000;
-  return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
-}
-
-function formatDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds} s`;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 function initialView(stops: TripStopView[]): Partial<ViewState> {
