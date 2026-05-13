@@ -19,6 +19,7 @@ import {
   createLocalCanonical,
   findOrCreateExternalCanonical,
 } from "./canonical";
+import { invalidateTripRoutesForPlace } from "../trips/routing";
 
 export type PlaceMarker = {
   id: string;
@@ -498,6 +499,14 @@ export async function updatePlace(
       updatedAt: new Date(),
     })
     .where(eq(places.id, input.placeId));
+
+  // Przesunięcie pina inwaliduje każdą cache'owaną trasę przechodzącą
+  // przez to miejsce — bez tego user widziałby starą geometrię aż do
+  // wygaśnięcia TTL (do 7 dni). Edycja samej nazwy/kategorii nie rusza
+  // geometrii, więc inwalidujemy tylko gdy współrzędne się zmieniły.
+  if (locationMoved) {
+    await invalidateTripRoutesForPlace(input.placeId);
+  }
 
   return ok(null);
 }

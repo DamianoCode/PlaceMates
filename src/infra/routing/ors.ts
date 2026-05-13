@@ -44,6 +44,14 @@ export type RouteResult = {
 
 const ORS_BASE = "https://api.openrouteservice.org/v2/directions";
 
+/** Hard cap na czas oczekiwania na odpowiedź ORS. Bez tego Node
+ *  domyślnie czeka ~100 s — pojedynczy zawieszony request blokuje
+ *  rendering trasy długo po tym jak user już przerzucił widok. 8 s
+ *  to kompromis: ORS odpowiada normalnie w <2 s, więc to tylko
+ *  guard na patologiczne przypadki (network blip, ORS degradacja).
+ *  Po timeoucie wracamy null → fallback do prostej linii. */
+const ORS_TIMEOUT_MS = 8_000;
+
 export async function callORS(
   profile: RoutingProfile,
   coords: Array<[number, number]>,
@@ -57,6 +65,9 @@ export async function callORS(
     return null;
   }
   if (coords.length < 2) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ORS_TIMEOUT_MS);
 
   try {
     const res = await fetch(`${ORS_BASE}/${profile}/geojson`, {
@@ -75,6 +86,7 @@ export async function callORS(
       // Always fresh — cache lives at our DB layer, not in fetch
       // cache where we couldn't invalidate it from server actions.
       cache: "no-store",
+      signal: controller.signal,
     });
 
     if (!res.ok) {
@@ -116,8 +128,16 @@ export async function callORS(
       segments,
     };
   } catch (err) {
-    // Network down, DNS, timeout — log and fall back.
-    console.error("[routing] ORS request failed", err);
+    // Network down, DNS, abort (timeout) — log and fall back. Abort
+    // ma własną nazwę żebyśmy łatwo poznali timeout vs prawdziwy
+    // network error w logach.
+    if (err instanceof Error && err.name === "AbortError") {
+      console.error(`[routing] ORS ${profile} timeout (${ORS_TIMEOUT_MS}ms)`);
+    } else {
+      console.error("[routing] ORS request failed", err);
+    }
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
