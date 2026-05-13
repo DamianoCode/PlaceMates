@@ -102,6 +102,14 @@ export async function callORSOptimization(
             start: vehicleStart,
           },
         ],
+        // `g: true` (geometry) wymusza obliczenie pełnej trasy po
+        // drogach — bez tego VROOM zwraca tylko macierz czasów
+        // (`duration`), a `distance` przychodzi jako 0 i UI pokazuje
+        // nonsensowne „Po optymalizacji: 0 m". Geometrii samej nie
+        // używamy (po Apply leci osobny /directions call który
+        // zapisuje świeży route do trip_routes cache), ale przy
+        // okazji dostajemy poprawne distance.
+        options: { g: true },
       }),
       cache: "no-store",
       signal: controller.signal,

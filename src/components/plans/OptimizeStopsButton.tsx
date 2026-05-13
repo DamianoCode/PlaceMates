@@ -160,9 +160,15 @@ function OptimizeDrawer({
         toast.error(res.error);
         return;
       }
-      // Komunikat z liczbą oszczędności (jeśli mamy current stats).
+      // Komunikat z liczbą oszczędności — tylko gdy mamy oba stats
+      // poprawnie (> 0). Defensywnie chroni przed sytuacją gdzie
+      // proposedDistance to 0 (degeneracja) i policzylibyśmy
+      // „zaoszczędzone" jako pełen current distance, co byłoby
+      // mylące.
       const savedM =
-        preview.currentDistanceM !== null
+        preview.currentDistanceM !== null &&
+        preview.currentDistanceM > 0 &&
+        preview.proposedDistanceM > 0
           ? preview.currentDistanceM - preview.proposedDistanceM
           : null;
       if (savedM !== null && savedM > 0) {
@@ -419,59 +425,92 @@ function PreviewResult({ preview }: { preview: OptimizationPreview }) {
 }
 
 function StatsDiff({ preview }: { preview: OptimizationPreview }) {
-  const hasCurrent =
-    preview.currentDistanceM !== null && preview.currentDurationS !== null;
-  const savedM = hasCurrent
-    ? (preview.currentDistanceM as number) - preview.proposedDistanceM
-    : null;
-  const savedS = hasCurrent
-    ? (preview.currentDurationS as number) - preview.proposedDurationS
-    : null;
+  // Traktuj proposedDistance jako "dostępny" tylko gdy > 0. VROOM
+  // bez `options.g: true` zwracałby 0 — guard zostawiamy nawet po
+  // fixie po stronie clienta na wypadek edge case'ów (np. degeneracja
+  // do pojedynczego punktu po dedupie). To samo dla current — jeśli
+  // ORS directions nie dał statów, nie udajemy diffa.
+  const hasProposedDistance = preview.proposedDistanceM > 0;
+  const hasProposedDuration = preview.proposedDurationS > 0;
+  const hasCurrentDistance =
+    preview.currentDistanceM !== null && preview.currentDistanceM > 0;
+  const hasCurrentDuration =
+    preview.currentDurationS !== null && preview.currentDurationS > 0;
+
+  // Oszczędności liczone niezależnie dla dystansu i czasu — pozwala
+  // pokazać sensowny diff nawet gdy jeden z wymiarów jest niedostępny
+  // (defense in depth: gdyby VROOM kiedyś przestał zwracać distance
+  // mimo `g: true`, dalej widzimy „Krócej o X min").
+  const savedM =
+    hasProposedDistance && hasCurrentDistance
+      ? (preview.currentDistanceM as number) - preview.proposedDistanceM
+      : null;
+  const savedS =
+    hasProposedDuration && hasCurrentDuration
+      ? (preview.currentDurationS as number) - preview.proposedDurationS
+      : null;
   const savedPct =
-    savedM !== null &&
-    hasCurrent &&
-    (preview.currentDistanceM as number) > 0
+    savedM !== null && savedM > 0 && (preview.currentDistanceM as number) > 0
       ? Math.round(
           (savedM / (preview.currentDistanceM as number)) * 100,
         )
       : null;
 
+  const anySaving = (savedM !== null && savedM > 0) || (savedS !== null && savedS > 0);
+  const anyWorse = (savedM !== null && savedM < 0) || (savedS !== null && savedS < 0);
+
   return (
     <div className="space-y-2 rounded-2xl border bg-card p-4">
-      {hasCurrent && (
+      {(hasCurrentDistance || hasCurrentDuration) && (
         <div className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <span>Aktualna</span>
           <span className="font-mono tabular-nums">
-            {formatDistance(preview.currentDistanceM as number)}
-            <span aria-hidden> · </span>
-            {formatDuration(preview.currentDurationS as number)}
+            {hasCurrentDistance && (
+              <>{formatDistance(preview.currentDistanceM as number)}</>
+            )}
+            {hasCurrentDistance && hasCurrentDuration && (
+              <span aria-hidden> · </span>
+            )}
+            {hasCurrentDuration && (
+              <>{formatDuration(preview.currentDurationS as number)}</>
+            )}
           </span>
         </div>
       )}
       <div className="flex items-center justify-between gap-3 text-sm">
         <span className="font-medium text-foreground">Po optymalizacji</span>
         <span className="font-mono font-semibold tabular-nums">
-          {formatDistance(preview.proposedDistanceM)}
-          <span aria-hidden> · </span>
-          {formatDuration(preview.proposedDurationS)}
+          {hasProposedDistance && (
+            <>{formatDistance(preview.proposedDistanceM)}</>
+          )}
+          {hasProposedDistance && hasProposedDuration && (
+            <span aria-hidden> · </span>
+          )}
+          {hasProposedDuration && (
+            <>{formatDuration(preview.proposedDurationS)}</>
+          )}
+          {!hasProposedDistance && !hasProposedDuration && (
+            <span className="italic text-muted-foreground">brak danych</span>
+          )}
         </span>
       </div>
-      {savedM !== null && savedM > 0 && (
+      {anySaving && (
         <div className="flex items-center gap-2 border-t border-border/60 pt-2 text-sm text-emerald-700 dark:text-emerald-400">
           <TrendingDown size={14} aria-hidden />
           <span>
             Krócej o{" "}
-            <strong className="font-semibold">
-              {formatDistance(savedM)}
-            </strong>
+            {savedM !== null && savedM > 0 && (
+              <strong className="font-semibold">
+                {formatDistance(savedM)}
+              </strong>
+            )}
+            {savedM !== null && savedM > 0 && savedS !== null && savedS > 0 && (
+              <span> · </span>
+            )}
             {savedS !== null && savedS > 0 && (
-              <>
-                {" "}
-                ·{" "}
-                <strong className="font-semibold">
-                  {formatDuration(savedS)}
-                </strong>
-              </>
+              <strong className="font-semibold">
+                {formatDuration(savedS)}
+              </strong>
             )}
             {savedPct !== null && savedPct > 0 && (
               <span className="text-emerald-700/80 dark:text-emerald-400/80">
@@ -482,7 +521,7 @@ function StatsDiff({ preview }: { preview: OptimizationPreview }) {
           </span>
         </div>
       )}
-      {savedM !== null && savedM <= 0 && (
+      {!anySaving && anyWorse && (
         <div className="border-t border-border/60 pt-2 text-xs italic text-muted-foreground">
           Proponowana trasa nie jest krótsza, ale została przepuszczona
           przez optymalizator — możesz mimo wszystko zastosować.
