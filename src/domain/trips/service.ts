@@ -742,6 +742,13 @@ export async function removeStop(
  * `::int[]` array casts removes the ambiguity and is the canonical
  * Postgres idiom for "update many rows from a parallel-array
  * payload" — single statement, single round-trip, atomic.
+ *
+ * Optimistic concurrency check: weryfikujemy że `orderedStopIds`
+ * pokrywa się 1:1 z aktualnym zbiorem stopów tripa. Bez tego dwie
+ * konkurencyjne mutacje (np. drag-drop w jednym tabie + apply
+ * z preview optymalizacji w drugim) mogłyby przepuścić częściowy
+ * reorder — UPDATE jest no-opem dla nieistniejącego id, ale
+ * pozostałe wiersze dostają nowe `sort_order` i robi się sieczka.
  */
 export async function reorderStops(
   tripId: string,
@@ -752,6 +759,34 @@ export async function reorderStops(
   if (!auth) return err("Nie należysz do tej grupy.");
   if (orderedStopIds.length === 0) return ok(null);
 
+  // Current state — pobieramy ID-y zanim cokolwiek zmienimy, żeby
+  // wykryć rozjazd ze stanu klienta. Sprawdzamy zarówno liczność
+  // (klient miał inną liczbę stopów) jak i set membership (klient
+  // ma id którego już nie ma w tripie).
+  const current = await db
+    .select({ id: tripStops.id })
+    .from(tripStops)
+    .where(eq(tripStops.tripId, tripId));
+  if (current.length !== orderedStopIds.length) {
+    return err("Plan zmienił się w międzyczasie — odśwież stronę.");
+  }
+  const currentIds = new Set(current.map((r) => r.id));
+  for (const id of orderedStopIds) {
+    if (!currentIds.has(id)) {
+      return err("Plan zmienił się w międzyczasie — odśwież stronę.");
+    }
+  }
+  // Set jest też duplikatofobiczny — jeśli klient przysłał duplikat,
+  // liczność `currentIds` (po dedupe) będzie mniejsza od
+  // `orderedStopIds.length`, ale check powyżej już to złapał: każdy
+  // id z list musi być w current, a po przejściu wszystkich N elementów
+  // mamy gwarancję że nie ma duplikatów (bo wtedy ten sam id byłby
+  // policzony dwa razy w `orderedStopIds.length` ale tylko raz po
+  // stronie `current`). Defensive double-check via Set rozmiar:
+  if (new Set(orderedStopIds).size !== orderedStopIds.length) {
+    return err("Lista kolejności zawiera duplikaty.");
+  }
+
   const idArray = sql.join(
     orderedStopIds.map((id) => sql`${id}`),
     sql`, `,
@@ -761,9 +796,9 @@ export async function reorderStops(
     sql`, `,
   );
 
-  // The trip_id filter is belt-and-suspenders: even if the client
-  // sneaks in a stop id from another trip, it won't get re-ordered
-  // because the join row's `ts.trip_id` won't match.
+  // The trip_id filter is belt-and-suspenders: even po concurrent
+  // check'u powyżej, atak/bug mógłby wcisnąć id z innego tripa.
+  // Filter w UPDATE robi to no-opem.
   await db.execute(sql`
     UPDATE ${tripStops} ts
        SET sort_order = v.sort_order

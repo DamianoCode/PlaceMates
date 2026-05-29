@@ -22,11 +22,28 @@ import "server-only";
  * posture as Sentry / Web Push.
  */
 
-export type RoutingProfile =
-  | "driving-car"
-  | "cycling-regular"
-  | "foot-walking"
-  | "foot-hiking";
+/** Lista profili trasowania ORS — single source of truth.
+ *  Wszystkie callery (API handler whitelist, server action walidacja,
+ *  UI profile pills w TripMapView i OptimizeStopsButton) derive'ują
+ *  z tej tablicy zamiast utrzymywać własne kopie. Dodanie nowego
+ *  profilu wymaga zmiany tylko tu. */
+export const ROUTING_PROFILES = [
+  "driving-car",
+  "cycling-regular",
+  "foot-walking",
+  "foot-hiking",
+] as const;
+
+export type RoutingProfile = (typeof ROUTING_PROFILES)[number];
+
+/** Type guard — przydaje się gdy walidujemy zewnętrzny input
+ *  (`?profile=` query, dane z localStorage etc.). */
+export function isRoutingProfile(value: unknown): value is RoutingProfile {
+  return (
+    typeof value === "string" &&
+    (ROUTING_PROFILES as ReadonlyArray<string>).includes(value)
+  );
+}
 
 export type RouteSegment = {
   distanceM: number;

@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { deleteTripAction } from "@/app/(app)/plans/actions";
 import { EditTripDialog } from "./EditTripDialog";
+import { OptimizeStopsButton } from "./OptimizeStopsButton";
 
 /**
  * Compact icon-only action set for the PageHeader trailing slot.
@@ -15,17 +16,24 @@ import { EditTripDialog } from "./EditTripDialog";
  * second row of pills competing with the Lista/Mapa toggle.
  *
  * Edit opens a dialog, Delete shows a confirm modal first because
- * losing a planned itinerary by mis-tap is a bad day.
+ * losing a planned itinerary by mis-tap is a bad day. Optymalizacja
+ * (Sparkles) leci jako pierwsza — to akcja "naprawcza" stanu planu
+ * (przeplanuj kolejność), więc warto żeby była najmocniej widoczna,
+ * potem Edit (zmiana meta) i Delete (destrukcyjna).
  */
 export function TripActionsBar({
   tripId,
   tripName,
   tripPlannedFor,
+  stopCount,
   canDelete,
 }: {
   tripId: string;
   tripName: string;
   tripPlannedFor: Date | null;
+  /** Liczba stopów — przekazana do OptimizeStopsButton żeby przycisk
+   *  mógł się sam disable'ować przy <3 stopach bez fetcha. */
+  stopCount: number;
   /** True when current user is the trip creator OR a group owner. */
   canDelete: boolean;
 }) {
@@ -48,6 +56,7 @@ export function TripActionsBar({
 
   return (
     <div className="flex items-center gap-0.5">
+      <OptimizeStopsButton tripId={tripId} stopCount={stopCount} />
       <button
         type="button"
         onClick={() => setEditing(true)}

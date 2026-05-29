@@ -7,6 +7,7 @@ import {
   type RouteResult,
   type RoutingProfile,
 } from "@/infra/routing/ors";
+import { createFailureCooldown } from "@/infra/routing/failure-cooldown";
 import { getTripForUser } from "./service";
 
 /**
@@ -20,7 +21,7 @@ import { getTripForUser } from "./service";
  *   4. ORS unreachable → fallback na stary cached row jeśli jest,
  *      inaczej null (klient pokazuje prostą linię).
  *
- * In-memory failure cooldown (`recentFailures`): jeśli ORS niedawno
+ * In-memory failure cooldown (`directionsCooldown`): jeśli ORS niedawno
  * (≤60 s) padło dla danego (tripId, profile), nie wołamy go ponownie
  * — od razu zwracamy stale row (albo null). Chroni przed waleniem
  * hammerem w padający serwis przy każdym requeście usera podczas
@@ -34,27 +35,11 @@ import { getTripForUser } from "./service";
  */
 
 const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const FAIL_COOLDOWN_MS = 60_000;
 
-const recentFailures = new Map<string, number>();
+const directionsCooldown = createFailureCooldown();
 
 function failureKey(tripId: string, profile: RoutingProfile): string {
   return `${tripId}:${profile}`;
-}
-
-function isInFailureCooldown(tripId: string, profile: RoutingProfile): boolean {
-  const key = failureKey(tripId, profile);
-  const at = recentFailures.get(key);
-  if (at === undefined) return false;
-  if (Date.now() - at > FAIL_COOLDOWN_MS) {
-    recentFailures.delete(key);
-    return false;
-  }
-  return true;
-}
-
-function markFailure(tripId: string, profile: RoutingProfile): void {
-  recentFailures.set(failureKey(tripId, profile), Date.now());
 }
 
 /** Tani check członkostwa w grupie tripa. Jeden indeksowany SELECT,
@@ -116,7 +101,7 @@ export async function getOrComputeRoute(
   // upływie spróbujemy ponownie. Bez tego każdy fresh request usera
   // podczas outage'u dorzucałby kolejne nieudane wywołanie do logów
   // i potencjalnie do rate-limita.
-  if (isInFailureCooldown(tripId, profile)) {
+  if (directionsCooldown.isInCooldown(failureKey(tripId, profile))) {
     if (cached) {
       return {
         geometry: cached.geometry,
@@ -148,7 +133,7 @@ export async function getOrComputeRoute(
   if (!result) {
     // ORS padło — zaznacz failure żeby kolejne requesty nie biły go
     // przez następne 60 s, i wróć stale cached row jeśli mamy.
-    markFailure(tripId, profile);
+    directionsCooldown.mark(failureKey(tripId, profile));
     if (cached) {
       return {
         geometry: cached.geometry,
@@ -168,7 +153,7 @@ export async function getOrComputeRoute(
   // do następnej mutacji. Self-healing przy następnym reorderze.
   // Pełna ochrona wymagałaby SELECT FOR UPDATE / advisory locka,
   // overkill dla aplikacji o tej skali.
-  recentFailures.delete(failureKey(tripId, profile));
+  directionsCooldown.clear(failureKey(tripId, profile));
   await db
     .insert(tripRoutes)
     .values({
@@ -200,11 +185,7 @@ export async function getOrComputeRoute(
  *  ORS od razu, nawet jeśli wczoraj padł. */
 export async function invalidateTripRoutes(tripId: string): Promise<void> {
   await db.delete(tripRoutes).where(eq(tripRoutes.tripId, tripId));
-  if (recentFailures.size > 0) {
-    for (const key of recentFailures.keys()) {
-      if (key.startsWith(`${tripId}:`)) recentFailures.delete(key);
-    }
-  }
+  directionsCooldown.clearWhere((key) => key.startsWith(`${tripId}:`));
 }
 
 /** Drop cached routes for every trip containing this place. Wołane
@@ -234,11 +215,9 @@ export async function invalidateTripRoutesForPlace(placeId: string): Promise<voi
   // Wyczyść failure markers dla affected tripów — geometria się
   // zmieniła, nie chcemy żeby cooldown ze starego ORS-failure'a
   // dla tego tripa odciął retry na świeżych współrzędnych.
-  if (recentFailures.size > 0) {
-    const affected = new Set(tripIds);
-    for (const key of recentFailures.keys()) {
-      const [tid] = key.split(":");
-      if (affected.has(tid)) recentFailures.delete(key);
-    }
-  }
+  const affected = new Set(tripIds);
+  directionsCooldown.clearWhere((key) => {
+    const [tid] = key.split(":");
+    return affected.has(tid);
+  });
 }

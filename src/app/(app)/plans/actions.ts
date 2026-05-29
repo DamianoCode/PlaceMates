@@ -14,6 +14,11 @@ import {
   updateStop,
   updateTrip,
 } from "@/domain/trips/service";
+import {
+  previewOptimizedTripOrder,
+  type OptimizationPreview,
+} from "@/domain/trips/optimization";
+import { isRoutingProfile, type RoutingProfile } from "@/infra/routing/ors";
 import { pushStopCompleted } from "@/infra/push/events";
 import { err, type Result } from "@/domain/result";
 
@@ -168,6 +173,31 @@ export async function reorderStopsAction(
 
   revalidatePath(`/plans/${tripId}`);
   return result;
+}
+
+/**
+ * Preview optymalizacji kolejności stopów. Read-only — woła ORS
+ * VROOM, ale nie mutuje DB. Caller pokazuje wynik w drawerze i
+ * dopiero po akceptacji wysyła `reorderStopsAction` z proponowaną
+ * sekwencją.
+ *
+ * Rozdzielenie preview / apply jest celowe: free tier ORS daje
+ * ograniczoną liczbę optimization calls/dzień, więc nie chcemy
+ * mutować bez potwierdzenia. Po zatwierdzeniu reuse istniejącego
+ * `reorderStopsAction` (już inwaliduje trip_routes).
+ */
+export async function previewOptimizeOrderAction(
+  tripId: string,
+  profile: RoutingProfile,
+): Promise<Result<OptimizationPreview>> {
+  const user = await (await getAuth()).getUser();
+  if (!user) return err("Wymagane zalogowanie.");
+
+  if (!isRoutingProfile(profile)) {
+    return err("Niepoprawny profil trasowania.");
+  }
+
+  return previewOptimizedTripOrder(tripId, profile, user.id);
 }
 
 export async function toggleStopCompletedAction(
