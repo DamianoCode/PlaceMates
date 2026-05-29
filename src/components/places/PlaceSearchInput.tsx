@@ -1,29 +1,36 @@
 "use client";
 
 import { Search, X } from "lucide-react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useDeferredValue, useEffect, useState, useTransition } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 
-export function PlaceSearchInput({ placeholder }: { placeholder?: string }) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useSearchParams();
-  const initial = params.get("q") ?? "";
-  const [value, setValue] = useState(initial);
+/**
+ * Controlled search box for the places list. Keeps an immediate local
+ * value (so typing feels instant) but only reports the *deferred* value
+ * up via `onChange` — that's what drives the cached query, so we don't
+ * fire a fetch on every keystroke. The parent owns the resulting filter
+ * state and URL.
+ */
+export function PlaceSearchInput({
+  initialValue,
+  onChange,
+  placeholder,
+}: {
+  initialValue: string;
+  onChange: (q: string) => void;
+  placeholder?: string;
+}) {
+  const [value, setValue] = useState(initialValue);
   const deferred = useDeferredValue(value);
-  const [, startTransition] = useTransition();
 
+  // Skip the mount call — the initial value already came from the URL,
+  // so reporting it back would be a redundant no-op (and could race the
+  // initial query). Only propagate genuine edits.
+  const lastReported = useRef(initialValue);
   useEffect(() => {
-    const next = new URLSearchParams(params);
-    if (deferred.trim().length > 0) next.set("q", deferred);
-    else next.delete("q");
-    const nextUrl = `${pathname}${next.size > 0 ? `?${next.toString()}` : ""}`;
-    startTransition(() => {
-      router.replace(nextUrl, { scroll: false });
-    });
-    // params is stable per render; deferred drives updates
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deferred, pathname]);
+    if (deferred === lastReported.current) return;
+    lastReported.current = deferred;
+    onChange(deferred.trim());
+  }, [deferred, onChange]);
 
   return (
     <div className="relative">
