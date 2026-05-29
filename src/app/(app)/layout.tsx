@@ -4,12 +4,12 @@ import { BottomNav } from "@/components/layout/BottomNav";
 import { InstallPrompt } from "@/components/layout/InstallPrompt";
 import { NetworkStatusBanner } from "@/components/pwa/NetworkStatusBanner";
 import { ServiceWorkerRegistration } from "@/components/pwa/ServiceWorkerRegistration";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
   // Proxy already redirects unauthenticated users, but we double-check here
   // so Server Components below can assume a user is present.
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   return (
