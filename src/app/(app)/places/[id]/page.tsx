@@ -10,7 +10,7 @@ import {
   UtensilsCrossed,
   Users,
 } from "lucide-react";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import {
   canUserEditPlace,
   getPlaceForUser,
@@ -55,7 +55,7 @@ export default async function PlaceDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const { id } = await params;

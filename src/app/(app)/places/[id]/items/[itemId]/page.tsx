@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { Camera, Star, Trash2, UtensilsCrossed, Users } from "lucide-react";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import {
   getItemForUser,
   listItemPhotos,
@@ -28,7 +28,7 @@ export default async function ItemPage({
 }: {
   params: Promise<{ id: string; itemId: string }>;
 }) {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const { id, itemId } = await params;

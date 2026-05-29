@@ -18,6 +18,19 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
+    // Client Router Cache. With the v15 default of 0s, every navigation
+    // re-fetches the page's RSC payload from the server — so revisiting a
+    // place you just viewed (e.g. back from an item, or hopping between
+    // places) re-runs all ~13 DB reads each time. Caching the rendered
+    // segment client-side makes those revisits instant. Mutations stay
+    // correct: Server Actions + the existing revalidatePath calls purge
+    // the cached entry, so the next visit after an edit is fresh.
+    //   dynamic — pages rendered per-request (most of this app)
+    //   static  — prefetched links / loading.tsx boundaries
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
 };
 
