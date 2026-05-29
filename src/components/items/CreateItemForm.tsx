@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,15 +16,32 @@ export function CreateItemForm({ placeId }: { placeId: string }) {
   );
   const [expanded, setExpanded] = useState(false);
   const [value, setValue] = useState("");
+  // useActionState keeps the last result around between submits. Tracking
+  // which success we've already handled (by object identity — each submit
+  // returns a fresh object) stops a re-expand from seeing the *previous*
+  // success and collapsing the form again. Without it the user could add
+  // only one item, then had to refresh the page to add another.
+  const handledRef = useRef<CreateItemState>(null);
 
   const error = state && "error" in state ? state.error : null;
-  // Collapse on success; clear the input so the next add starts fresh.
-  if (state && "ok" in state && state.ok && expanded) {
+
+  // Collapse + clear once per successful add. Deferred via queueMicrotask
+  // to satisfy react-compiler's set-state-in-effect rule (matches the
+  // convention used elsewhere in this codebase).
+  useEffect(() => {
+    if (!(state && "ok" in state && state.ok)) return;
+    if (state === handledRef.current) return;
+    handledRef.current = state;
+    let abort = false;
     queueMicrotask(() => {
+      if (abort) return;
       setValue("");
       setExpanded(false);
     });
-  }
+    return () => {
+      abort = true;
+    };
+  }, [state]);
 
   if (!expanded) {
     return (
