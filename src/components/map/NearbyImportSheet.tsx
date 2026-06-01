@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
@@ -165,7 +165,18 @@ export function NearbyImportSheet({
         `/api/nearby?categories=${encodeURIComponent(slugs.join(","))}&bbox=${bboxParam}`,
       );
     },
-    staleTime: 60_000,
+    // POIs are effectively static during a trip, so cache aggressively:
+    // re-searching the same area + categories (the common case — close
+    // the drawer, reopen, search again) is served from memory with no
+    // network call. The query key already keys on slugs + bbox, so a
+    // genuinely different area still fetches.
+    staleTime: 30 * 60_000, // 30 min "fresh" — no refetch within the window
+    gcTime: 60 * 60_000, // keep the cached result an hour after unmount
+    // Walking in and out of coverage on mobile must not re-fire the query.
+    refetchOnReconnect: false,
+    // Show the previous results while a new area loads instead of a blank
+    // flash — smoother on a phone.
+    placeholderData: keepPreviousData,
   });
   const rawResults = useMemo(() => searchData?.results ?? [], [searchData]);
 
@@ -237,6 +248,13 @@ export function NearbyImportSheet({
   const allVisibleChecked =
     visibleResults.length > 0 &&
     visibleResults.every((r) => checked.has(resultKey(r)));
+
+  // Slug → display name, memoized so each virtual row resolves its
+  // category label in O(1) instead of a linear `.find` per render.
+  const categoryNameBySlug = useMemo(
+    () => new Map(categories.map((c) => [c.slug, c.name])),
+    [categories],
+  );
 
   // Pre-check all on a fresh response. Defer with queueMicrotask so
   // the React-compiler set-state-in-effect rule is satisfied.
@@ -728,7 +746,7 @@ export function NearbyImportSheet({
                       // the place is at a glance in a mixed list.
                       const slug = hintToOurSlug(r.categoryHint);
                       const catName = slug
-                        ? categories.find((c) => c.slug === slug)?.name ?? null
+                        ? categoryNameBySlug.get(slug) ?? null
                         : null;
                       return (
                         <div
