@@ -744,10 +744,13 @@ export function NearbyImportSheet({
                       // Resolve the row's group-category (the same slug
                       // doImport routes it to) so the user can tell what
                       // the place is at a glance in a mixed list.
+                      // Prefer a specific type ("Pomnik", "Kościół") over
+                      // the broad app category ("Atrakcja"); fall back to
+                      // the category name, then to nothing.
                       const slug = hintToOurSlug(r.categoryHint);
-                      const catName = slug
-                        ? categoryNameBySlug.get(slug) ?? null
-                        : null;
+                      const typeLabel =
+                        poiTypeLabel(r.categoryHint) ??
+                        (slug ? categoryNameBySlug.get(slug) ?? null : null);
                       return (
                         <div
                           key={key}
@@ -765,7 +768,7 @@ export function NearbyImportSheet({
                             itemKey={key}
                             name={r.name}
                             address={r.address}
-                            categoryName={catName}
+                            categoryName={typeLabel}
                             // Per-row distance is only meaningful while we
                             // sort by it — the GPS/Map reference toggle is
                             // hidden in name-sort, so hide the number too.
@@ -933,7 +936,90 @@ function hintToOurSlug(hint: string): string | null {
     hostel: "accommodation",
     guest_house: "accommodation",
   };
-  return map[leaf.toLowerCase()] ?? null;
+  const direct = map[leaf.toLowerCase()];
+  if (direct) return direct;
+  // Geoapify dotted paths whose specific leaf we don't enumerate (e.g.
+  // tourism.sights.city_gate, religion.place_of_worship.christianity):
+  // route by the meaningful root so they still land in "Atrakcja".
+  // Leaf checks above win first, so viewpoint/peak keep their own bucket.
+  if (hint.startsWith("religion.place_of_worship")) return "attraction";
+  if (hint.startsWith("tourism.sights")) return "attraction";
+  if (hint.startsWith("tourism.attraction")) return "attraction";
+  if (hint.startsWith("entertainment.museum")) return "attraction";
+  if (hint.startsWith("entertainment.culture")) return "attraction";
+  return null;
+}
+
+// OSM tag value or Geoapify dotted-category leaf → short Polish label for
+// the result chip, so a row reads "POMNIK" / "KOŚCIÓŁ" / "MUZEUM" instead
+// of the generic "ATRAKCJA".
+const TYPE_LABELS: Record<string, string> = {
+  // Miejsca kultu — Geoapify klasyfikuje je po wyznaniu, OSM po typie.
+  place_of_worship: "Miejsce kultu",
+  christianity: "Kościół",
+  judaism: "Synagoga",
+  islam: "Meczet",
+  buddhism: "Świątynia",
+  hinduism: "Świątynia",
+  shinto: "Świątynia",
+  sikhism: "Świątynia",
+  multifaith: "Miejsce kultu",
+  church: "Kościół",
+  cathedral: "Katedra",
+  basilica: "Bazylika",
+  chapel: "Kaplica",
+  monastery: "Klasztor",
+  mosque: "Meczet",
+  synagogue: "Synagoga",
+  temple: "Świątynia",
+  shrine: "Kapliczka",
+  // Zabytki / historic.
+  castle: "Zamek",
+  fort: "Forteca",
+  fortress: "Forteca",
+  city_gate: "Brama",
+  tower: "Wieża",
+  city_hall: "Ratusz",
+  monument: "Pomnik",
+  memorial: "Miejsce pamięci",
+  statue: "Pomnik",
+  sculpture: "Rzeźba",
+  mural: "Mural",
+  artwork: "Sztuka",
+  ruins: "Ruiny",
+  ruines: "Ruiny",
+  archaeological_site: "Stanowisko arch.",
+  battlefield: "Pole bitwy",
+  building: "Zabytek",
+  bridge: "Most",
+  windmill: "Wiatrak",
+  lighthouse: "Latarnia",
+  // Muzea / kultura.
+  museum: "Muzeum",
+  gallery: "Galeria",
+  arts_centre: "Centrum sztuki",
+  theatre: "Teatr",
+  // Atrakcje / natura.
+  attraction: "Atrakcja",
+  sights: "Zabytek",
+  viewpoint: "Punkt widokowy",
+  fountain: "Fontanna",
+  clock: "Zegar",
+  peak: "Szczyt",
+  waterfall: "Wodospad",
+  park: "Park",
+  nature_reserve: "Rezerwat",
+};
+
+/**
+ * Short Polish label for a POI's specific type, from the OSM tag value or
+ * the leaf of a Geoapify dotted category. Returns null when we have no
+ * better word than the app-category name.
+ */
+function poiTypeLabel(hint: string): string | null {
+  if (!hint) return null;
+  const leaf = hint.includes(".") ? hint.split(".").pop()! : hint;
+  return TYPE_LABELS[leaf.toLowerCase()] ?? null;
 }
 
 /** Haversine distance in metres between two lat/lng points. */

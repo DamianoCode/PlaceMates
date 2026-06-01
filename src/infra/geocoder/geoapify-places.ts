@@ -92,12 +92,37 @@ export type GeoapifyPoi = {
   address: string | null;
 };
 
+// Priority roots for picking a *meaningful* category. Geoapify tags a
+// place with many categories (a tower is also `building.public_and_civil`,
+// which is useless as a label and doesn't route to a sensible bucket).
+// We walk these roots in order and take the deepest match under the first
+// that hits, so the hint carries the real type (tower, church, statue…).
+const HINT_ROOT_PRIORITY = [
+  "religion.place_of_worship",
+  "tourism.sights",
+  "tourism.attraction",
+  "entertainment.museum",
+  "entertainment.culture",
+  "entertainment",
+  "leisure",
+  "natural",
+  "catering",
+  "commercial",
+  "accommodation",
+  "tourism",
+];
+
 function pickCategoryHint(cats: string[] | undefined): string {
   if (!cats || cats.length === 0) return "";
-  // Prefer the deepest dot-path so the row gets the most specific
-  // label downstream.
-  const sorted = cats.slice().sort((a, b) => b.length - a.length);
-  return sorted[0];
+  for (const root of HINT_ROOT_PRIORITY) {
+    const matches = cats.filter((c) => c === root || c.startsWith(`${root}.`));
+    if (matches.length > 0) {
+      // Deepest (most specific) wins within the chosen root.
+      return matches.sort((a, b) => b.length - a.length)[0];
+    }
+  }
+  // Nothing recognised — deepest overall so downstream can still try.
+  return cats.slice().sort((a, b) => b.length - a.length)[0];
 }
 
 function toPoi(feature: GeoapifyPlace): GeoapifyPoi | null {
@@ -148,6 +173,10 @@ export async function geoapifyPlacesByCategories(
   );
   url.searchParams.set("categories", cats);
   url.searchParams.set("limit", String(Math.min(limit, 500)));
+  // Polish names/addresses — without this Geoapify returns English
+  // defaults ("Main Market Square" instead of "Rynek Główny"). Mirrors
+  // the "pl" language passed to the geocoder.
+  url.searchParams.set("lang", "pl");
   url.searchParams.set("apiKey", apiKey);
 
   const res = await fetch(url, {
@@ -157,12 +186,21 @@ export async function geoapifyPlacesByCategories(
   if (!res.ok) return [];
   const data = (await res.json()) as GeoapifyResponse;
   const out: GeoapifyPoi[] = [];
-  const seen = new Set<string>();
+  const seenIds = new Set<string>();
+  const seenPlaces = new Set<string>();
   for (const f of data.features ?? []) {
     const poi = toPoi(f);
     if (!poi) continue;
-    if (seen.has(poi.externalId)) continue;
-    seen.add(poi.externalId);
+    if (seenIds.has(poi.externalId)) continue;
+    // Geoapify frequently returns one real place as several features
+    // (a node plus its building polygon, or the same monument under two
+    // taxonomies) with different place_ids — dedup by externalId alone
+    // leaves visible doubles. Collapse same-name hits within ~100 m
+    // (3 decimal degrees) so the list isn't padded with duplicates.
+    const placeKey = `${poi.name.toLowerCase()}@${poi.lat.toFixed(3)},${poi.lng.toFixed(3)}`;
+    if (seenPlaces.has(placeKey)) continue;
+    seenIds.add(poi.externalId);
+    seenPlaces.add(placeKey);
     out.push(poi);
   }
   return out;
