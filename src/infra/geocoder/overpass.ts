@@ -69,6 +69,11 @@ export const CATEGORY_TO_OSM: Record<string, OverpassTagFilter[]> = {
     { key: "historic", value: "memorial", nameOptional: true },
     { key: "historic", value: "archaeological_site", nameOptional: true },
     { key: "man_made", value: "lighthouse" },
+    // Churches, cathedrals etc. Name required — an unnamed wayside
+    // chapel is noise, but the famous ones (Bazylika Mariacka) are
+    // always named. Geoapify surfaces these via religion.place_of_worship;
+    // this keeps parity when we fall back to Overpass.
+    { key: "amenity", value: "place_of_worship" },
   ],
 
   park: [
@@ -112,26 +117,30 @@ function buildQuery(
   limit: number,
 ): string {
   const args = bboxArgs(bbox);
-  const inner = filters
-    .map((f) => {
-      // Name-required filter: every element type carries the ["name"]
-      // restriction. Optional means we accept unnamed too.
-      const nameRestrict = f.nameOptional ? "" : '["name"]';
-      const tag = `["${f.key}"="${f.value}"]`;
-      // node + way + relation. Relations matter for big features
-      // (city parks, lakes, protected areas) which are often modeled
-      // as multipolygon relations in OSM.
-      return (
-        `node${tag}${nameRestrict}(${args});` +
-        `way${tag}${nameRestrict}(${args});` +
-        `relation${tag}${nameRestrict}(${args});`
-      );
-    })
-    .join("");
-  // `out center` gives ways and relations a representative point
-  // (centroid of the bbox) so we can render them as pins without
-  // resolving every member node.
-  return `[out:json][timeout:25];(${inner});out center ${Math.min(limit, 200)};`;
+  // Build the tag clauses for one OSM element type across all filters.
+  const clausesFor = (type: "node" | "way" | "relation") =>
+    filters
+      .map((f) => {
+        // Name-required filter carries the ["name"] restriction;
+        // optional means we accept unnamed too.
+        const nameRestrict = f.nameOptional ? "" : '["name"]';
+        return `${type}["${f.key}"="${f.value}"]${nameRestrict}(${args});`;
+      })
+      .join("");
+  const cap = Math.min(limit, 200);
+  // Emit nodes and area features (way/relation) with INDEPENDENT caps.
+  // Overpass returns elements in type order — all nodes, then ways,
+  // then relations — so a single shared `out` cap lets a dense crop of
+  // node POIs (cafés, monuments) truncate the big landmark areas
+  // (castles, market halls, churches) that always sort last. A separate
+  // budget for areas guarantees they survive. `out center` resolves an
+  // area to a representative point so we can pin it without resolving
+  // every member node.
+  return (
+    `[out:json][timeout:25];` +
+    `(${clausesFor("node")});out ${cap};` +
+    `(${clausesFor("way")}${clausesFor("relation")});out center ${cap};`
+  );
 }
 
 type OverpassElement = {
@@ -171,6 +180,7 @@ function synthesizeName(tags: Record<string, string>): string {
   if (tags.historic === "monument") return "Pomnik";
   if (tags.historic === "memorial") return "Pamiątkowe miejsce";
   if (tags.historic === "archaeological_site") return "Stanowisko archeologiczne";
+  if (tags.amenity === "place_of_worship") return "Miejsce kultu";
   if (tags.natural === "peak") return tags.ele ? `Szczyt (${tags.ele} m)` : "Szczyt";
   if (tags.natural === "cliff") return "Klif";
   if (tags.natural === "waterfall") return "Wodospad";

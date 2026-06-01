@@ -33,30 +33,36 @@ type GeoapifyResponse = { features: GeoapifyPlace[] };
  * Map our app's category slugs → Geoapify Places category strings.
  * The taxonomy is hierarchical and dot-separated; specifying a parent
  * category includes its children, so `tourism.sights` covers castles,
- * monuments, viewpoints etc. without enumerating each.
+ * monuments, archaeological sites etc. without enumerating each.
  *
  * Multiple categories per slug → join with `,` in the query — Geoapify
  * unions them in a single request, which is much friendlier than the
  * N-roundtrip approach Overpass would need.
+ *
+ * IMPORTANT: every string here must be a real Geoapify category.
+ * Geoapify rejects the WHOLE request with HTTP 400 if even one
+ * category is unknown — so a single typo silently disables nearby
+ * search for any selection that includes the offending slug, falling
+ * back to the thinner Overpass path. `npm run check:geoapify` guards
+ * this against the vendored taxonomy in ./geoapify-categories.ts.
  */
-const CATEGORY_TO_GEOAPIFY: Record<string, string[]> = {
+export const CATEGORY_TO_GEOAPIFY: Record<string, string[]> = {
   restaurant: ["catering.restaurant"],
   cafe: ["catering.cafe"],
   "ice-cream": ["catering.ice_cream"],
-  bakery: ["commercial.food_and_drink.bakery", "catering.bakery"],
-  // Outdoor: peaks, viewpoints, waterfalls — Geoapify exposes these
-  // under tourism.sights.viewpoint and natural.* siblings.
-  viewpoint: [
-    "tourism.sights.viewpoint",
-    "natural.peak",
-    "natural.water.waterfall",
-  ],
-  // tourism.sights covers castles, monuments, archaeological sites,
-  // memorials, places of worship — much wider than raw Overpass.
+  bakery: ["commercial.food_and_drink.bakery"],
+  // Outdoor scenery: viewpoints live under tourism.attraction.viewpoint
+  // and summits under natural.mountain.peak (Geoapify has no waterfall
+  // category — those surface via Overpass instead).
+  viewpoint: ["tourism.attraction.viewpoint", "natural.mountain.peak"],
+  // Sights, generic attractions (artwork/fountain/clock), museums and
+  // places of worship. religion.place_of_worship is what surfaces big
+  // churches like Bazylika Mariacka that tourism.sights alone can miss.
   attraction: [
     "tourism.sights",
-    "tourism.attraction_park",
+    "tourism.attraction",
     "entertainment.museum",
+    "religion.place_of_worship",
   ],
   park: ["leisure.park", "natural.forest", "natural.protected_area"],
   beach: ["beach"],
