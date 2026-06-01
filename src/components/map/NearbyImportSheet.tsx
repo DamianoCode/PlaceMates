@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowDownAZ,
   ArrowUp,
   Check,
+  ChevronDown,
+  ListFilter,
   Loader2,
   Locate,
   Map as MapIcon,
@@ -15,7 +17,8 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
 import { bulkImportAction } from "@/app/(app)/places/import-actions";
@@ -91,6 +94,15 @@ export function NearbyImportSheet({
   // Light "asking for location now" indicator so toggling to GPS
   // while permission is still being prompted has a visible state.
   const [requestingPos, setRequestingPos] = useState(false);
+  // The category pills are bulky; once a search runs we collapse them
+  // into a one-line summary so the results list gets the full height.
+  // Tapping the summary re-expands the picker to change the selection.
+  const [showCategoryPicker, setShowCategoryPicker] = useState(true);
+  // Free-text filter applied client-side over the fetched results — the
+  // fast way to find one place in a long list without re-querying.
+  const [filterText, setFilterText] = useState("");
+  // Scroll container for the virtualized results list.
+  const listRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
 
   // Shared geolocation request — used both on drawer open (silent) and
@@ -153,7 +165,18 @@ export function NearbyImportSheet({
         `/api/nearby?categories=${encodeURIComponent(slugs.join(","))}&bbox=${bboxParam}`,
       );
     },
-    staleTime: 60_000,
+    // POIs are effectively static during a trip, so cache aggressively:
+    // re-searching the same area + categories (the common case — close
+    // the drawer, reopen, search again) is served from memory with no
+    // network call. The query key already keys on slugs + bbox, so a
+    // genuinely different area still fetches.
+    staleTime: 30 * 60_000, // 30 min "fresh" — no refetch within the window
+    gcTime: 60 * 60_000, // keep the cached result an hour after unmount
+    // Walking in and out of coverage on mobile must not re-fire the query.
+    refetchOnReconnect: false,
+    // Show the previous results while a new area loads instead of a blank
+    // flash — smoother on a phone.
+    placeholderData: keepPreviousData,
   });
   const rawResults = useMemo(() => searchData?.results ?? [], [searchData]);
 
@@ -186,6 +209,52 @@ export function NearbyImportSheet({
     }
     return withDistance;
   }, [rawResults, distanceRef, sortBy, sortDir]);
+
+  // Client-side name/address filter over the sorted results.
+  const visibleResults = useMemo(() => {
+    const q = filterText.trim().toLowerCase();
+    if (!q) return results;
+    return results.filter(
+      (r) =>
+        r.name.toLowerCase().includes(q) ||
+        (r.address?.toLowerCase().includes(q) ?? false),
+    );
+  }, [results, filterText]);
+
+  // Virtualize the list — with up to 300 hits, rendering every row is
+  // wasteful and janky. Mirrors the AddStopsButton pattern.
+  const virtualizer = useVirtualizer({
+    count: visibleResults.length,
+    getScrollElement: () => listRef.current,
+    // Row ≈ 64 px (py-3 + name + meta line); the virtualizer remeasures
+    // actual heights via measureElement, this is just the seed.
+    estimateSize: () => 64,
+    overscan: 8,
+  });
+
+  // Stable toggle so each memoized row only re-renders when its own
+  // checked state flips (not on every selection change).
+  const toggleResult = useCallback((key: string) => {
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
+  // "Select all" and the toolbar label operate on the *visible* (filtered)
+  // rows, so the action matches what the user can actually see.
+  const allVisibleChecked =
+    visibleResults.length > 0 &&
+    visibleResults.every((r) => checked.has(resultKey(r)));
+
+  // Slug → display name, memoized so each virtual row resolves its
+  // category label in O(1) instead of a linear `.find` per render.
+  const categoryNameBySlug = useMemo(
+    () => new Map(categories.map((c) => [c.slug, c.name])),
+    [categories],
+  );
 
   // Pre-check all on a fresh response. Defer with queueMicrotask so
   // the React-compiler set-state-in-effect rule is satisfied.
@@ -228,6 +297,8 @@ export function NearbyImportSheet({
       setUserPos(null);
       setDistanceSource("gps");
       setRequestingPos(false);
+      setShowCategoryPicker(true);
+      setFilterText("");
     });
     return () => {
       abort = true;
@@ -259,6 +330,10 @@ export function NearbyImportSheet({
     };
     setSearch({ slugs: Array.from(selectedSlugs), bbox, center });
     setChecked(new Set());
+    setFilterText("");
+    // Hand the screen over to the results — the picker folds into a
+    // summary bar the user can tap to change the selection.
+    setShowCategoryPicker(false);
   }
 
   async function doImport() {
@@ -326,9 +401,6 @@ export function NearbyImportSheet({
     router.refresh();
   }
 
-  const allChecked =
-    results.length > 0 && checked.size === results.length;
-
   return (
     <Drawer.Root
       open={open}
@@ -339,7 +411,12 @@ export function NearbyImportSheet({
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
         <Drawer.Content
-          className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-2xl"
+          className={cn(
+            "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-2xl",
+            // Compact while picking categories; near-full-height once
+            // results arrive so the list has room to breathe.
+            search ? "h-[92dvh]" : "max-h-[85dvh]",
+          )}
           aria-describedby={undefined}
         >
           <Drawer.Handle className="my-2.5 h-1.5 w-10 shrink-0 rounded-full bg-muted" />
@@ -351,7 +428,7 @@ export function NearbyImportSheet({
               </Drawer.Title>
               <Drawer.Description className="text-xs italic text-muted-foreground">
                 {search
-                  ? `Wybrane: ${search.slugs.length} ${search.slugs.length === 1 ? "kategoria" : "kategorie"}`
+                  ? "Zaznacz miejsca i dodaj do swojej listy"
                   : "Zaznacz kategorie i wciśnij Szukaj"}
               </Drawer.Description>
             </div>
@@ -365,8 +442,10 @@ export function NearbyImportSheet({
             </button>
           </div>
 
-          {/* Category multi-select — always visible at the top so the
-           *  user can change selection without dismissing the drawer. */}
+          {/* Category picker — full pill grid while choosing; folds into
+           *  a one-line summary once a search runs so the results list
+           *  reclaims the vertical space. */}
+          {showCategoryPicker ? (
           <div className="border-b p-3">
             <ul className="flex flex-wrap gap-1.5">
               {categories.map((c) => {
@@ -434,6 +513,23 @@ export function NearbyImportSheet({
               </div>
             </div>
           </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowCategoryPicker(true)}
+              className="flex w-full items-center justify-between gap-2 border-b px-4 py-3 text-left transition-colors hover:bg-muted/50"
+            >
+              <span className="inline-flex items-center gap-2 text-sm font-medium">
+                <ListFilter size={15} className="text-primary" />
+                {search?.slugs.length ?? 0}{" "}
+                {(search?.slugs.length ?? 0) === 1 ? "kategoria" : "kategorie"}
+                <span className="font-normal text-muted-foreground">
+                  · zmień wybór
+                </span>
+              </span>
+              <ChevronDown size={16} className="text-muted-foreground" />
+            </button>
+          )}
 
           {/* Results panel. Hidden until the user runs a search. */}
           {search && (
@@ -451,21 +547,31 @@ export function NearbyImportSheet({
                       ? "Szukam…"
                       : results.length === 0
                         ? "Brak wyników w widocznym obszarze."
-                        : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
+                        : visibleResults.length === 0
+                          ? "Brak dopasowań do filtra."
+                          : filterText.trim()
+                            ? `${visibleResults.length} z ${results.length}`
+                            : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
                   </span>
-                  {results.length > 0 && (
+                  {visibleResults.length > 0 && (
                     <button
                       type="button"
                       onClick={() =>
-                        setChecked(
-                          allChecked
-                            ? new Set()
-                            : new Set(results.map(resultKey)),
-                        )
+                        // Merge with existing selection so filtering then
+                        // "select all" never clobbers hidden picks.
+                        setChecked((prev) => {
+                          const next = new Set(prev);
+                          for (const r of visibleResults) {
+                            const k = resultKey(r);
+                            if (allVisibleChecked) next.delete(k);
+                            else next.add(k);
+                          }
+                          return next;
+                        })
                       }
                       className="inline-flex h-9 items-center rounded-full px-3 font-medium text-primary hover:bg-primary/10"
                     >
-                      {allChecked ? "Odznacz" : "Zaznacz"} wszystkie
+                      {allVisibleChecked ? "Odznacz" : "Zaznacz"} wszystkie
                     </button>
                   )}
                 </div>
@@ -573,94 +679,113 @@ export function NearbyImportSheet({
                 )}
               </div>
 
-              <ul className="min-h-0 flex-1 divide-y overflow-auto">
-                {loading && results.length === 0 && (
-                  <li className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
-                    <Loader2 size={16} className="animate-spin" />
-                    Szukam…
-                  </li>
-                )}
-                {!loading && results.length === 0 && (
-                  <li className="p-8 text-center text-sm text-muted-foreground">
-                    Nic nie znaleziono. Przesuń mapę albo zmień zestaw
-                    kategorii i spróbuj ponownie.
-                  </li>
-                )}
-                {results.map((r) => {
-                  const key = resultKey(r);
-                  const isChecked = checked.has(key);
-                  // Resolve the row's group-category (the same slug
-                  // that doImport will route it to) so the user can
-                  // tell *what* the place is at a glance — important
-                  // for multi-category searches where the list mixes
-                  // cafés, viewpoints, monuments etc.
-                  const slug = hintToOurSlug(r.categoryHint);
-                  const catName = slug
-                    ? categories.find((c) => c.slug === slug)?.name ?? null
-                    : null;
-                  return (
-                    <li key={key}>
+              {/* Free-text filter — fixed above the scroll area so it
+               *  stays put while the list scrolls. */}
+              {results.length > 0 && (
+                <div className="border-b px-3 py-2">
+                  <div className="relative">
+                    <Search
+                      size={15}
+                      aria-hidden
+                      className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground"
+                    />
+                    <input
+                      type="text"
+                      value={filterText}
+                      onChange={(e) => setFilterText(e.target.value)}
+                      placeholder="Filtruj wyniki po nazwie…"
+                      aria-label="Filtruj wyniki"
+                      className="h-9 w-full rounded-full border border-border bg-background pr-9 pl-9 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    />
+                    {filterText && (
                       <button
                         type="button"
-                        onClick={() => {
-                          const next = new Set(checked);
-                          if (isChecked) next.delete(key);
-                          else next.add(key);
-                          setChecked(next);
-                        }}
-                        className={cn(
-                          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
-                          isChecked ? "bg-primary/10" : "hover:bg-muted/50",
-                        )}
+                        onClick={() => setFilterText("")}
+                        aria-label="Wyczyść filtr"
+                        className="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
                       >
-                        <span
-                          className={cn(
-                            "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border",
-                            isChecked
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-border",
-                          )}
-                          aria-hidden
-                        >
-                          {isChecked && <Check size={14} />}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline justify-between gap-2">
-                            <p className="truncate text-sm font-medium">
-                              {r.name}
-                            </p>
-                            {/* Per-row distance is only meaningful
-                             * while we sort by it — when sorting by
-                             * name the GPS/Map toggle is hidden so
-                             * the user has no way to verify which
-                             * reference the numbers are coming from.
-                             * Hide the numbers in that mode too. */}
-                            {sortBy === "distance" && r.distanceM !== null && (
-                              <span className="flex-shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
-                                {formatDistance(r.distanceM)}
-                              </span>
-                            )}
-                          </div>
-                          {(catName || r.address) && (
-                            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              {catName && (
-                                <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wider text-primary">
-                                  {catName}
-                                </span>
-                              )}
-                              {r.address && (
-                                <span className="min-w-0 truncate">
-                                  {r.address}
-                                </span>
-                              )}
-                            </p>
-                          )}
-                        </div>
+                        <X size={14} />
                       </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div ref={listRef} className="min-h-0 flex-1 overflow-auto">
+                {loading && results.length === 0 && (
+                  <div className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+                    <Loader2 size={16} className="animate-spin" />
+                    Szukam…
+                  </div>
+                )}
+                {!loading && results.length === 0 && (
+                  <p className="p-8 text-center text-sm text-muted-foreground">
+                    Nic nie znaleziono. Przesuń mapę albo zmień zestaw
+                    kategorii i spróbuj ponownie.
+                  </p>
+                )}
+                {!loading &&
+                  results.length > 0 &&
+                  visibleResults.length === 0 && (
+                    <p className="p-8 text-center text-sm text-muted-foreground">
+                      Brak dopasowań do „{filterText.trim()}”.
+                    </p>
+                  )}
+                {visibleResults.length > 0 && (
+                  <div
+                    style={{
+                      height: `${virtualizer.getTotalSize()}px`,
+                      position: "relative",
+                    }}
+                  >
+                    {virtualizer.getVirtualItems().map((virtualRow) => {
+                      const r = visibleResults[virtualRow.index];
+                      const key = resultKey(r);
+                      // Resolve the row's group-category (the same slug
+                      // doImport routes it to) so the user can tell what
+                      // the place is at a glance in a mixed list.
+                      // Prefer a specific type ("Pomnik", "Kościół") over
+                      // the broad app category ("Atrakcja"); fall back to
+                      // the category name, then to nothing.
+                      const slug = hintToOurSlug(r.categoryHint);
+                      const typeLabel =
+                        poiTypeLabel(r.categoryHint) ??
+                        (slug ? categoryNameBySlug.get(slug) ?? null : null);
+                      return (
+                        <div
+                          key={key}
+                          ref={virtualizer.measureElement}
+                          data-index={virtualRow.index}
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                        >
+                          <ResultRow
+                            itemKey={key}
+                            name={r.name}
+                            address={r.address}
+                            categoryName={typeLabel}
+                            // Per-row distance is only meaningful while we
+                            // sort by it — the GPS/Map reference toggle is
+                            // hidden in name-sort, so hide the number too.
+                            distanceLabel={
+                              sortBy === "distance" && r.distanceM !== null
+                                ? formatDistance(r.distanceM)
+                                : null
+                            }
+                            checked={checked.has(key)}
+                            onToggle={toggleResult}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
 
               <div className="flex items-center justify-between gap-3 border-t bg-background px-4 py-3">
                 <p className="text-xs text-muted-foreground">
@@ -676,6 +801,7 @@ export function NearbyImportSheet({
                 >
                   {submitting && <Loader2 size={14} className="animate-spin" />}
                   Dodaj wybrane
+                  {checked.size > 0 && ` (${checked.size})`}
                 </button>
               </div>
             </>
@@ -689,6 +815,73 @@ export function NearbyImportSheet({
 function resultKey(r: NearbyResult): string {
   return `${r.provider}:${r.externalId}`;
 }
+
+/**
+ * One result row. Memoised so toggling a single selection only
+ * re-renders that row, not all (up to 300) virtualized siblings —
+ * `onToggle` is a stable callback from the parent and every other prop
+ * is primitive.
+ */
+const ResultRow = memo(function ResultRow({
+  itemKey,
+  name,
+  address,
+  categoryName,
+  distanceLabel,
+  checked,
+  onToggle,
+}: {
+  itemKey: string;
+  name: string;
+  address: string | null;
+  categoryName: string | null;
+  distanceLabel: string | null;
+  checked: boolean;
+  onToggle: (key: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(itemKey)}
+      className={cn(
+        "flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left transition-colors",
+        checked ? "bg-primary/10" : "hover:bg-muted/50",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border",
+          checked
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-border",
+        )}
+        aria-hidden
+      >
+        {checked && <Check size={14} />}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <p className="truncate text-sm font-medium">{name}</p>
+          {distanceLabel && (
+            <span className="flex-shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+              {distanceLabel}
+            </span>
+          )}
+        </div>
+        {(categoryName || address) && (
+          <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            {categoryName && (
+              <span className="inline-flex flex-shrink-0 items-center rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-medium tracking-wider whitespace-nowrap text-primary uppercase">
+                {categoryName}
+              </span>
+            )}
+            {address && <span className="min-w-0 truncate">{address}</span>}
+          </p>
+        )}
+      </div>
+    </button>
+  );
+});
 
 /**
  * OSM tag value or Geoapify dotted category → our app slug. Both
@@ -719,6 +912,19 @@ function hintToOurSlug(hint: string): string | null {
     memorial: "attraction",
     archaeological_site: "attraction",
     lighthouse: "attraction",
+    fountain: "attraction",
+    clock: "attraction",
+    // Places of worship — both the OSM `place_of_worship` value and the
+    // Geoapify leaves (church, cathedral, …) route to our sights bucket.
+    place_of_worship: "attraction",
+    church: "attraction",
+    cathedral: "attraction",
+    chapel: "attraction",
+    basilica: "attraction",
+    mosque: "attraction",
+    synagogue: "attraction",
+    temple: "attraction",
+    shrine: "attraction",
     park: "park",
     nature_reserve: "park",
     protected_area: "park",
@@ -730,7 +936,90 @@ function hintToOurSlug(hint: string): string | null {
     hostel: "accommodation",
     guest_house: "accommodation",
   };
-  return map[leaf.toLowerCase()] ?? null;
+  const direct = map[leaf.toLowerCase()];
+  if (direct) return direct;
+  // Geoapify dotted paths whose specific leaf we don't enumerate (e.g.
+  // tourism.sights.city_gate, religion.place_of_worship.christianity):
+  // route by the meaningful root so they still land in "Atrakcja".
+  // Leaf checks above win first, so viewpoint/peak keep their own bucket.
+  if (hint.startsWith("religion.place_of_worship")) return "attraction";
+  if (hint.startsWith("tourism.sights")) return "attraction";
+  if (hint.startsWith("tourism.attraction")) return "attraction";
+  if (hint.startsWith("entertainment.museum")) return "attraction";
+  if (hint.startsWith("entertainment.culture")) return "attraction";
+  return null;
+}
+
+// OSM tag value or Geoapify dotted-category leaf → short Polish label for
+// the result chip, so a row reads "POMNIK" / "KOŚCIÓŁ" / "MUZEUM" instead
+// of the generic "ATRAKCJA".
+const TYPE_LABELS: Record<string, string> = {
+  // Miejsca kultu — Geoapify klasyfikuje je po wyznaniu, OSM po typie.
+  place_of_worship: "Miejsce kultu",
+  christianity: "Kościół",
+  judaism: "Synagoga",
+  islam: "Meczet",
+  buddhism: "Świątynia",
+  hinduism: "Świątynia",
+  shinto: "Świątynia",
+  sikhism: "Świątynia",
+  multifaith: "Miejsce kultu",
+  church: "Kościół",
+  cathedral: "Katedra",
+  basilica: "Bazylika",
+  chapel: "Kaplica",
+  monastery: "Klasztor",
+  mosque: "Meczet",
+  synagogue: "Synagoga",
+  temple: "Świątynia",
+  shrine: "Kapliczka",
+  // Zabytki / historic.
+  castle: "Zamek",
+  fort: "Forteca",
+  fortress: "Forteca",
+  city_gate: "Brama",
+  tower: "Wieża",
+  city_hall: "Ratusz",
+  monument: "Pomnik",
+  memorial: "Miejsce pamięci",
+  statue: "Pomnik",
+  sculpture: "Rzeźba",
+  mural: "Mural",
+  artwork: "Sztuka",
+  ruins: "Ruiny",
+  ruines: "Ruiny",
+  archaeological_site: "Stanowisko arch.",
+  battlefield: "Pole bitwy",
+  building: "Zabytek",
+  bridge: "Most",
+  windmill: "Wiatrak",
+  lighthouse: "Latarnia",
+  // Muzea / kultura.
+  museum: "Muzeum",
+  gallery: "Galeria",
+  arts_centre: "Centrum sztuki",
+  theatre: "Teatr",
+  // Atrakcje / natura.
+  attraction: "Atrakcja",
+  sights: "Zabytek",
+  viewpoint: "Punkt widokowy",
+  fountain: "Fontanna",
+  clock: "Zegar",
+  peak: "Szczyt",
+  waterfall: "Wodospad",
+  park: "Park",
+  nature_reserve: "Rezerwat",
+};
+
+/**
+ * Short Polish label for a POI's specific type, from the OSM tag value or
+ * the leaf of a Geoapify dotted category. Returns null when we have no
+ * better word than the app-category name.
+ */
+function poiTypeLabel(hint: string): string | null {
+  if (!hint) return null;
+  const leaf = hint.includes(".") ? hint.split(".").pop()! : hint;
+  return TYPE_LABELS[leaf.toLowerCase()] ?? null;
 }
 
 /** Haversine distance in metres between two lat/lng points. */

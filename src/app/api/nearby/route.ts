@@ -11,6 +11,13 @@ export const runtime = "nodejs";
 // a reasonable city-region.
 const MAX_BBOX_SPAN = 0.6;
 
+// How many POIs to pull per nearby search. Geoapify returns results in
+// no particular importance order, so a low cap silently truncates sparse
+// landmarks (a single famous church) behind dense ones (cafés). 300
+// covers a dense city-centre viewport's worth of sights without
+// truncation while keeping the payload bounded.
+const NEARBY_RESULT_LIMIT = 300;
+
 /**
  * "Nearby places" lookup. Accepts one or more category slugs (legacy
  * `category=` single, plus new `categories=` comma-list). When
@@ -57,7 +64,7 @@ export async function GET(req: NextRequest) {
       geoapifyKey,
       categories,
       bbox,
-      80,
+      NEARBY_RESULT_LIMIT,
     );
     if (hits.length > 0) {
       return NextResponse.json({
@@ -78,7 +85,7 @@ export async function GET(req: NextRequest) {
   // Overpass fallback. Normalise to the same wire-shape so the client
   // never has to branch on provider when rendering or importing.
   const overpassResults = await overpassSearchByCategories(categories, bbox, {
-    limit: 80,
+    limit: NEARBY_RESULT_LIMIT,
   });
   return NextResponse.json({
     results: overpassResults.map((r) => ({
