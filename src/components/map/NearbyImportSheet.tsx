@@ -871,7 +871,7 @@ const ResultRow = memo(function ResultRow({
         {(categoryName || address) && (
           <p className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             {categoryName && (
-              <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-medium uppercase tracking-wider text-primary">
+              <span className="inline-flex flex-shrink-0 items-center rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[9px] font-medium tracking-wider whitespace-nowrap text-primary uppercase">
                 {categoryName}
               </span>
             )}
