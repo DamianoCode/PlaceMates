@@ -92,7 +92,11 @@ The rough rule: routes and Server Actions in `app/` stay thin and call into `dom
 
 ## Status & license
 
-This is a personal project, still moving, built primarily for a Polish-speaking group of friends. There's no license file yet — until one is added, treat it as all rights reserved. If you'd like to use or build on it, open an issue and let's talk.
+This is a personal project, still moving, built primarily for a Polish-speaking group of friends.
+
+Licensed under the **GNU Affero General Public License v3.0 or later** — see [`LICENSE`](LICENSE). In short: you're free to use, study, modify and share it, but if you run a modified version as a network service, you have to make your source available too. Questions or ideas? Open an issue.
+
+© 2026 DamianoCode
 
 ---
 
@@ -177,4 +181,8 @@ Zasada z grubsza taka: trasy i Server Actions w `app/` są cienkie i wołają do
 
 ### Status i licencja
 
-To projekt osobisty, wciąż w ruchu, zbudowany głównie dla polskojęzycznej paczki znajomych. Nie ma jeszcze pliku licencji — dopóki się nie pojawi, traktuj go jako „wszelkie prawa zastrzeżone". Jeśli chcesz z niego skorzystać albo coś na nim zbudować, załóż issue i pogadajmy.
+To projekt osobisty, wciąż w ruchu, zbudowany głównie dla polskojęzycznej paczki znajomych.
+
+Na licencji **GNU Affero General Public License v3.0 lub nowszej** — patrz [`LICENSE`](LICENSE). W skrócie: możesz go używać, badać, modyfikować i udostępniać, ale jeśli uruchomisz zmodyfikowaną wersję jako serwis sieciowy, musisz udostępnić też swoje źródła. Pytania albo pomysły? Załóż issue.
+
+© 2026 DamianoCode
