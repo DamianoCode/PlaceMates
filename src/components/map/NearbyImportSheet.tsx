@@ -21,7 +21,10 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
-import { bulkImportAction } from "@/app/(app)/places/import-actions";
+import {
+  bulkImportAction,
+  type ImportResult,
+} from "@/app/(app)/places/import-actions";
 import { fetchJson, HttpError } from "@/lib/fetch-json";
 
 export type ImportCategory = { id: string; slug: string; name: string };
@@ -363,40 +366,69 @@ export function NearbyImportSheet({
     setSubmitting(true);
     let inserted = 0;
     let skipped = 0;
+    let failed = 0;
     let firstError: string | null = null;
-    for (const [categoryId, items] of groups) {
-      const result = await bulkImportAction({
-        groupId,
-        categoryId,
-        items: items.map((r) => ({
-          name: r.name,
-          lat: r.lat,
-          lng: r.lng,
-          address: r.address,
-          provider: r.provider,
-          externalId: r.externalId,
-          // Legacy alias — kept so older callers keep working.
-          osmId: r.provider === "osm" ? r.externalId : null,
-        })),
-      });
-      if (!result.ok) {
-        firstError ??= result.error;
-        continue;
+    let firstFailureReason: string | null = null;
+    try {
+      for (const [categoryId, items] of groups) {
+        let result: ImportResult;
+        try {
+          result = await bulkImportAction({
+            groupId,
+            categoryId,
+            items: items.map((r) => ({
+              name: r.name,
+              lat: r.lat,
+              lng: r.lng,
+              address: r.address,
+              provider: r.provider,
+              externalId: r.externalId,
+              // Legacy alias — kept so older callers keep working.
+              osmId: r.provider === "osm" ? r.externalId : null,
+            })),
+          });
+        } catch {
+          // Network drop or an unexpected server crash for this category.
+          // Record it and keep going so other categories still import.
+          firstError ??= "Błąd połączenia. Część miejsc mogła się nie dodać.";
+          continue;
+        }
+        if (!result.ok) {
+          firstError ??= result.error;
+          continue;
+        }
+        inserted += result.inserted;
+        skipped += result.skipped;
+        failed += result.failed;
+        if (result.failureReason) firstFailureReason ??= result.failureReason;
       }
-      inserted += result.inserted;
-      skipped += result.skipped;
+    } finally {
+      // Always release the spinner, even if something above threw.
+      setSubmitting(false);
     }
-    setSubmitting(false);
 
-    if (firstError && inserted === 0) {
-      toast.error(firstError);
+    // Nothing landed: surface the most specific reason we have.
+    if (inserted === 0) {
+      toast.error(
+        firstError ?? firstFailureReason ?? "Nie udało się dodać żadnego miejsca.",
+      );
       return;
     }
-    toast.success(
-      `Dodano ${inserted} miejsc${
-        skipped > 0 ? ` · pominięto ${skipped} już dodanych` : ""
-      }.`,
-    );
+
+    // At least one place landed. Report the full picture — added,
+    // already-present, and anything that didn't make it — so a partial
+    // result is never mistaken for a clean success.
+    const parts = [`Dodano ${inserted} ${inserted === 1 ? "miejsce" : "miejsc"}`];
+    if (skipped > 0) parts.push(`pominięto ${skipped} już dodanych`);
+    if (failed > 0) parts.push(`${failed} się nie powiodło`);
+    const message = parts.join(" · ");
+    if (failed > 0 || firstError) {
+      toast.warning(
+        firstFailureReason ? `${message} (${firstFailureReason})` : message,
+      );
+    } else {
+      toast.success(message);
+    }
     onClose();
     router.refresh();
   }
