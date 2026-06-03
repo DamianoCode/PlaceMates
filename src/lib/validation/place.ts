@@ -26,7 +26,11 @@ export const CreatePlaceInput = z.object({
    */
   osmId: z.string().max(64).optional(),
   provider: ExternalProvider.optional(),
-  externalId: z.string().max(128).optional(),
+  // Geoapify place_ids are opaque hex that encodes the POI name, so they
+  // routinely run 100-212+ chars (a 200-char name can push ~870). The DB
+  // column is unbounded `text`; this cap is only an abuse guard, so keep
+  // it generous or long-named POIs silently fail to import.
+  externalId: z.string().max(1024).optional(),
 });
 export type CreatePlaceInput = z.infer<typeof CreatePlaceInput>;
 
