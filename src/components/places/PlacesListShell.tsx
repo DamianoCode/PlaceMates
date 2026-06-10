@@ -183,7 +183,7 @@ export function PlacesListShell({
               type="button"
               onClick={() => onNavigate({ sortBy: nextSortBy })}
               aria-label="Zmień kryterium sortowania"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground transition duration-150 hover:bg-muted hover:text-foreground active:scale-95"
             >
               <activeSortMeta.icon size={14} />
               {activeSortMeta.label}
@@ -199,7 +199,7 @@ export function PlacesListShell({
                 state.sortDir === "asc" ? "Sortuj malejąco" : "Sortuj rosnąco"
               }
               title={dirTitle(state.sortBy, state.sortDir)}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition duration-150 hover:bg-muted hover:text-foreground active:scale-90"
             >
               {state.sortDir === "asc" ? (
                 <ArrowUp size={14} />
@@ -231,7 +231,7 @@ function PillButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors",
+        "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 active:scale-95",
         active
           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
           : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground",

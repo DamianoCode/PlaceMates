@@ -19,7 +19,7 @@ export function RankedPlaceCard({
   return (
     <Link
       href={`/ranking/${place.canonicalId}`}
-      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/40"
+      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 active:scale-[0.985] active:bg-accent/50"
     >
       <div className="flex flex-col items-center justify-center">
         <span className="font-display text-2xl tabular-nums leading-none text-primary">

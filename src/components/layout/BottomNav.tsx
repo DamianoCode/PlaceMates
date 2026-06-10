@@ -40,11 +40,26 @@ export function BottomNav() {
                 prefetch
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-[60px] flex-col items-center justify-center gap-1 text-xs transition-colors",
+                  "flex min-h-[60px] flex-col items-center justify-center gap-1 text-xs transition-[color,transform] duration-150 active:scale-90",
                   active ? "text-primary" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <Icon size={22} aria-hidden className={active ? "stroke-[2.25]" : undefined} />
+                {/* Icon sits over a soft "active indicator" pill (Material-3
+                 *  style) that scales in when the tab is selected — gives the
+                 *  active state a clear, tactile anchor instead of colour alone. */}
+                <span className="relative flex h-7 w-12 items-center justify-center">
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="pm-fade-view absolute inset-0 rounded-full bg-primary/12"
+                    />
+                  )}
+                  <Icon
+                    size={22}
+                    aria-hidden
+                    className={cn("relative", active && "stroke-[2.25]")}
+                  />
+                </span>
                 <span className={active ? "font-medium" : undefined}>{label}</span>
               </Link>
             </li>

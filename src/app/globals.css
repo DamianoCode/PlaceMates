@@ -131,6 +131,19 @@
   }
   html {
     font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+    /* Kill the grey/blue tap flash on mobile — we provide our own
+     * press feedback (active:scale) on interactive elements instead. */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Remove the legacy 300ms tap delay and double-tap-zoom on controls
+   * (pinch-zoom and the map's own gestures are unaffected). Makes every
+   * tap register instantly — the single biggest "feels native" win. */
+  a,
+  button,
+  [role="button"],
+  summary,
+  label {
+    touch-action: manipulation;
   }
   /* Fraunces as a display face: headings + brand marks. */
   h1, h2, h3, .font-display {
@@ -174,6 +187,55 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes pm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* View-level transition between routes. Opacity-only on purpose: a
+ * `transform` here would create a containing block and break the map's
+ * fixed overlays (preview sheet, speed dial, MapLibre ctrls) and the
+ * sticky PageHeader. The directional "drift" feel is added per-list via
+ * pm-stagger, on containers that have no fixed descendants. */
+@utility pm-fade-view {
+  animation: pm-fade-in 180ms ease-out both;
+}
+
+/* Staggered entrance for list/card containers. Apply to a wrapper whose
+ * direct children are the cards; each child fades up in sequence. Plays
+ * once on mount (i.e. when the route remounts the view). Delays cap so
+ * long lists don't feel slow. */
+@utility pm-stagger {
+  & > * {
+    animation: pm-fade-up 240ms ease-out both;
+  }
+  & > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  & > *:nth-child(2) {
+    animation-delay: 40ms;
+  }
+  & > *:nth-child(3) {
+    animation-delay: 80ms;
+  }
+  & > *:nth-child(4) {
+    animation-delay: 120ms;
+  }
+  & > *:nth-child(5) {
+    animation-delay: 160ms;
+  }
+  & > *:nth-child(6) {
+    animation-delay: 200ms;
+  }
+  & > *:nth-child(n + 7) {
+    animation-delay: 240ms;
   }
 }
 

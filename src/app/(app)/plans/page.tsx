@@ -170,7 +170,7 @@ function Section({
       >
         {title}
       </h2>
-      <div className="space-y-2">{children}</div>
+      <div className="pm-stagger space-y-2">{children}</div>
     </div>
   );
 }

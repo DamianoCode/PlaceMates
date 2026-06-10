@@ -144,7 +144,7 @@ export default async function RankingPage({
                 : "Ranking czeka na pierwsze oceny."}
           </p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="pm-stagger space-y-2">
             {ranked.map((place, i) => (
               <li key={place.canonicalId}>
                 <RankedPlaceCard place={place} rank={i + 1} />
@@ -167,7 +167,7 @@ function Pill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors";
+    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 active:scale-95";
   return (
     <Link
       href={href}
