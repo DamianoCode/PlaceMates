@@ -5,6 +5,7 @@ import { listRankedPlaces } from "@/domain/ranking/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditorialHeader } from "@/components/layout/EditorialHeader";
+import { ScrollRow } from "@/components/layout/ScrollRow";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
 
 type Search = Promise<{ category?: string; group?: string }>;
@@ -96,9 +97,9 @@ export default async function RankingPage({
         />
 
         {userGroups.length > 0 && (
-          <nav
+          <ScrollRow
             aria-label="Zakres rankingu"
-            className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
+            className="flex gap-1.5 overflow-x-auto no-scrollbar"
           >
             <Pill href={buildHref({ group: null })} active={!activeGroup}>
               Wszyscy
@@ -112,12 +113,12 @@ export default async function RankingPage({
                 {g.name}
               </Pill>
             ))}
-          </nav>
+          </ScrollRow>
         )}
 
-        <nav
+        <ScrollRow
           aria-label="Filtry kategorii"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
           <Pill href={buildHref({ category: null })} active={!activeCategory}>
             Wszystkie
@@ -131,7 +132,7 @@ export default async function RankingPage({
               {f.label}
             </Pill>
           ))}
-        </nav>
+        </ScrollRow>
 
         {ranked.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">

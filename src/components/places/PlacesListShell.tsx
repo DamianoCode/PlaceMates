@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollRow } from "@/components/layout/ScrollRow";
 import type {
   PlacesSortBy,
   PlacesSortDir,
@@ -73,9 +74,9 @@ export function PlacesListShell({
   return (
     <>
       {/* Saved-set filter row. Toggle: clicking the active pill clears it. */}
-      <nav
+      <ScrollRow
         aria-label="Filtr zapisanych"
-        className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
+        className="flex gap-1.5 overflow-x-auto no-scrollbar"
       >
         <PillButton active={!state.set} onClick={() => onNavigate({ set: null })}>
           Wszystkie
@@ -109,12 +110,12 @@ export function PlacesListShell({
         >
           Grupowo
         </PillButton>
-      </nav>
+      </ScrollRow>
 
       {categories.length > 0 && (
-        <nav
+        <ScrollRow
           aria-label="Filtry kategorii"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
           <PillButton
             active={!state.category}
@@ -135,16 +136,16 @@ export function PlacesListShell({
               {c.name}
             </PillButton>
           ))}
-        </nav>
+        </ScrollRow>
       )}
 
       {/* Per-group narrow appears only inside the group-wishlist set —
        *  the union view is the default for ≥2-group users, and clicking
        *  a group pill drills down. Solo-group users never see this row. */}
       {state.set === "group-wishlist" && groupWishlistGroups.length >= 2 && (
-        <nav
+        <ScrollRow
           aria-label="Filtr grupy"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
           <PillButton
             active={!state.groupWishlistGroupId}
@@ -166,7 +167,7 @@ export function PlacesListShell({
               {g.name}
             </PillButton>
           ))}
-        </nav>
+        </ScrollRow>
       )}
 
       {count > 0 && (

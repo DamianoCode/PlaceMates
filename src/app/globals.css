@@ -212,19 +212,6 @@
  * direct children are the cards; each child fades up in sequence. Plays
  * once on mount (i.e. when the route remounts the view). Delays cap so
  * long lists don't feel slow. */
-/* Edge-fade for horizontal scroll rows (filter pills, chips). Signals
- * "there's more off-screen" so users know the row scrolls. Fades the
- * RIGHT edge only — a left fade would clip the first (often active) pill
- * at scroll-start and look like a stray shadow. */
-@utility scroll-fade-x {
-  -webkit-mask-image: linear-gradient(
-    to right,
-    black calc(100% - 20px),
-    transparent
-  );
-  mask-image: linear-gradient(to right, black calc(100% - 20px), transparent);
-}
-
 @utility pm-stagger {
   & > * {
     animation: pm-fade-up 240ms ease-out both;
