@@ -5,6 +5,8 @@ import { listRankedPlaces } from "@/domain/ranking/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditorialHeader } from "@/components/layout/EditorialHeader";
+import { ScrollRow } from "@/components/layout/ScrollRow";
+import { StaggerList } from "@/components/layout/StaggerList";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
 
 type Search = Promise<{ category?: string; group?: string }>;
@@ -96,7 +98,7 @@ export default async function RankingPage({
         />
 
         {userGroups.length > 0 && (
-          <nav
+          <ScrollRow
             aria-label="Zakres rankingu"
             className="flex gap-1.5 overflow-x-auto no-scrollbar"
           >
@@ -112,10 +114,10 @@ export default async function RankingPage({
                 {g.name}
               </Pill>
             ))}
-          </nav>
+          </ScrollRow>
         )}
 
-        <nav
+        <ScrollRow
           aria-label="Filtry kategorii"
           className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
@@ -131,7 +133,7 @@ export default async function RankingPage({
               {f.label}
             </Pill>
           ))}
-        </nav>
+        </ScrollRow>
 
         {ranked.length === 0 ? (
           <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">
@@ -144,13 +146,13 @@ export default async function RankingPage({
                 : "Ranking czeka na pierwsze oceny."}
           </p>
         ) : (
-          <ul className="space-y-2">
+          <StaggerList as="ul" className="space-y-2">
             {ranked.map((place, i) => (
               <li key={place.canonicalId}>
                 <RankedPlaceCard place={place} rank={i + 1} />
               </li>
             ))}
-          </ul>
+          </StaggerList>
         )}
       </section>
     </>
@@ -167,7 +169,7 @@ function Pill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors";
+    "relative inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 before:absolute before:-inset-y-1 before:content-[''] active:scale-95";
   return (
     <Link
       href={href}

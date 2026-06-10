@@ -1,35 +1,15 @@
 import Link from "next/link";
 import { Bookmark, Heart, Star, Users } from "lucide-react";
 import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats";
-import { CategoryIcon } from "@/components/map/category-icons";
+import { CardThumb } from "@/components/places/CardThumb";
 
 export function PlaceCard({ place }: { place: PlaceCardData }) {
   return (
     <Link
       href={`/places/${place.id}`}
-      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/40"
+      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.985] active:bg-accent/50"
     >
-      {place.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={place.photoUrl}
-          alt=""
-          loading="lazy"
-          className="h-20 w-20 flex-shrink-0 rounded-xl object-cover"
-        />
-      ) : (
-        <div
-          aria-hidden
-          className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
-        >
-          <CategoryIcon
-            slug={place.categorySlug}
-            size={28}
-            strokeWidth={1.5}
-            className="text-primary/70"
-          />
-        </div>
-      )}
+      <CardThumb photoUrl={place.photoUrl} categorySlug={place.categorySlug} />
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div className="min-w-0">

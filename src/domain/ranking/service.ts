@@ -1,7 +1,8 @@
-import { sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
 import { db } from "@/infra/db/client";
-import { canonicalPlaces } from "@/infra/db/schema";
+import { canonicalPlaces, photos, places } from "@/infra/db/schema";
+import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
 import {
   RANKING_CACHE_TAG,
   RANKING_CACHE_TTL_SECONDS,
@@ -19,6 +20,24 @@ export type RankedPlace = {
   count: number;
   /** True when canonical has provider+external_id, i.e. POI-backed. */
   hasExternalId: boolean;
+  /**
+   * Cover photo for the canonical, picked across all its group-scoped
+   * `places` siblings (cover-first, then newest). Null when no sibling
+   * has a photo — the card falls back to the category-icon tile, same
+   * as the places list. Keeps ranking rows visually consistent with
+   * `/places` instead of always showing the generic tile.
+   */
+  photoUrl: string | null;
+};
+
+/**
+ * Internal shape returned by the cached layer: identical to RankedPlace
+ * but carrying the raw storage path instead of a public URL. Building
+ * the URL needs `getStorage()` → `cookies()`, which is forbidden inside
+ * `unstable_cache`; paths are cacheable, the path→URL mapping isn't.
+ */
+type RankedPlaceRow = Omit<RankedPlace, "photoUrl"> & {
+  photoPath: string | null;
 };
 
 export type RankingOptions = {
@@ -50,7 +69,7 @@ export type RankingOptions = {
  */
 async function listRankedPlacesUncached(
   opts: RankingOptions = {},
-): Promise<RankedPlace[]> {
+): Promise<RankedPlaceRow[]> {
   const limit = opts.limit ?? RANKING_LIMIT_DEFAULT;
   const minRatings = opts.minRatings ?? RANKING_MIN_RATINGS_DEFAULT;
   const category = opts.categorySlug ?? null;
@@ -94,6 +113,30 @@ async function listRankedPlacesUncached(
      LIMIT ${limit}
   `);
 
+  // Cover photo per canonical. Photos hang off group-scoped `places`,
+  // so we hop places → photos for every ranked canonical in one batched
+  // query (cover-first, newest-next) and keep the first hit per
+  // canonical — mirrors the dedupe in list-with-stats so a place looks
+  // the same here as in /places.
+  const ids = rows.map((r) => r.id);
+  const photoBy = new Map<string, string>();
+  if (ids.length > 0) {
+    const photoRows = await db
+      .select({
+        canonicalId: places.canonicalPlaceId,
+        storagePath: photos.storagePath,
+      })
+      .from(photos)
+      .innerJoin(places, eq(places.id, photos.placeId))
+      .where(inArray(places.canonicalPlaceId, ids))
+      .orderBy(desc(photos.isCover), desc(photos.createdAt));
+    for (const p of photoRows) {
+      if (p.canonicalId && !photoBy.has(p.canonicalId)) {
+        photoBy.set(p.canonicalId, p.storagePath);
+      }
+    }
+  }
+
   return rows.map((r) => ({
     canonicalId: r.id,
     name: r.name,
@@ -103,6 +146,7 @@ async function listRankedPlacesUncached(
     hasExternalId: r.has_external,
     avg: Math.round(Number(r.avg) * 100) / 100,
     count: Number(r.cnt),
+    photoPath: photoBy.get(r.id) ?? null,
   }));
 }
 
@@ -113,7 +157,7 @@ async function listRankedPlacesUncached(
  * after a rating mutation. Keys include all option fields so different
  * filters cache independently.
  */
-export const listRankedPlaces = unstable_cache(
+const listRankedPlacesCached = unstable_cache(
   listRankedPlacesUncached,
   ["ranking-list"],
   {
@@ -121,6 +165,28 @@ export const listRankedPlaces = unstable_cache(
     revalidate: RANKING_CACHE_TTL_SECONDS,
   },
 );
+
+/**
+ * Public entry-point. Reads the cached rows (storage paths) and resolves
+ * cover photos to public URLs here — `getStorage()` touches `cookies()`,
+ * so it must live outside the cache scope. The mapping is cheap string
+ * work; we only spin up the storage client when a row actually has a
+ * photo.
+ */
+export async function listRankedPlaces(
+  opts: RankingOptions = {},
+): Promise<RankedPlace[]> {
+  const rows = await listRankedPlacesCached(opts);
+  const storage = rows.some((r) => r.photoPath) ? await getStorage() : null;
+  return rows.map((r) => {
+    const { photoPath, ...rest } = r;
+    return {
+      ...rest,
+      photoUrl:
+        photoPath && storage ? storage.publicUrl(PHOTO_BUCKET, photoPath) : null,
+    };
+  });
+}
 
 export type CanonicalView = {
   id: string;

@@ -53,6 +53,7 @@ export function PhotoHero({
         src={cover.url}
         alt=""
         loading="lazy"
+        decoding="async"
         className={heroClasses}
         onClick={() => openAt(cover.id)}
       />
@@ -65,6 +66,7 @@ export function PhotoHero({
               src={p.url}
               alt=""
               loading="lazy"
+              decoding="async"
               onClick={() => openAt(p.id)}
               className="h-20 w-20 flex-shrink-0 cursor-zoom-in rounded-xl object-cover"
             />

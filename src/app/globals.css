@@ -131,6 +131,19 @@
   }
   html {
     font-family: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+    /* Kill the grey/blue tap flash on mobile — we provide our own
+     * press feedback (active:scale) on interactive elements instead. */
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Remove the legacy 300ms tap delay and double-tap-zoom on controls
+   * (pinch-zoom and the map's own gestures are unaffected). Makes every
+   * tap register instantly — the single biggest "feels native" win. */
+  a,
+  button,
+  [role="button"],
+  summary,
+  label {
+    touch-action: manipulation;
   }
   /* Fraunces as a display face: headings + brand marks. */
   h1, h2, h3, .font-display {
@@ -177,6 +190,24 @@
   }
 }
 
+@keyframes pm-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* View-level transition between routes. Opacity-only on purpose: a
+ * `transform` here would create a containing block and break the map's
+ * fixed overlays (preview sheet, speed dial, MapLibre ctrls) and the
+ * sticky PageHeader. The directional "drift" feel is added per-list via
+ * the StaggerList / PlacesVirtualList entrance, not here. */
+@utility pm-fade-view {
+  animation: pm-fade-in 180ms ease-out both;
+}
+
 @keyframes pm-pulse-ring {
   0% {
     box-shadow: 0 0 0 0 oklch(from var(--color-primary) l c h / 0.45);
@@ -196,7 +227,12 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Zero delays too — staggered list entrances set animation-delay,
+     * which would otherwise leave content invisible for up to ~300ms
+     * under reduced motion. */
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }
 

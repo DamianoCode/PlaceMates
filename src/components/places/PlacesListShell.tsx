@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollRow } from "@/components/layout/ScrollRow";
 import type {
   PlacesSortBy,
   PlacesSortDir,
@@ -73,7 +74,7 @@ export function PlacesListShell({
   return (
     <>
       {/* Saved-set filter row. Toggle: clicking the active pill clears it. */}
-      <nav
+      <ScrollRow
         aria-label="Filtr zapisanych"
         className="flex gap-1.5 overflow-x-auto no-scrollbar"
       >
@@ -109,10 +110,10 @@ export function PlacesListShell({
         >
           Grupowo
         </PillButton>
-      </nav>
+      </ScrollRow>
 
       {categories.length > 0 && (
-        <nav
+        <ScrollRow
           aria-label="Filtry kategorii"
           className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
@@ -135,14 +136,14 @@ export function PlacesListShell({
               {c.name}
             </PillButton>
           ))}
-        </nav>
+        </ScrollRow>
       )}
 
       {/* Per-group narrow appears only inside the group-wishlist set —
        *  the union view is the default for ≥2-group users, and clicking
        *  a group pill drills down. Solo-group users never see this row. */}
       {state.set === "group-wishlist" && groupWishlistGroups.length >= 2 && (
-        <nav
+        <ScrollRow
           aria-label="Filtr grupy"
           className="flex gap-1.5 overflow-x-auto no-scrollbar"
         >
@@ -166,7 +167,7 @@ export function PlacesListShell({
               {g.name}
             </PillButton>
           ))}
-        </nav>
+        </ScrollRow>
       )}
 
       {count > 0 && (
@@ -183,7 +184,7 @@ export function PlacesListShell({
               type="button"
               onClick={() => onNavigate({ sortBy: nextSortBy })}
               aria-label="Zmień kryterium sortowania"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="relative inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground transition duration-150 before:absolute before:-inset-y-1 before:content-[''] hover:bg-muted hover:text-foreground active:scale-95"
             >
               <activeSortMeta.icon size={14} />
               {activeSortMeta.label}
@@ -199,7 +200,7 @@ export function PlacesListShell({
                 state.sortDir === "asc" ? "Sortuj malejąco" : "Sortuj rosnąco"
               }
               title={dirTitle(state.sortBy, state.sortDir)}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition duration-150 before:absolute before:-inset-1 before:content-[''] hover:bg-muted hover:text-foreground active:scale-90"
             >
               {state.sortDir === "asc" ? (
                 <ArrowUp size={14} />
@@ -231,7 +232,9 @@ function PillButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-colors",
+        // h-9 visual, but a transparent ::before extends the tap area to
+        // ~44px tall (WCAG/HIG touch target) without bulking up the row.
+        "relative inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 before:absolute before:-inset-y-1 before:content-[''] active:scale-95",
         active
           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
           : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground",

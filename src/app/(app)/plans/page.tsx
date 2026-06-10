@@ -4,6 +4,7 @@ import { getAuth } from "@/infra/auth";
 import { listTripsForUser } from "@/domain/trips/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { StaggerList } from "@/components/layout/StaggerList";
 import { TripCard } from "@/components/plans/TripCard";
 import { NewTripButton } from "@/components/plans/NewTripButton";
 
@@ -170,7 +171,7 @@ function Section({
       >
         {title}
       </h2>
-      <div className="space-y-2">{children}</div>
+      <StaggerList className="space-y-2">{children}</StaggerList>
     </div>
   );
 }
