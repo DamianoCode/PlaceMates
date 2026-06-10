@@ -28,7 +28,7 @@ export function TripCard({ trip }: { trip: TripSummary }) {
     <Link
       href={`/plans/${trip.id}`}
       className={cn(
-        "group relative block overflow-hidden rounded-2xl border bg-card pl-5 pr-4 py-4 shadow-sm transition-all duration-150 hover:shadow-md active:scale-[0.99]",
+        "group relative block overflow-hidden rounded-2xl border bg-card pl-5 pr-4 py-4 shadow-sm transition-all duration-150 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99]",
         allDone && "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/15",
       )}
     >

@@ -34,6 +34,7 @@ export function PhotoTile({
         src={url}
         alt=""
         loading="lazy"
+        decoding="async"
         onClick={() => openAt(photoId)}
         className="h-full w-full cursor-zoom-in object-cover"
       />

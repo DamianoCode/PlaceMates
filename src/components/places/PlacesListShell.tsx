@@ -75,7 +75,7 @@ export function PlacesListShell({
       {/* Saved-set filter row. Toggle: clicking the active pill clears it. */}
       <nav
         aria-label="Filtr zapisanych"
-        className="flex gap-1.5 overflow-x-auto no-scrollbar"
+        className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
       >
         <PillButton active={!state.set} onClick={() => onNavigate({ set: null })}>
           Wszystkie
@@ -114,7 +114,7 @@ export function PlacesListShell({
       {categories.length > 0 && (
         <nav
           aria-label="Filtry kategorii"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
         >
           <PillButton
             active={!state.category}
@@ -144,7 +144,7 @@ export function PlacesListShell({
       {state.set === "group-wishlist" && groupWishlistGroups.length >= 2 && (
         <nav
           aria-label="Filtr grupy"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
         >
           <PillButton
             active={!state.groupWishlistGroupId}
@@ -183,7 +183,7 @@ export function PlacesListShell({
               type="button"
               onClick={() => onNavigate({ sortBy: nextSortBy })}
               aria-label="Zmień kryterium sortowania"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground transition duration-150 hover:bg-muted hover:text-foreground active:scale-95"
+              className="relative inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-background px-3 text-muted-foreground transition duration-150 before:absolute before:-inset-y-1 before:content-[''] hover:bg-muted hover:text-foreground active:scale-95"
             >
               <activeSortMeta.icon size={14} />
               {activeSortMeta.label}
@@ -199,7 +199,7 @@ export function PlacesListShell({
                 state.sortDir === "asc" ? "Sortuj malejąco" : "Sortuj rosnąco"
               }
               title={dirTitle(state.sortBy, state.sortDir)}
-              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition duration-150 hover:bg-muted hover:text-foreground active:scale-90"
+              className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition duration-150 before:absolute before:-inset-1 before:content-[''] hover:bg-muted hover:text-foreground active:scale-90"
             >
               {state.sortDir === "asc" ? (
                 <ArrowUp size={14} />
@@ -231,7 +231,9 @@ function PillButton({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 active:scale-95",
+        // h-9 visual, but a transparent ::before extends the tap area to
+        // ~44px tall (WCAG/HIG touch target) without bulking up the row.
+        "relative inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 before:absolute before:-inset-y-1 before:content-[''] active:scale-95",
         active
           ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
           : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground",

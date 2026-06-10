@@ -98,7 +98,7 @@ export default async function RankingPage({
         {userGroups.length > 0 && (
           <nav
             aria-label="Zakres rankingu"
-            className="flex gap-1.5 overflow-x-auto no-scrollbar"
+            className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
           >
             <Pill href={buildHref({ group: null })} active={!activeGroup}>
               Wszyscy
@@ -117,7 +117,7 @@ export default async function RankingPage({
 
         <nav
           aria-label="Filtry kategorii"
-          className="flex gap-1.5 overflow-x-auto no-scrollbar"
+          className="flex gap-1.5 overflow-x-auto no-scrollbar scroll-fade-x"
         >
           <Pill href={buildHref({ category: null })} active={!activeCategory}>
             Wszystkie
@@ -167,7 +167,7 @@ function Pill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 active:scale-95";
+    "relative inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition duration-150 before:absolute before:-inset-y-1 before:content-[''] active:scale-95";
   return (
     <Link
       href={href}
