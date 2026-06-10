@@ -278,7 +278,12 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* Zero delays too — staggered entrances (pm-stagger, list cards) set
+     * animation-delay, which would otherwise leave content invisible for
+     * up to ~300ms under reduced motion. */
+    animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
 }
 

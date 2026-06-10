@@ -19,12 +19,29 @@ import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats
  * names that wrap, missing photo, etc.) corrects itself within a
  * frame.
  */
+// How many of the first cards get the staggered entrance. Capped so the
+// cascade stays short (8 × 40ms ≈ 320ms) and so only the cards actually
+// visible on first paint animate.
+const STAGGER_CAP = 8;
+
 export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
   const listRef = useRef<HTMLUListElement | null>(null);
   // Window virtualizer needs the list's offset from the page top to
   // know where its content starts. We measure it on mount and after
   // the layout settles. SSR-safe — defaults to 0 until we hit client.
   const [offset, setOffset] = useState(0);
+
+  // One-shot entrance stagger. Virtualised rows mount/unmount on scroll,
+  // so animating per-mount would re-fire on every scroll — a flashing
+  // mess. Instead we run the stagger only during a short window after
+  // first paint; after it closes, scroll-revealed rows just appear. This
+  // gives the "cards cascade in when I open the tab" feel without the
+  // anti-pattern.
+  const [staggerOn, setStaggerOn] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setStaggerOn(false), 800);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -59,6 +76,7 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
     >
       {virtualizer.getVirtualItems().map((row) => {
         const card = cards[row.index];
+        const animate = staggerOn && row.index < STAGGER_CAP;
         return (
           <li
             key={card.id}
@@ -73,7 +91,21 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
               paddingBottom: "0.5rem",
             }}
           >
-            <PlaceCard place={card} />
+            {/* Entrance animation lives on an inner wrapper, not the <li>:
+             *  the <li> owns the virtualiser's positioning transform, and
+             *  pm-fade-up animates transform too — animating both on the
+             *  same element would make the card jump to the wrong spot. */}
+            <div
+              style={
+                animate
+                  ? {
+                      animation: `pm-fade-up 240ms ease-out ${row.index * 40}ms both`,
+                    }
+                  : undefined
+              }
+            >
+              <PlaceCard place={card} />
+            </div>
           </li>
         );
       })}
