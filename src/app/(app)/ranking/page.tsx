@@ -6,6 +6,7 @@ import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditorialHeader } from "@/components/layout/EditorialHeader";
 import { ScrollRow } from "@/components/layout/ScrollRow";
+import { StaggerList } from "@/components/layout/StaggerList";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
 
 type Search = Promise<{ category?: string; group?: string }>;
@@ -145,13 +146,13 @@ export default async function RankingPage({
                 : "Ranking czeka na pierwsze oceny."}
           </p>
         ) : (
-          <ul className="pm-stagger space-y-2">
+          <StaggerList as="ul" className="space-y-2">
             {ranked.map((place, i) => (
               <li key={place.canonicalId}>
                 <RankedPlaceCard place={place} rank={i + 1} />
               </li>
             ))}
-          </ul>
+          </StaggerList>
         )}
       </section>
     </>
