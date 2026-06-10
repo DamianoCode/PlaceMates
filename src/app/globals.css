@@ -213,23 +213,16 @@
  * once on mount (i.e. when the route remounts the view). Delays cap so
  * long lists don't feel slow. */
 /* Edge-fade for horizontal scroll rows (filter pills, chips). Signals
- * "there's more off-screen" so users know the row scrolls. Matches the
- * mask used on the map filter bar and the detail action row. */
+ * "there's more off-screen" so users know the row scrolls. Fades the
+ * RIGHT edge only — a left fade would clip the first (often active) pill
+ * at scroll-start and look like a stray shadow. */
 @utility scroll-fade-x {
   -webkit-mask-image: linear-gradient(
     to right,
-    transparent,
-    black 12px,
-    black calc(100% - 16px),
+    black calc(100% - 20px),
     transparent
   );
-  mask-image: linear-gradient(
-    to right,
-    transparent,
-    black 12px,
-    black calc(100% - 16px),
-    transparent
-  );
+  mask-image: linear-gradient(to right, black calc(100% - 20px), transparent);
 }
 
 @utility pm-stagger {
