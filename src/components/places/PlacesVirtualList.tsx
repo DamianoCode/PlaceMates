@@ -64,6 +64,16 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
     scrollMargin: offset,
   });
 
+  const virtualItems = virtualizer.getVirtualItems();
+  // Only run the entrance stagger when the list mounts at the very top.
+  // On back-navigation Next restores the scroll position mid-list, so the
+  // first rendered row won't be index 0 — we skip the cascade and the
+  // list just appears, instead of animating the (now off-screen) first 8
+  // while the visible rows sit static. The brief first-paint race (top
+  // rendered before scroll restore jumps) is hidden by the RouteTransition
+  // view fade still ramping opacity from 0.
+  const atTop = virtualItems.length > 0 && virtualItems[0].index === 0;
+
   return (
     <ul
       ref={listRef}
@@ -74,9 +84,9 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
         position: "relative",
       }}
     >
-      {virtualizer.getVirtualItems().map((row) => {
+      {virtualItems.map((row) => {
         const card = cards[row.index];
-        const animate = staggerOn && row.index < STAGGER_CAP;
+        const animate = staggerOn && atTop && row.index < STAGGER_CAP;
         return (
           <li
             key={card.id}
