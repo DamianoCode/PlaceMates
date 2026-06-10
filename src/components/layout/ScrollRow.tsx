@@ -2,33 +2,20 @@
 
 import { useEffect, useRef, useState, type ComponentProps } from "react";
 
-const FADE = 24; // px width of each edge fade
-
-function maskFor(left: boolean, right: boolean): string {
-  if (left && right) {
-    return `linear-gradient(to right, transparent, black ${FADE}px, black calc(100% - ${FADE}px), transparent)`;
-  }
-  if (right) {
-    return `linear-gradient(to right, black calc(100% - ${FADE}px), transparent)`;
-  }
-  if (left) {
-    return `linear-gradient(to right, transparent, black ${FADE}px)`;
-  }
-  return "none";
-}
-
 /**
  * Horizontal scroll container (filter pill rows, chips) with scroll-aware
  * edge fades. A side fades only when content is actually hidden in that
  * direction: nothing at rest when everything fits, right-only at the
- * start of an overflowing row, left-only once scrolled to the end. This
- * avoids a static mask clipping the first/active pill when there's
- * nothing to scroll. Renders a <nav>; forwards aria-label, className, etc.
+ * start of an overflowing row, left-only once scrolled to the end.
+ *
+ * The fade is two gradient overlays whose opacity transitions — not a CSS
+ * mask. A mask can't tween between "none" and a gradient, so it would pop
+ * in/out; opacity animates smoothly. Renders a <nav> inside a relative
+ * wrapper; forwards aria-label, className, etc. to the <nav>.
  */
 export function ScrollRow({
   className,
   children,
-  style,
   ...rest
 }: ComponentProps<"nav">) {
   const ref = useRef<HTMLElement>(null);
@@ -55,15 +42,21 @@ export function ScrollRow({
     };
   }, []);
 
-  const mask = maskFor(edges.left, edges.right);
   return (
-    <nav
-      ref={ref}
-      className={className}
-      style={{ ...style, WebkitMaskImage: mask, maskImage: mask }}
-      {...rest}
-    >
-      {children}
-    </nav>
+    <div className="relative">
+      <nav ref={ref} className={className} {...rest}>
+        {children}
+      </nav>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent transition-opacity duration-200 ease-out"
+        style={{ opacity: edges.left ? 1 : 0 }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent transition-opacity duration-200 ease-out"
+        style={{ opacity: edges.right ? 1 : 0 }}
+      />
+    </div>
   );
 }
