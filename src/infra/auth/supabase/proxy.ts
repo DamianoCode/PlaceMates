@@ -49,6 +49,10 @@ export async function updateSession(request: NextRequest) {
     // obsługuje brak sesji friendly toastem).
     path === "/forgot-password" ||
     path === "/reset-password" ||
+    // Keep-warm / health ping — hit by an external cron without a session.
+    // The route handler stays open (or gated by CRON_SECRET); it must not
+    // be bounced to /login or the pinger gets a 307.
+    path === "/api/health" ||
     path === "/";
 
   if (!user && !isPublic) {
