@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
 import { getProfile } from "@/domain/profile/service";
 import { getNotificationPrefs } from "@/domain/push/service";
@@ -26,7 +26,7 @@ import { PushNotificationsCard } from "@/components/push/PushNotificationsCard";
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 
 export default async function MePage() {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   const [groups, profile, notificationPrefs] = user
     ? await Promise.all([
         listUserGroups(user.id),
