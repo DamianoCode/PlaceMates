@@ -31,17 +31,35 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
   // the layout settles. SSR-safe — defaults to 0 until we hit client.
   const [offset, setOffset] = useState(0);
 
-  // One-shot entrance stagger. Virtualised rows mount/unmount on scroll,
-  // so animating per-mount would re-fire on every scroll — a flashing
-  // mess. Instead we run the stagger only during a short window after
-  // first paint; after it closes, scroll-revealed rows just appear. This
-  // gives the "cards cascade in when I open the tab" feel without the
-  // anti-pattern.
-  const [staggerOn, setStaggerOn] = useState(true);
+  // Entrance cascade for the first screenful of cards. Three phases:
+  //   pending  – first-batch rows held at opacity 0 (pre-decision)
+  //   animate  – cascade plays (only when we open the list at the top)
+  //   static   – no animation; rows just show
+  //
+  // The decision is deferred one frame (rAF) so it runs AFTER Next has
+  // applied scroll restoration. That's the crux: on back-navigation Next
+  // restores a mid-list scroll, but it does so in an effect that runs
+  // *after* this component's first render — reading scroll synchronously
+  // would wrongly see the top and animate. By waiting a frame we read the
+  // settled position and only cascade when genuinely at the top (first
+  // load / fresh tab open). Holding first-batch rows at opacity 0 until
+  // the decision means flipping to animate/static never flickers; those
+  // rows are off-screen anyway when the scroll was restored mid-list.
+  const [phase, setPhase] = useState<"pending" | "animate" | "static">(
+    "pending",
+  );
   useEffect(() => {
-    const t = setTimeout(() => setStaggerOn(false), 800);
-    return () => clearTimeout(t);
+    const raf = requestAnimationFrame(() => {
+      setPhase(window.scrollY < 8 ? "animate" : "static");
+    });
+    return () => cancelAnimationFrame(raf);
   }, []);
+  useEffect(() => {
+    if (phase !== "animate") return;
+    // Close the window so scrolling back to the top later doesn't replay.
+    const t = setTimeout(() => setPhase("static"), 800);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   useEffect(() => {
     if (!listRef.current) return;
@@ -65,14 +83,6 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
   });
 
   const virtualItems = virtualizer.getVirtualItems();
-  // Only run the entrance stagger when the list mounts at the very top.
-  // On back-navigation Next restores the scroll position mid-list, so the
-  // first rendered row won't be index 0 — we skip the cascade and the
-  // list just appears, instead of animating the (now off-screen) first 8
-  // while the visible rows sit static. The brief first-paint race (top
-  // rendered before scroll restore jumps) is hidden by the RouteTransition
-  // view fade still ramping opacity from 0.
-  const atTop = virtualItems.length > 0 && virtualItems[0].index === 0;
 
   return (
     <ul
@@ -86,7 +96,17 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
     >
       {virtualItems.map((row) => {
         const card = cards[row.index];
-        const animate = staggerOn && atTop && row.index < STAGGER_CAP;
+        // Only the first screenful participates in the entrance; rows past
+        // the cap (and anything scrolled in later) always render normally.
+        const inFirstBatch = row.index < STAGGER_CAP;
+        const entrance =
+          inFirstBatch && phase === "pending"
+            ? { opacity: 0 }
+            : inFirstBatch && phase === "animate"
+              ? {
+                  animation: `pm-fade-up 240ms ease-out ${row.index * 40}ms both`,
+                }
+              : undefined;
         return (
           <li
             key={card.id}
@@ -105,15 +125,7 @@ export function PlacesVirtualList({ cards }: { cards: PlaceCardData[] }) {
              *  the <li> owns the virtualiser's positioning transform, and
              *  pm-fade-up animates transform too — animating both on the
              *  same element would make the card jump to the wrong spot. */}
-            <div
-              style={
-                animate
-                  ? {
-                      animation: `pm-fade-up 240ms ease-out ${row.index * 40}ms both`,
-                    }
-                  : undefined
-              }
-            >
+            <div style={entrance}>
               <PlaceCard place={card} />
             </div>
           </li>
