@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import { listUserGroups } from "@/domain/groups/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { listPlacesForUser } from "@/domain/places/service";
@@ -27,7 +27,7 @@ export default async function MapPage({
 }: {
   searchParams: Search;
 }) {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const groups = await listUserGroups(user.id);

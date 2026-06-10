@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import {
   filterStateToOptions,
   parsePlacesSearch,
@@ -17,7 +17,7 @@ export default async function PlacesPage({
 }: {
   searchParams: Promise<RawPlacesSearch>;
 }) {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const raw = await searchParams;

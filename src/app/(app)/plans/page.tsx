@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { Route, Sparkles } from "lucide-react";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import { listTripsForUser } from "@/domain/trips/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -22,7 +22,7 @@ import { NewTripButton } from "@/components/plans/NewTripButton";
  *     right, then sectioned card lists.
  */
 export default async function PlansPage() {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const [{ active, archived }, groups] = await Promise.all([
