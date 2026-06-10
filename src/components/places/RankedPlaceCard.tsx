@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { RankedPlace } from "@/domain/ranking/service";
-import { CategoryIcon } from "@/components/map/category-icons";
+import { CardThumb } from "@/components/places/CardThumb";
 import { StarRating } from "@/components/places/StarRating";
 
 /**
@@ -19,26 +19,16 @@ export function RankedPlaceCard({
   return (
     <Link
       href={`/ranking/${place.canonicalId}`}
-      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 active:scale-[0.985] active:bg-accent/50"
+      className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.985] active:bg-accent/50"
     >
       <div className="flex flex-col items-center justify-center">
         <span className="font-display text-2xl tabular-nums leading-none text-primary">
           #{rank}
         </span>
       </div>
-      <div
-        aria-hidden
-        className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
-      >
-        <CategoryIcon
-          slug={place.categoryHint}
-          size={24}
-          strokeWidth={1.5}
-          className="text-primary/70"
-        />
-      </div>
+      <CardThumb photoUrl={place.photoUrl} categorySlug={place.categoryHint} />
       <div className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
-        <p className="truncate font-display text-base leading-tight">
+        <p className="truncate font-display text-lg leading-tight">
           {place.name}
         </p>
         <div className="flex items-center gap-1.5 text-sm">
