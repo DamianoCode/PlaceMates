@@ -26,6 +26,7 @@ import {
   type ImportResult,
 } from "@/app/(app)/places/import-actions";
 import { fetchJson, HttpError } from "@/lib/fetch-json";
+import { plural } from "@/lib/plural";
 
 export type ImportCategory = { id: string; slug: string; name: string };
 
@@ -418,7 +419,9 @@ export function NearbyImportSheet({
     // At least one place landed. Report the full picture — added,
     // already-present, and anything that didn't make it — so a partial
     // result is never mistaken for a clean success.
-    const parts = [`Dodano ${inserted} ${inserted === 1 ? "miejsce" : "miejsc"}`];
+    const parts = [
+      `Dodano ${inserted} ${plural(inserted, ["miejsce", "miejsca", "miejsc"])}`,
+    ];
     if (skipped > 0) parts.push(`pominięto ${skipped} już dodanych`);
     if (failed > 0) parts.push(`${failed} się nie powiodło`);
     const message = parts.join(" · ");
@@ -554,7 +557,11 @@ export function NearbyImportSheet({
               <span className="inline-flex items-center gap-2 text-sm font-medium">
                 <ListFilter size={15} className="text-primary" />
                 {search?.slugs.length ?? 0}{" "}
-                {(search?.slugs.length ?? 0) === 1 ? "kategoria" : "kategorie"}
+                {plural(search?.slugs.length ?? 0, [
+                  "kategoria",
+                  "kategorie",
+                  "kategorii",
+                ])}
                 <span className="font-normal text-muted-foreground">
                   · zmień wybór
                 </span>
@@ -583,7 +590,7 @@ export function NearbyImportSheet({
                           ? "Brak dopasowań do filtra."
                           : filterText.trim()
                             ? `${visibleResults.length} z ${results.length}`
-                            : `${results.length} ${results.length === 1 ? "wynik" : "wyników"}`}
+                            : `${results.length} ${plural(results.length, ["wynik", "wyniki", "wyników"])}`}
                   </span>
                   {visibleResults.length > 0 && (
                     <button

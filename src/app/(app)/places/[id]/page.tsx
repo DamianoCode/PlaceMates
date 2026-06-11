@@ -201,7 +201,7 @@ export default async function PlaceDetailPage({
           </div>
 
           <div className="border-t border-border/40">
-            <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-3 no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_12px,black_calc(100%-12px),transparent)]">
+            <div className="flex items-center gap-1.5 overflow-x-auto px-4 py-3 no-scrollbar [mask-image:linear-gradient(to_right,black_calc(100%-20px),transparent)]">
               <NavigateButton
                 lat={place.lat}
                 lng={place.lng}

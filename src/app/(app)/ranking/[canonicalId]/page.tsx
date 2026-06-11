@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ExternalLink, MapPin, Star } from "lucide-react";
 import { getAuth } from "@/infra/auth";
+import { plural } from "@/lib/plural";
 import {
   findUserPlaceForCanonical,
   getCanonicalById,
@@ -77,7 +78,7 @@ export default async function CanonicalPlacePage({
                   <StarRating value={canonical.avg} size={18} />
                   <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/80">
                     {canonical.count}{" "}
-                    {canonical.count === 1 ? "ocena" : "ocen"}
+                    {plural(canonical.count, ["ocena", "oceny", "ocen"])}
                   </span>
                 </div>
               </div>

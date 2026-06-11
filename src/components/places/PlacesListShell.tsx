@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/plural";
 import { ScrollRow } from "@/components/layout/ScrollRow";
 import type {
   PlacesSortBy,
@@ -177,7 +178,7 @@ export function PlacesListShell({
              *  anchored to *something* the user is reading rather
              *  than floating in space. */}
             {isPending && <Loader2 size={12} className="animate-spin" />}
-            {count} {count === 1 ? "miejsce" : "miejsc"}
+            {count} {plural(count, ["miejsce", "miejsca", "miejsc"])}
           </span>
           <div className="inline-flex items-center gap-1">
             <button
