@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { Camera, Star, Trash2, UtensilsCrossed, Users } from "lucide-react";
 import { getCurrentUser } from "@/infra/auth";
+import { plural } from "@/lib/plural";
 import {
   getItemForUser,
   listItemPhotos,
@@ -92,7 +93,7 @@ export default async function ItemPage({
                 <StarRating value={avg} size={16} className="mt-1" />
                 <span className="mt-0.5 text-[11px] text-muted-foreground">
                   {ratings.length}{" "}
-                  {ratings.length === 1 ? "ocena" : "ocen"}
+                  {plural(ratings.length, ["ocena", "oceny", "ocen"])}
                 </span>
               </>
             ) : (

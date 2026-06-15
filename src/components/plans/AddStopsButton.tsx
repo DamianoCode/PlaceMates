@@ -12,6 +12,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Plus, Search, Sparkles } from "lucide-react";
+import { plural } from "@/lib/plural";
 import { toast } from "sonner";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
@@ -393,6 +394,5 @@ function EmptyHint() {
 }
 
 function plStops(n: number): string {
-  if (n === 1) return "stop";
-  return "stopów";
+  return plural(n, ["stop", "stopy", "stopów"]);
 }

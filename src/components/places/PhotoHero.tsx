@@ -30,8 +30,10 @@ export function PhotoHero({
   // wide desktop viewports. On narrow screens the aspect ratio drives;
   // once width * 9/16 would exceed the cap the element becomes a
   // cinematic wide panorama and object-cover trims the top/bottom.
+  // Applied to the <button> wrapping the cover so it's keyboard-focusable;
+  // object-cover lives on the inner <img>.
   const heroClasses =
-    "aspect-[16/9] max-h-[min(50vh,420px)] w-full rounded-2xl object-cover cursor-zoom-in";
+    "block aspect-[16/9] max-h-[min(50vh,420px)] w-full cursor-zoom-in overflow-hidden rounded-2xl";
 
   if (photos.length === 0) {
     return (
@@ -48,28 +50,40 @@ export function PhotoHero({
 
   return (
     <div className="space-y-2">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={cover.url}
-        alt=""
-        loading="lazy"
-        decoding="async"
-        className={heroClasses}
+      <button
+        type="button"
         onClick={() => openAt(cover.id)}
-      />
+        aria-label="Otwórz zdjęcie"
+        className={heroClasses}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={cover.url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      </button>
       {rest.length > 0 && (
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
           {rest.map((p) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <button
               key={p.id}
-              src={p.url}
-              alt=""
-              loading="lazy"
-              decoding="async"
+              type="button"
               onClick={() => openAt(p.id)}
-              className="h-20 w-20 flex-shrink-0 cursor-zoom-in rounded-xl object-cover"
-            />
+              aria-label="Otwórz zdjęcie"
+              className="h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.url}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
+              />
+            </button>
           ))}
         </div>
       )}

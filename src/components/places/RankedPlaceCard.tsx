@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Star } from "lucide-react";
 import type { RankedPlace } from "@/domain/ranking/service";
+import { plural } from "@/lib/plural";
 import { CardThumb } from "@/components/places/CardThumb";
 import { StarRating } from "@/components/places/StarRating";
 
@@ -37,7 +38,7 @@ export function RankedPlaceCard({
             {place.avg.toFixed(2)}
           </span>
           <span className="text-xs text-muted-foreground">
-            ({place.count} {place.count === 1 ? "ocena" : "ocen"})
+            ({place.count} {plural(place.count, ["ocena", "oceny", "ocen"])})
           </span>
         </div>
         <StarRating value={place.avg} size={12} />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronRight, Trophy, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
+import { plural } from "@/lib/plural";
 import {
   getGroupForUser,
   listGroupMembers,
@@ -46,7 +47,7 @@ export default async function GroupPage({
             canEdit={isOwner}
           />
           <p className="text-sm italic text-muted-foreground">
-            {members.length} {members.length === 1 ? "osoba" : "osób"} · założona{" "}
+            {members.length} {plural(members.length, ["osoba", "osoby", "osób"])} · założona{" "}
             {new Intl.DateTimeFormat("pl-PL", { dateStyle: "medium" }).format(
               group.createdAt,
             )}

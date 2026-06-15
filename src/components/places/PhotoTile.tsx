@@ -29,15 +29,21 @@ export function PhotoTile({
   const { openAt } = usePhotoOpener();
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={url}
-        alt=""
-        loading="lazy"
-        decoding="async"
+      <button
+        type="button"
         onClick={() => openAt(photoId)}
-        className="h-full w-full cursor-zoom-in object-cover"
-      />
+        aria-label="Otwórz zdjęcie"
+        className="block h-full w-full cursor-zoom-in"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+      </button>
       <CoverPhotoButton
         photoId={photoId}
         isCover={isCover}

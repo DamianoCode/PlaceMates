@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Check, MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/plural";
 import type { TripSummary } from "@/domain/trips/service";
 
 /**
@@ -111,6 +112,5 @@ function formatDate(d: Date): string {
 }
 
 function plStops(n: number): string {
-  if (n === 1) return "stop";
-  return "stopów";
+  return plural(n, ["stop", "stopy", "stopów"]);
 }

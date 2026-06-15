@@ -1,5 +1,6 @@
 import { Star, Users } from "lucide-react";
 import type { RatingByGroup } from "@/domain/ratings/service";
+import { plural } from "@/lib/plural";
 import {
   Card,
   CardContent,
@@ -56,7 +57,7 @@ export function RatingsByGroup({
                 </h3>
                 <span className="text-xs text-muted-foreground">
                   {bucket.ratings.length}{" "}
-                  {bucket.ratings.length === 1 ? "ocena" : "ocen"}
+                  {plural(bucket.ratings.length, ["ocena", "oceny", "ocen"])}
                 </span>
               </header>
               <ul className="space-y-2">
