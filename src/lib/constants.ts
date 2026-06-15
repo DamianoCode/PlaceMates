@@ -26,6 +26,19 @@ export const RANKING_CACHE_TTL_SECONDS = 60;
 /** Tag used by `unstable_cache` for ranking responses. */
 export const RANKING_CACHE_TAG = "ranking";
 
+// Group insights ----------------------------------------------------------
+
+/**
+ * Cache TTL for the per-group insight counters. Like the ranking
+ * aggregate, the numbers change at human pace — a stale minute is
+ * harmless. Place/rating mutations invalidate the tag eagerly; photo
+ * and visit counts self-heal within this window.
+ */
+export const INSIGHTS_CACHE_TTL_SECONDS = 60;
+
+/** Tag used by `unstable_cache` for group insight counters. */
+export const INSIGHTS_CACHE_TAG = "insights";
+
 // Map markers -------------------------------------------------------------
 
 /** Stagger between marker pop-ins (ms per marker, low index first). */

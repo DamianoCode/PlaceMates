@@ -1,4 +1,5 @@
 import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { db } from "@/infra/db/client";
 import { isNull } from "drizzle-orm";
 import {
@@ -12,6 +13,7 @@ import {
   ratings,
 } from "@/infra/db/schema";
 import { getStorage, PHOTO_BUCKET } from "@/infra/storage";
+import { INSIGHTS_CACHE_TAG } from "@/lib/constants";
 import type { BBox, CreatePlaceInput, UpdatePlaceInput } from "@/lib/validation/place";
 import { err, ok, type Result } from "../result";
 import {
@@ -272,6 +274,8 @@ export async function createPlace(
     })
     .returning({ id: places.id });
 
+  // Adding a place moves the group's place/category counters.
+  revalidateTag(INSIGHTS_CACHE_TAG, "max");
   return ok({ id: row.id });
 }
 
@@ -395,6 +399,7 @@ export async function bulkCreatePlaces(
   }));
 
   const inserted = await db.insert(places).values(values).returning({ id: places.id });
+  if (inserted.length > 0) revalidateTag(INSIGHTS_CACHE_TAG, "max");
   return ok({ inserted: inserted.length, skipped: items.length - inserted.length });
 }
 
@@ -799,5 +804,8 @@ export async function deletePlace(
   );
 
   await db.delete(places).where(eq(places.id, placeId));
+  // Removing a place (and its cascaded ratings/photos/visits) shifts
+  // every counter — drop the cached insights.
+  revalidateTag(INSIGHTS_CACHE_TAG, "max");
   return ok(null);
 }
