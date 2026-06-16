@@ -35,7 +35,6 @@ export default async function GroupFeedPage({
               Co się <em className="font-display italic text-primary">dzieje</em>.
             </>
           }
-          lede="Najnowsze ruchy w grupie — nowe miejsca, oceny, zdjęcia i plany."
         />
 
         {first.items.length === 0 ? (

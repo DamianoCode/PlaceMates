@@ -53,7 +53,6 @@ export default async function GroupInsightsPage({
               Wasze <em className="font-display italic text-primary">liczby</em>.
             </>
           }
-          lede="Podsumowanie tego, co wspólnie odkryliście i oceniliście w tej grupie."
         />
 
         {counts.places === 0 ? (
