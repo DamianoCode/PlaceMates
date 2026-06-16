@@ -18,12 +18,12 @@ export async function bootstrapProfileAndGroup(user: BootstrapUser): Promise<{
   isNewProfile: boolean;
 }> {
   // Profile: insert-or-skip (PK handles the duplicate).
-  const existingProfile = await db
-    .select({ id: profiles.id })
+  const [existingProfile] = await db
+    .select({ id: profiles.id, avatarUrl: profiles.avatarUrl })
     .from(profiles)
     .where(eq(profiles.id, user.id))
     .limit(1);
-  const isNewProfile = existingProfile.length === 0;
+  const isNewProfile = !existingProfile;
 
   if (isNewProfile) {
     await db
@@ -34,6 +34,17 @@ export async function bootstrapProfileAndGroup(user: BootstrapUser): Promise<{
         avatarUrl: user.avatarUrl,
       })
       .onConflictDoNothing();
+  } else if (!existingProfile.avatarUrl && user.avatarUrl) {
+    // Backfill the OAuth avatar for profiles minted before it was
+    // captured (the trigger / older bootstrap only set it on first
+    // insert). Only when empty — never clobber a custom uploaded avatar.
+    // Makes the Google picture available everywhere profiles.avatar_url
+    // is read (activity feed, group member lists), not just on /me where
+    // a `?? user.avatarUrl` fallback masked the gap.
+    await db
+      .update(profiles)
+      .set({ avatarUrl: user.avatarUrl })
+      .where(eq(profiles.id, user.id));
   }
 
   // Personal group: only mint one if the user doesn't already own a group.
