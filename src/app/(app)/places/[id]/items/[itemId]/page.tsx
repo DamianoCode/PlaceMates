@@ -33,16 +33,15 @@ export default async function ItemPage({
   if (!user) redirect("/login");
 
   const { id, itemId } = await params;
-  const [place, item] = await Promise.all([
+  // All four reads key off the route params (no inter-dependency) — fan
+  // them out in one batch instead of two sequential round-trips.
+  const [place, item, ratings, photos] = await Promise.all([
     getPlaceForUser(id, user.id),
     getItemForUser(itemId, user.id),
-  ]);
-  if (!place || !item || item.placeId !== id) notFound();
-
-  const [ratings, photos] = await Promise.all([
     listItemRatings(itemId, user.id),
     listItemPhotos(itemId, user.id),
   ]);
+  if (!place || !item || item.placeId !== id) notFound();
 
   const mine = ratings.find((r) => r.userId === user.id) ?? null;
   const others = ratings.filter((r) => r.userId !== user.id);

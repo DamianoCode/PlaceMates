@@ -28,6 +28,13 @@ export type YearTopMember = {
   total: number;
 };
 
+export type YearPhoto = {
+  url: string;
+  /** Intrinsic dimensions so the gallery can reserve each tile's box. */
+  width: number;
+  height: number;
+};
+
 export type YearMonth = {
   /** 1–12. */
   month: number;
@@ -51,8 +58,8 @@ export type YearReview = {
   topMember: YearTopMember | null;
   /** 12-element timeline, index 0 = January. */
   monthly: YearMonth[];
-  /** Public URLs of the year's photos for the masonry gallery. */
-  gallery: string[];
+  /** The year's photos (with dimensions) for the masonry gallery. */
+  gallery: YearPhoto[];
   /** Sum of `monthly` — drives the empty state + "X wydarzeń". */
   totalEvents: number;
 };
@@ -204,9 +211,10 @@ export async function getGroupYearReview(
     `),
 
     // The year's photos for the masonry gallery — cover shots first, then
-    // newest. Capped; the collage only needs a generous handful.
-    db.execute<{ path: string }>(sql`
-      SELECT ph.storage_path AS path
+    // newest. Width/height come along so the collage can reserve each
+    // tile's aspect ratio (no layout shift as images stream in).
+    db.execute<{ path: string; width: number; height: number }>(sql`
+      SELECT ph.storage_path AS path, ph.width, ph.height
         FROM photos ph JOIN places p ON p.id = ph.place_id
        WHERE p.group_id = ${groupId}
          AND ph.created_at >= ${start}::timestamptz AND ph.created_at < ${end}::timestamptz
@@ -236,11 +244,14 @@ export async function getGroupYearReview(
       }
     }
   }
-  const galleryPaths = galleryRows.map((r) => r.path);
   const storage =
-    photoBy.size > 0 || galleryPaths.length > 0 ? await getStorage() : null;
-  const gallery = storage
-    ? galleryPaths.map((p) => storage.publicUrl(PHOTO_BUCKET, p))
+    photoBy.size > 0 || galleryRows.length > 0 ? await getStorage() : null;
+  const gallery: YearPhoto[] = storage
+    ? galleryRows.map((r) => ({
+        url: storage.publicUrl(PHOTO_BUCKET, r.path),
+        width: Number(r.width),
+        height: Number(r.height),
+      }))
     : [];
 
   const toRanked = (r: RankedRow): RankedPlace => {

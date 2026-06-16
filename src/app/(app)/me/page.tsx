@@ -156,7 +156,7 @@ function NavRow({
       href={href}
       className="flex items-center gap-3 py-3 first:pt-0 last:pb-0 transition-colors hover:text-foreground"
     >
-      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
         {icon}
       </div>
       <div className="min-w-0 flex-1">

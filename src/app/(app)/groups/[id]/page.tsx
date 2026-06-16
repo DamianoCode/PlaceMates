@@ -26,6 +26,7 @@ import { InviteForm } from "@/components/groups/InviteForm";
 import { RenameGroupForm } from "@/components/groups/RenameGroupForm";
 import { MemberRow } from "@/components/groups/MemberRow";
 import { LeaveGroupForm } from "@/components/groups/LeaveGroupForm";
+import { StaggerList } from "@/components/layout/StaggerList";
 
 export default async function GroupPage({
   params,
@@ -61,7 +62,7 @@ export default async function GroupPage({
           </p>
         </div>
 
-        <div className="grid gap-2.5 sm:grid-cols-2">
+        <StaggerList as="div" className="grid gap-2.5 sm:grid-cols-2">
           <Link
             href={`/ranking?group=${group.id}`}
             className="group flex items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 transition-colors hover:border-primary/50"
@@ -145,7 +146,7 @@ export default async function GroupPage({
               className="flex-shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
             />
           </Link>
-        </div>
+        </StaggerList>
 
         <Card>
           <CardHeader>

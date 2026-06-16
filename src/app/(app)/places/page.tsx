@@ -10,6 +10,7 @@ import { listPlacesWithStats } from "@/domain/places/list-with-stats";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { listUserGroups } from "@/domain/groups/service";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { EditorialHeader } from "@/components/layout/EditorialHeader";
 import { PlacesBrowser } from "@/components/places/PlacesBrowser";
 
 export default async function PlacesPage({
@@ -56,6 +57,16 @@ export default async function PlacesPage({
     <>
       <PageHeader title="Miejsca" fallbackHref="/map" />
       <section className="mx-auto max-w-2xl space-y-4 p-4">
+        <EditorialHeader
+          eyebrow="Twoja kolekcja"
+          title={
+            <>
+              Wasz <em className="font-display italic text-primary">atlas</em>{" "}
+              miejsc.
+            </>
+          }
+          lede="Wszystko, co odkryliście — z ocenami, zdjęciami i listami. Filtruj i szukaj."
+        />
         <PlacesBrowser
           initialState={initialState}
           initialCards={initialCards}

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { GroupInsightCounts } from "@/domain/insights/service";
 import { plural } from "@/lib/plural";
+import { StaggerList } from "@/components/layout/StaggerList";
 
 /**
  * Headline counters for the group Insights dashboard. Server-rendered,
@@ -34,7 +35,7 @@ const COUNTERS: Counter[] = [
 
 export function CounterGrid({ counts }: { counts: GroupInsightCounts }) {
   return (
-    <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+    <StaggerList as="ul" className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
       {COUNTERS.map(({ key, icon: Icon, forms }) => {
         const value = counts[key];
         return (
@@ -54,6 +55,6 @@ export function CounterGrid({ counts }: { counts: GroupInsightCounts }) {
           </li>
         );
       })}
-    </ul>
+    </StaggerList>
   );
 }

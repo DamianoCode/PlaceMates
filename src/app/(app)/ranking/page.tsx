@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Trophy } from "lucide-react";
 import { getCurrentUser } from "@/infra/auth";
 import { listRankedPlaces } from "@/domain/ranking/service";
 import { listUserGroups } from "@/domain/groups/service";
@@ -8,6 +9,7 @@ import { EditorialHeader } from "@/components/layout/EditorialHeader";
 import { ScrollRow } from "@/components/layout/ScrollRow";
 import { StaggerList } from "@/components/layout/StaggerList";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
+import { EmptyState } from "@/components/layout/EmptyState";
 
 type Search = Promise<{ category?: string; group?: string }>;
 
@@ -136,7 +138,7 @@ export default async function RankingPage({
         </ScrollRow>
 
         {ranked.length === 0 ? (
-          <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">
+          <EmptyState icon={Trophy}>
             {activeGroup
               ? activeCategory
                 ? "Wasza grupa nie ma jeszcze ocen w tej kategorii."
@@ -144,7 +146,7 @@ export default async function RankingPage({
               : activeCategory
                 ? "Nikt jeszcze nie ocenił miejsca w tej kategorii."
                 : "Ranking czeka na pierwsze oceny."}
-          </p>
+          </EmptyState>
         ) : (
           <StaggerList as="ul" className="space-y-2">
             {ranked.map((place, i) => (

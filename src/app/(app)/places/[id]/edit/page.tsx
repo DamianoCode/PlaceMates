@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getAuth } from "@/infra/auth";
+import { getCurrentUser } from "@/infra/auth";
 import { canUserEditPlace, getPlaceForUser } from "@/domain/places/service";
 import { listCategoriesForGroup } from "@/domain/categories/service";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -18,16 +18,18 @@ export default async function EditPlacePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await (await getAuth()).getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const place = await getPlaceForUser(id, user.id);
+  // Both checks query membership independently — run them together.
+  const [place, allowed] = await Promise.all([
+    getPlaceForUser(id, user.id),
+    canUserEditPlace(id, user.id),
+  ]);
   if (!place) notFound();
-
   // Guard server-side — never render the edit form for unauthorized users
   // even if they typed the URL directly.
-  const allowed = await canUserEditPlace(id, user.id);
   if (!allowed) redirect(`/places/${id}`);
 
   const cats = await listCategoriesForGroup(place.groupId);
