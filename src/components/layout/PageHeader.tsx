@@ -31,7 +31,12 @@ export function PageHeader({
   }
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/85 px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] backdrop-blur">
+    <header
+      // Anchored across route cross-fades (see ::view-transition-group in
+      // globals.css) so the back button + title stay put instead of flickering.
+      style={{ viewTransitionName: "site-header" }}
+      className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/85 px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] backdrop-blur"
+    >
       <button
         type="button"
         onClick={handleBack}
