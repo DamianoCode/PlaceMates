@@ -1,10 +1,12 @@
 import { notFound, redirect } from "next/navigation";
+import { Activity } from "lucide-react";
 import { getCurrentUser } from "@/infra/auth";
 import { getGroupForUser } from "@/domain/groups/service";
 import { listActivityForGroup } from "@/domain/activity/service";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { EditorialHeader } from "@/components/layout/EditorialHeader";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
+import { EmptyState } from "@/components/layout/EmptyState";
 
 export default async function GroupFeedPage({
   params,
@@ -33,14 +35,13 @@ export default async function GroupFeedPage({
               Co się <em className="font-display italic text-primary">dzieje</em>.
             </>
           }
-          lede="Najnowsze ruchy w grupie — nowe miejsca, oceny, zdjęcia i plany."
         />
 
         {first.items.length === 0 ? (
-          <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">
+          <EmptyState icon={Activity}>
             Jeszcze nic się nie wydarzyło. Dodajcie miejsce albo wystawcie
             ocenę — pojawi się tutaj.
-          </p>
+          </EmptyState>
         ) : (
           <ActivityFeed
             groupId={id}

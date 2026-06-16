@@ -110,7 +110,6 @@ export async function listGroupMembers(
   groupId: string,
   userId: string,
 ): Promise<GroupMemberView[]> {
-  if (!(await isMember(groupId, userId))) return [];
   const rows = await db
     .select({
       userId: groupMembers.userId,
@@ -121,7 +120,17 @@ export async function listGroupMembers(
     })
     .from(groupMembers)
     .innerJoin(profiles, eq(profiles.id, groupMembers.userId))
-    .where(eq(groupMembers.groupId, groupId))
+    // Membership gate folded into the query (one round-trip instead of a
+    // separate isMember check): a non-member matches zero rows via the
+    // EXISTS, so callers still get [] without being able to list a group
+    // they don't belong to.
+    .where(
+      and(
+        eq(groupMembers.groupId, groupId),
+        sql`EXISTS (SELECT 1 FROM ${groupMembers} me
+                     WHERE me.group_id = ${groupId} AND me.user_id = ${userId})`,
+      ),
+    )
     // Owners first, then alphabetical by display name.
     .orderBy(desc(groupMembers.role), asc(profiles.displayName));
   return rows.map((r) => ({

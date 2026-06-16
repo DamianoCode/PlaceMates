@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { BarChart3, ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/infra/auth";
 import { getGroupForUser } from "@/domain/groups/service";
 import {
@@ -14,6 +14,7 @@ import { StaggerList } from "@/components/layout/StaggerList";
 import { RankedPlaceCard } from "@/components/places/RankedPlaceCard";
 import { CounterGrid } from "@/components/insights/CounterGrid";
 import { CategoryBreakdown } from "@/components/insights/CategoryBreakdown";
+import { EmptyState } from "@/components/layout/EmptyState";
 
 /** How many top places the dashboard previews before linking to the full ranking. */
 const TOP_PLACES_PREVIEW = 5;
@@ -52,14 +53,13 @@ export default async function GroupInsightsPage({
               Wasze <em className="font-display italic text-primary">liczby</em>.
             </>
           }
-          lede="Podsumowanie tego, co wspólnie odkryliście i oceniliście w tej grupie."
         />
 
         {counts.places === 0 ? (
-          <p className="rounded-2xl border border-dashed p-8 text-center text-sm italic text-muted-foreground">
+          <EmptyState icon={BarChart3}>
             Ta grupa nie ma jeszcze żadnych miejsc. Dodajcie pierwsze, a
             statystyki pojawią się tutaj.
-          </p>
+          </EmptyState>
         ) : (
           <>
             <CounterGrid counts={counts} />
