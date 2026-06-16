@@ -121,24 +121,22 @@ export function ActivityItem({ item }: { item: ActivityView }) {
   ) : null;
 
   return (
-    <li className="flex items-center gap-3 overflow-hidden rounded-2xl border bg-card p-3">
-      <div className="relative flex-shrink-0">
-        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-sm font-semibold text-primary">
-          {item.actorAvatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.actorAvatarUrl}
-              alt=""
-              loading="lazy"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            initials(item.actorName)
-          )}
-        </div>
-        <span className="absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
-          <Icon size={10} strokeWidth={2.25} />
-        </span>
+    <li className="flex items-center gap-3 rounded-2xl border bg-card p-3">
+      {/* Avatar — clean circle, no overlay. The type is conveyed by the
+       *  verb text plus the inline icon on the meta line below, so we
+       *  avoid the fragile absolutely-positioned corner badge entirely. */}
+      <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-sm font-semibold text-primary">
+        {item.actorAvatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={item.actorAvatarUrl}
+            alt=""
+            loading="lazy"
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          initials(item.actorName)
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -148,8 +146,14 @@ export function ActivityItem({ item }: { item: ActivityView }) {
           {subject ? <> {subject}</> : null}
           {d.tail ? <> {d.tail}</> : null}
         </p>
-        <p className="mt-0.5 text-xs text-muted-foreground/80">
-          {STAMP.format(item.createdAt)}
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/80">
+          <Icon
+            size={13}
+            strokeWidth={2}
+            className="flex-shrink-0 text-primary/70"
+            aria-hidden
+          />
+          <span className="tabular-nums">{STAMP.format(item.createdAt)}</span>
         </p>
       </div>
     </li>
