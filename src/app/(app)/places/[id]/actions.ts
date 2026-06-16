@@ -9,6 +9,7 @@ import { deleteRating, upsertRating } from "@/domain/ratings/service";
 import { addVisit, deleteVisit } from "@/domain/visits/service";
 import { addPhoto, deletePhoto, setCoverPhoto } from "@/domain/photos/service";
 import { pushRatingCreated } from "@/infra/push/events";
+import { recordPhotoAdded, recordRatingAdded } from "@/domain/activity/service";
 
 type ActionState = { error: string } | { ok: true } | null;
 
@@ -57,6 +58,7 @@ export async function submitRatingAction(
   // serverless instance alive until this resolves, but the user's
   // response has already been sent — zero added latency.
   after(() => pushRatingCreated(user.id, placeId, result.data.overall));
+  after(() => recordRatingAdded(user.id, placeId, result.data.overall));
   return { ok: true };
 }
 
@@ -102,6 +104,7 @@ export async function addPhotoAction(
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/places/${placeId}`);
+  after(() => recordPhotoAdded(user.id, placeId));
   return { ok: true };
 }
 

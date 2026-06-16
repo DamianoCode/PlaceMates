@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import { profiles } from "@/infra/db/schema";
 import { AVATAR_BUCKET, getStorage } from "@/infra/storage";
@@ -61,6 +61,32 @@ export async function updateAvatar(
     .where(eq(profiles.id, userId));
 
   return ok({ url });
+}
+
+/**
+ * One-time self-heal: copy the OAuth avatar (from auth metadata) into the
+ * profile row when it's still empty. Profiles minted before the avatar was
+ * captured kept a NULL `avatar_url`, which only `/me` masked via a
+ * `?? user.avatarUrl` fallback — the activity feed and group member lists
+ * read the column directly and showed initials.
+ *
+ * Guarded `WHERE avatar_url IS NULL`, so once healed it's a no-op and it
+ * never clobbers a custom uploaded avatar. Best-effort: callers invoke it
+ * via `after()` so a failure or the extra round-trip never touches the
+ * render path.
+ */
+export async function ensureProfileAvatar(
+  userId: string,
+  avatarUrl: string,
+): Promise<void> {
+  try {
+    await db
+      .update(profiles)
+      .set({ avatarUrl })
+      .where(and(eq(profiles.id, userId), isNull(profiles.avatarUrl)));
+  } catch (e) {
+    console.error("[profile] avatar self-heal failed:", e);
+  }
 }
 
 export async function clearAvatar(userId: string): Promise<Result<null>> {

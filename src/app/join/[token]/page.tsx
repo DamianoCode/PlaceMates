@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/infra/auth";
 import { acceptInvite } from "@/domain/groups/invites";
+import { recordMemberJoined } from "@/domain/activity/service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Invite acceptance is intentionally outside the (app) group so that the
@@ -19,7 +21,12 @@ export default async function JoinPage({
   if (!user) redirect(`/login?next=/join/${token}`);
 
   const result = await acceptInvite(token, user.id);
-  if (result.ok) redirect("/map");
+  if (result.ok) {
+    // Single-use invite → fires once per join. `after` defers the feed
+    // write past the redirect response (redirect() throws below).
+    after(() => recordMemberJoined(user.id, result.data.groupId));
+    redirect("/map");
+  }
 
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
