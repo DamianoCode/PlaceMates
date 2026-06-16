@@ -14,6 +14,7 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx --env-file=.env scripts/seed-categories.ts",
     "db:backfill-ratings": "tsx --env-file=.env scripts/backfill-ratings-overall.ts",
+    "db:backfill-avatars": "tsx --env-file=.env scripts/backfill-avatars.ts",
     "gen:icons": "tsx scripts/generate-icons.ts",
     "check:geoapify": "tsx --env-file=.env scripts/check-geoapify-categories.ts"
   },
