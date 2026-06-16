@@ -455,6 +455,12 @@ export const notificationPrefs = pgTable("notification_prefs", {
   stopCompleted: boolean("stop_completed").notNull().default(true),
   /** Ktoś z grupy dodał nowe miejsce. */
   newPlace: boolean("new_place").notNull().default(true),
+  /** Ktoś z grupy dodał zdjęcie do miejsca. */
+  photo: boolean("photo").notNull().default(true),
+  /** Ktoś z grupy utworzył nowy plan/wyprawę. */
+  trip: boolean("trip").notNull().default(true),
+  /** Ktoś dołączył do grupy. */
+  member: boolean("member").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

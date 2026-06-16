@@ -33,7 +33,18 @@ export default async function MePage() {
         getProfile(user.id),
         getNotificationPrefs(user.id),
       ])
-    : [[], null, { rating: true, stopCompleted: true, newPlace: true }];
+    : [
+        [],
+        null,
+        {
+          rating: true,
+          stopCompleted: true,
+          newPlace: true,
+          photo: true,
+          trip: true,
+          member: true,
+        },
+      ];
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
 

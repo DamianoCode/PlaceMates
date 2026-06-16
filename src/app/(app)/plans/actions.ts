@@ -19,7 +19,7 @@ import {
   type OptimizationPreview,
 } from "@/domain/trips/optimization";
 import { isRoutingProfile, type RoutingProfile } from "@/infra/routing/ors";
-import { pushStopCompleted } from "@/infra/push/events";
+import { pushStopCompleted, pushTripCreated } from "@/infra/push/events";
 import { recordStopCompleted, recordTripCreated } from "@/domain/activity/service";
 import { err, type Result } from "@/domain/result";
 
@@ -63,6 +63,9 @@ export async function createTripAction(input: {
   if (input.firstPlaceId) {
     revalidatePath(`/places/${input.firstPlaceId}`);
   }
+  after(() =>
+    pushTripCreated(user.id, result.data.id, input.groupId, input.name),
+  );
   after(() =>
     recordTripCreated(user.id, result.data.id, input.groupId, input.name),
   );
