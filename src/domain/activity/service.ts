@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, lt, or } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import {
   activities,
@@ -65,7 +65,12 @@ export async function recordPlaceAdded(
   });
 }
 
-/** Someone rated a place. Resolves the place's group + name from its id. */
+/**
+ * Someone rated a place. UPSERTS on (actor, place) so editing your score
+ * refreshes the single existing feed row (new value, bumped to the top)
+ * instead of stacking a fresh "ocenił(a)" line on every save. Resolves the
+ * place's group + name from its id.
+ */
 export async function recordRatingAdded(
   actorId: string,
   placeId: string,
@@ -78,13 +83,21 @@ export async function recordRatingAdded(
       .where(eq(places.id, placeId))
       .limit(1);
     if (!place) return;
-    await insertActivity({
-      type: "rating_added",
-      groupId: place.groupId,
-      actorId,
-      placeId,
-      metadata: { placeName: place.name, overall },
-    });
+    const metadata: ActivityMetadata = { placeName: place.name, overall };
+    await db
+      .insert(activities)
+      .values({
+        type: "rating_added",
+        groupId: place.groupId,
+        actorId,
+        placeId,
+        metadata,
+      })
+      .onConflictDoUpdate({
+        target: [activities.actorId, activities.placeId],
+        targetWhere: sql`${activities.type} = 'rating_added'`,
+        set: { metadata, createdAt: new Date() },
+      });
   } catch (e) {
     console.error("[activity] rating_added failed:", e);
   }

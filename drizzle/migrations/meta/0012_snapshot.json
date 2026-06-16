@@ -1,5 +1,5 @@
 {
-  "id": "d5935508-2192-4e4c-a411-36a54f0d584b",
+  "id": "28ca45e0-55b5-4936-9377-db438f187ad8",
   "prevId": "8302531a-6f19-4829-9a14-3fae2a7293eb",
   "version": "7",
   "dialect": "postgresql",
@@ -84,6 +84,28 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "activities_rating_actor_place_uk": {
+          "name": "activities_rating_actor_place_uk",
+          "columns": [
+            {
+              "expression": "actor_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "place_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"activities\".\"type\" = 'rating_added'",
           "concurrently": false,
           "method": "btree",
           "with": {}

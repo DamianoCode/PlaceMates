@@ -103,15 +103,6 @@ const STAMP = new Intl.DateTimeFormat("pl-PL", {
   minute: "2-digit",
 });
 
-// Skip rendering/layout for off-screen rows — cheap windowing without a
-// virtualizer (rule: rendering-content-visibility). `auto` remembers the
-// last measured height; the fallback keeps the scrollbar roughly right
-// before a row has been painted once.
-const CV_STYLE = {
-  contentVisibility: "auto",
-  containIntrinsicSize: "auto 76px",
-} as React.CSSProperties;
-
 export function ActivityItem({ item }: { item: ActivityView }) {
   const d = describe(item);
   const Icon = d.icon;
@@ -130,26 +121,23 @@ export function ActivityItem({ item }: { item: ActivityView }) {
   ) : null;
 
   return (
-    <li
-      style={CV_STYLE}
-      className="flex items-start gap-3 rounded-2xl border bg-card p-3"
-    >
+    <li className="flex items-center gap-3 overflow-hidden rounded-2xl border bg-card p-3">
       <div className="relative flex-shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 text-sm font-medium text-primary">
+        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-sm font-semibold text-primary">
           {item.actorAvatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={item.actorAvatarUrl}
               alt=""
               loading="lazy"
-              className="h-10 w-10 rounded-full object-cover"
+              className="h-full w-full object-cover"
             />
           ) : (
             initials(item.actorName)
           )}
         </div>
-        <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-background bg-muted text-primary">
-          <Icon size={11} strokeWidth={2} />
+        <span className="absolute -bottom-0.5 -right-0.5 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
+          <Icon size={10} strokeWidth={2.25} />
         </span>
       </div>
 

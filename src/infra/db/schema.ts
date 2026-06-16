@@ -617,5 +617,12 @@ export const activities = pgTable(
       t.createdAt,
       t.id,
     ),
+    // Re-rating a place must not spam the feed: rating_added upserts on
+    // (actor, place) so a score edit refreshes the existing row (latest
+    // value, bumped to top) instead of stacking duplicates. Partial — only
+    // rating rows participate; every other event type still appends freely.
+    uniqueIndex("activities_rating_actor_place_uk")
+      .on(t.actorId, t.placeId)
+      .where(sql`${t.type} = 'rating_added'`),
   ],
 );

@@ -13,4 +13,5 @@ ALTER TABLE "activities" ADD CONSTRAINT "activities_group_id_groups_id_fk" FOREI
 ALTER TABLE "activities" ADD CONSTRAINT "activities_actor_id_profiles_id_fk" FOREIGN KEY ("actor_id") REFERENCES "public"."profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "activities" ADD CONSTRAINT "activities_place_id_places_id_fk" FOREIGN KEY ("place_id") REFERENCES "public"."places"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "activities" ADD CONSTRAINT "activities_trip_id_trips_id_fk" FOREIGN KEY ("trip_id") REFERENCES "public"."trips"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "activities_group_created_idx" ON "activities" USING btree ("group_id","created_at","id");
+CREATE INDEX "activities_group_created_idx" ON "activities" USING btree ("group_id","created_at","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "activities_rating_actor_place_uk" ON "activities" USING btree ("actor_id","place_id") WHERE "activities"."type" = 'rating_added';
