@@ -83,8 +83,11 @@ export async function getGroupYearReview(
     requestedYear && Number.isFinite(requestedYear) ? requestedYear : maxYear;
   const year = Math.min(Math.max(want, minYear), maxYear);
 
-  const start = new Date(Date.UTC(year, 0, 1));
-  const end = new Date(Date.UTC(year + 1, 0, 1));
+  // ISO-string bounds (not Date objects): the postgres-js driver with
+  // `prepare: false` can't bind a raw Date as a parameter in db.execute —
+  // pass text + cast to timestamptz in SQL. UTC boundaries are fine here.
+  const start = `${year}-01-01T00:00:00Z`;
+  const end = `${year + 1}-01-01T00:00:00Z`;
 
   const [countRows, rankedRows, monthlyRows, memberRows] = await Promise.all([
     // Headline counters (same shape as Insights so CounterGrid is reused),
@@ -100,26 +103,26 @@ export async function getGroupYearReview(
       SELECT
         (SELECT COUNT(*)::int FROM places
           WHERE group_id = ${groupId}
-            AND created_at >= ${start} AND created_at < ${end}) AS places,
+            AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz) AS places,
         (SELECT COUNT(DISTINCT r.place_id)::int
            FROM ratings r JOIN places p ON p.id = r.place_id
           WHERE p.group_id = ${groupId}
-            AND r.created_at >= ${start} AND r.created_at < ${end}) AS rated,
+            AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz) AS rated,
         (SELECT COUNT(*)::int
            FROM ratings r JOIN places p ON p.id = r.place_id
           WHERE p.group_id = ${groupId}
-            AND r.created_at >= ${start} AND r.created_at < ${end}) AS ratings,
+            AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz) AS ratings,
         (SELECT COUNT(*)::int
            FROM visits v JOIN places p ON p.id = v.place_id
           WHERE p.group_id = ${groupId}
-            AND v.visited_at >= ${start} AND v.visited_at < ${end}) AS visits,
+            AND v.visited_at >= ${start}::timestamptz AND v.visited_at < ${end}::timestamptz) AS visits,
         (SELECT COUNT(*)::int
            FROM photos ph JOIN places p ON p.id = ph.place_id
           WHERE p.group_id = ${groupId}
-            AND ph.created_at >= ${start} AND ph.created_at < ${end}) AS photos,
+            AND ph.created_at >= ${start}::timestamptz AND ph.created_at < ${end}::timestamptz) AS photos,
         (SELECT COUNT(DISTINCT category_id)::int FROM places
           WHERE group_id = ${groupId}
-            AND created_at >= ${start} AND created_at < ${end}) AS categories
+            AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz) AS categories
     `),
 
     // Year-scoped ranking — full list (top 3 for the hero, all rows feed
@@ -137,7 +140,7 @@ export async function getGroupYearReview(
         JOIN places p  ON p.canonical_place_id = cp.id
         JOIN ratings r ON r.place_id = p.id
        WHERE p.group_id = ${groupId}
-         AND r.created_at >= ${start} AND r.created_at < ${end}
+         AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz
        GROUP BY cp.id
       HAVING COUNT(r.*) >= 1
        ORDER BY AVG(r.overall) DESC, COUNT(r.*) DESC
@@ -150,19 +153,19 @@ export async function getGroupYearReview(
         FROM (
           SELECT created_at AS ts FROM places
             WHERE group_id = ${groupId}
-              AND created_at >= ${start} AND created_at < ${end}
+              AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz
           UNION ALL
           SELECT r.created_at FROM ratings r JOIN places p ON p.id = r.place_id
             WHERE p.group_id = ${groupId}
-              AND r.created_at >= ${start} AND r.created_at < ${end}
+              AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz
           UNION ALL
           SELECT ph.created_at FROM photos ph JOIN places p ON p.id = ph.place_id
             WHERE p.group_id = ${groupId}
-              AND ph.created_at >= ${start} AND ph.created_at < ${end}
+              AND ph.created_at >= ${start}::timestamptz AND ph.created_at < ${end}::timestamptz
           UNION ALL
           SELECT v.visited_at FROM visits v JOIN places p ON p.id = v.place_id
             WHERE p.group_id = ${groupId}
-              AND v.visited_at >= ${start} AND v.visited_at < ${end}
+              AND v.visited_at >= ${start}::timestamptz AND v.visited_at < ${end}::timestamptz
         ) e
        GROUP BY 1
     `),
@@ -178,17 +181,17 @@ export async function getGroupYearReview(
         FROM (
           SELECT created_by AS uid, COUNT(*) AS cnt FROM places
             WHERE group_id = ${groupId}
-              AND created_at >= ${start} AND created_at < ${end}
+              AND created_at >= ${start}::timestamptz AND created_at < ${end}::timestamptz
            GROUP BY created_by
           UNION ALL
           SELECT r.user_id, COUNT(*) FROM ratings r JOIN places p ON p.id = r.place_id
             WHERE p.group_id = ${groupId}
-              AND r.created_at >= ${start} AND r.created_at < ${end}
+              AND r.created_at >= ${start}::timestamptz AND r.created_at < ${end}::timestamptz
            GROUP BY r.user_id
           UNION ALL
           SELECT ph.user_id, COUNT(*) FROM photos ph JOIN places p ON p.id = ph.place_id
             WHERE p.group_id = ${groupId}
-              AND ph.created_at >= ${start} AND ph.created_at < ${end}
+              AND ph.created_at >= ${start}::timestamptz AND ph.created_at < ${end}::timestamptz
            GROUP BY ph.user_id
         ) c
         JOIN profiles prof ON prof.id = c.uid
