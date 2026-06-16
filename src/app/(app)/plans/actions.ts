@@ -20,6 +20,7 @@ import {
 } from "@/domain/trips/optimization";
 import { isRoutingProfile, type RoutingProfile } from "@/infra/routing/ors";
 import { pushStopCompleted } from "@/infra/push/events";
+import { recordStopCompleted, recordTripCreated } from "@/domain/activity/service";
 import { err, type Result } from "@/domain/result";
 
 /**
@@ -62,6 +63,9 @@ export async function createTripAction(input: {
   if (input.firstPlaceId) {
     revalidatePath(`/places/${input.firstPlaceId}`);
   }
+  after(() =>
+    recordTripCreated(user.id, result.data.id, input.groupId, input.name),
+  );
   return result;
 }
 
@@ -215,6 +219,7 @@ export async function toggleStopCompletedAction(
   // Fire-and-forget push to other group members. `after` keeps the
   // serverless instance alive past response without adding latency.
   after(() => pushStopCompleted(user.id, stopId, result.data.completed));
+  after(() => recordStopCompleted(user.id, stopId, result.data.completed));
   return result;
 }
 

@@ -550,3 +550,72 @@ export const tripStops = pgTable(
     index("trip_stops_place_idx").on(t.placeId),
   ],
 );
+
+// Activity feed ----------------------------------------------------------
+//
+// Materialized event log — one row per noteworthy thing a member did in a
+// group (added a place, rated, uploaded a photo, planned/checked-off a
+// trip, joined). Deliberately a flat table rather than a UNION-over-tables
+// query at read time: that would be fragile (every new event source forks
+// the query) and slow (no single index can serve it).
+//
+// `metadata` SNAPSHOTS the human-readable bits (place/trip name, rating
+// value) at emit time so the feed renders without N+1 joins AND keeps
+// reading correctly after the referenced row is deleted — place_id /
+// trip_id go NULL on delete, the snapshot name survives.
+
+/** Discriminator for `activities.type`. Extend as new event sources opt in. */
+export const ACTIVITY_TYPES = [
+  "place_added",
+  "rating_added",
+  "photo_added",
+  "trip_created",
+  "trip_completed",
+  "member_joined",
+] as const;
+export type ActivityType = (typeof ACTIVITY_TYPES)[number];
+
+/** Snapshot payload — all optional; each type fills the fields it needs. */
+export type ActivityMetadata = {
+  placeName?: string;
+  tripName?: string;
+  /** Rating overall (rating_added). */
+  overall?: number;
+};
+
+export const activities = pgTable(
+  "activities",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ACTIVITY_TYPES }).notNull(),
+    /** Subject place, when relevant. NULL after the place is deleted —
+     *  metadata.placeName still renders the line. */
+    placeId: uuid("place_id").references(() => places.id, {
+      onDelete: "set null",
+    }),
+    /** Subject trip, when relevant. NULL after the trip is deleted. */
+    tripId: uuid("trip_id").references(() => trips.id, {
+      onDelete: "set null",
+    }),
+    metadata: jsonb("metadata").$type<ActivityMetadata>().notNull().default({}),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (t) => [
+    // Keyset pagination reads `WHERE group_id = ? ORDER BY created_at DESC,
+    // id DESC`. A plain ascending (group_id, created_at, id) btree serves
+    // that via a backward index scan — no DESC index needed.
+    index("activities_group_created_idx").on(
+      t.groupId,
+      t.createdAt,
+      t.id,
+    ),
+  ],
+);
