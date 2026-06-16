@@ -22,18 +22,23 @@ export type PushSubscriptionPayload = {
   keys: { p256dh: string; auth: string };
 };
 
-export type NotificationKind = "rating" | "stopCompleted" | "newPlace";
+export type NotificationKind =
+  | "rating"
+  | "stopCompleted"
+  | "newPlace"
+  | "photo"
+  | "trip"
+  | "member";
 
-export type NotificationPrefs = {
-  rating: boolean;
-  stopCompleted: boolean;
-  newPlace: boolean;
-};
+export type NotificationPrefs = Record<NotificationKind, boolean>;
 
 const DEFAULT_PREFS: NotificationPrefs = {
   rating: true,
   stopCompleted: true,
   newPlace: true,
+  photo: true,
+  trip: true,
+  member: true,
 };
 
 export async function addSubscription(
@@ -122,6 +127,9 @@ export async function getNotificationPrefs(
     rating: row.rating,
     stopCompleted: row.stopCompleted,
     newPlace: row.newPlace,
+    photo: row.photo,
+    trip: row.trip,
+    member: row.member,
   };
 }
 
@@ -142,6 +150,9 @@ export async function setNotificationPref(
       rating: next.rating,
       stopCompleted: next.stopCompleted,
       newPlace: next.newPlace,
+      photo: next.photo,
+      trip: next.trip,
+      member: next.member,
     })
     .onConflictDoUpdate({
       target: notificationPrefs.userId,
@@ -149,6 +160,9 @@ export async function setNotificationPref(
         rating: next.rating,
         stopCompleted: next.stopCompleted,
         newPlace: next.newPlace,
+        photo: next.photo,
+        trip: next.trip,
+        member: next.member,
         updatedAt: new Date(),
       },
     });

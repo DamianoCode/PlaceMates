@@ -56,6 +56,21 @@ const PREF_ROWS: PrefRow[] = [
     label: "Nowe miejsce w grupie",
     hint: "Asia dodała kawiarnię „Piramida Smaku”.",
   },
+  {
+    kind: "photo",
+    label: "Nowe zdjęcie",
+    hint: "Marek dodał zdjęcie do „Bramy Spotkań”.",
+  },
+  {
+    kind: "trip",
+    label: "Nowy plan w grupie",
+    hint: "Asia zaplanowała „Weekend w Krakowie”.",
+  },
+  {
+    kind: "member",
+    label: "Nowy członek grupy",
+    hint: "Kasia dołączyła do grupy.",
+  },
 ];
 
 export function PushNotificationsCard({

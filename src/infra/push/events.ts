@@ -142,3 +142,110 @@ export async function pushPlaceCreated(
     console.error("[push] place-created event failed", err);
   }
 }
+
+/** Someone (`actorId`) added a photo to `placeId`. Notify every other
+ *  group member. Resolves the place's group + name from its id. */
+export async function pushPhotoAdded(
+  actorId: string,
+  placeId: string,
+): Promise<void> {
+  try {
+    const [place] = await db
+      .select({ groupId: places.groupId, name: places.name })
+      .from(places)
+      .where(eq(places.id, placeId))
+      .limit(1);
+    if (!place) return;
+
+    const members = await db
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, place.groupId));
+
+    const [actor] = await db
+      .select({ displayName: profiles.displayName })
+      .from(profiles)
+      .where(eq(profiles.id, actorId))
+      .limit(1);
+
+    await sendToUsersExcept(
+      members.map((m) => m.userId),
+      actorId,
+      "photo",
+      {
+        title: "Nowe zdjęcie w grupie",
+        body: `${actor?.displayName ?? "Ktoś"} dodał(a) zdjęcie do ${place.name}.`,
+        url: `/places/${placeId}`,
+      },
+    );
+  } catch (err) {
+    console.error("[push] photo-added event failed", err);
+  }
+}
+
+/** Someone (`actorId`) created a trip. Notify every other group member.
+ *  Group id + name are known at the call site. */
+export async function pushTripCreated(
+  actorId: string,
+  tripId: string,
+  groupId: string,
+  tripName: string,
+): Promise<void> {
+  try {
+    const members = await db
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    const [actor] = await db
+      .select({ displayName: profiles.displayName })
+      .from(profiles)
+      .where(eq(profiles.id, actorId))
+      .limit(1);
+
+    await sendToUsersExcept(
+      members.map((m) => m.userId),
+      actorId,
+      "trip",
+      {
+        title: "Nowy plan w grupie",
+        body: `${actor?.displayName ?? "Ktoś"} zaplanował(a) „${tripName}”.`,
+        url: `/plans/${tripId}`,
+      },
+    );
+  } catch (err) {
+    console.error("[push] trip-created event failed", err);
+  }
+}
+
+/** Someone (`actorId`) joined `groupId`. Notify every existing member. */
+export async function pushMemberJoined(
+  actorId: string,
+  groupId: string,
+): Promise<void> {
+  try {
+    const members = await db
+      .select({ userId: groupMembers.userId })
+      .from(groupMembers)
+      .where(eq(groupMembers.groupId, groupId));
+
+    const [actor] = await db
+      .select({ displayName: profiles.displayName })
+      .from(profiles)
+      .where(eq(profiles.id, actorId))
+      .limit(1);
+
+    await sendToUsersExcept(
+      members.map((m) => m.userId),
+      actorId,
+      "member",
+      {
+        title: "Nowy członek grupy",
+        body: `${actor?.displayName ?? "Ktoś"} dołączył(a) do grupy.`,
+        url: `/groups/${groupId}`,
+      },
+    );
+  } catch (err) {
+    console.error("[push] member-joined event failed", err);
+  }
+}

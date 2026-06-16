@@ -8,7 +8,7 @@ import { getPlaceForUser } from "@/domain/places/service";
 import { deleteRating, upsertRating } from "@/domain/ratings/service";
 import { addVisit, deleteVisit } from "@/domain/visits/service";
 import { addPhoto, deletePhoto, setCoverPhoto } from "@/domain/photos/service";
-import { pushRatingCreated } from "@/infra/push/events";
+import { pushPhotoAdded, pushRatingCreated } from "@/infra/push/events";
 import { recordPhotoAdded, recordRatingAdded } from "@/domain/activity/service";
 
 type ActionState = { error: string } | { ok: true } | null;
@@ -104,6 +104,7 @@ export async function addPhotoAction(
   if (!result.ok) return { error: result.error };
 
   revalidatePath(`/places/${placeId}`);
+  after(() => pushPhotoAdded(user.id, placeId));
   after(() => recordPhotoAdded(user.id, placeId));
   return { ok: true };
 }
