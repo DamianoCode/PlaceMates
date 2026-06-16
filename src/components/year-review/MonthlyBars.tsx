@@ -1,30 +1,24 @@
 import { cn } from "@/lib/utils";
+import { plural } from "@/lib/plural";
 import type { YearMonth } from "@/domain/year-review/service";
 
 const MONTHS_PL = [
-  "sty",
-  "lut",
-  "mar",
-  "kwi",
-  "maj",
-  "cze",
-  "lip",
-  "sie",
-  "wrz",
-  "paź",
-  "lis",
-  "gru",
+  "sty", "lut", "mar", "kwi", "maj", "cze",
+  "lip", "sie", "wrz", "paź", "lis", "gru",
+];
+const MONTHS_FULL = [
+  "styczeń", "luty", "marzec", "kwiecień", "maj", "czerwiec",
+  "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień",
 ];
 
 /**
- * 12-bar monthly activity timeline — the recap's signature visual. Bar
- * height is proportional to that month's contributions; the busiest month
- * is highlighted in full primary, the rest in a tint. Pure CSS, no chart
- * lib (mobile/bundle), server-rendered.
+ * Yearly activity timeline — 12 gradient bars, the busiest month crowned in
+ * full saturation with its count called out above and named in the caption.
+ * It's a visualization (not a month picker): the caption + value labels make
+ * that unmistakable. Pure CSS, server-rendered.
  */
 export function MonthlyBars({ months }: { months: YearMonth[] }) {
   const max = months.reduce((m, x) => Math.max(m, x.count), 0) || 1;
-  // Index of the busiest month (first one wins on ties); -1 when empty.
   let peak = -1;
   let peakCount = 0;
   months.forEach((mo, i) => {
@@ -36,38 +30,60 @@ export function MonthlyBars({ months }: { months: YearMonth[] }) {
 
   return (
     <div>
-      <div className="flex h-32 items-end gap-1">
+      <div className="flex h-44 items-end gap-1.5">
         {months.map((mo, i) => {
-          const h = mo.count === 0 ? 0 : Math.max(6, (mo.count / max) * 100);
+          const h = mo.count === 0 ? 2 : Math.max(9, (mo.count / max) * 100);
+          const isPeak = i === peak && mo.count > 0;
           return (
-            <div key={mo.month} className="flex h-full flex-1 items-end">
+            <div
+              key={mo.month}
+              className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
+            >
+              {isPeak && (
+                <span className="font-display text-sm font-semibold tabular-nums text-primary">
+                  {mo.count}
+                </span>
+              )}
               <div
                 className={cn(
-                  "w-full rounded-t-md transition-colors",
-                  i === peak ? "bg-primary" : "bg-primary/25",
+                  "w-full rounded-md bg-gradient-to-t transition-colors",
+                  isPeak
+                    ? "from-primary to-amber-400 shadow-sm shadow-primary/30"
+                    : "from-primary/30 to-primary/10",
                 )}
                 style={{ height: `${h}%` }}
-                title={`${MONTHS_PL[i]}: ${mo.count}`}
               />
             </div>
           );
         })}
       </div>
-      <div className="mt-1.5 flex gap-1">
+
+      <div className="mt-2 flex gap-1.5">
         {months.map((mo, i) => (
           <span
             key={mo.month}
             className={cn(
-              "flex-1 text-center text-[9px] tabular-nums",
+              "flex-1 text-center text-[11px]",
               i === peak
-                ? "font-medium text-primary"
-                : "text-muted-foreground/70",
+                ? "font-semibold text-foreground"
+                : "text-muted-foreground/60",
             )}
           >
             {MONTHS_PL[i]}
           </span>
         ))}
       </div>
+
+      {peak >= 0 && (
+        <p className="mt-5 text-sm text-muted-foreground">
+          Najgorętszy miesiąc:{" "}
+          <span className="font-medium text-foreground">
+            {MONTHS_FULL[peak]}
+          </span>{" "}
+          — {peakCount}{" "}
+          {plural(peakCount, ["wydarzenie", "wydarzenia", "wydarzeń"])}.
+        </p>
+      )}
     </div>
   );
 }

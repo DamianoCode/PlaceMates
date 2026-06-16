@@ -51,6 +51,8 @@ export type YearReview = {
   topMember: YearTopMember | null;
   /** 12-element timeline, index 0 = January. */
   monthly: YearMonth[];
+  /** Public URLs of the year's photos for the masonry gallery. */
+  gallery: string[];
   /** Sum of `monthly` — drives the empty state + "X wydarzeń". */
   totalEvents: number;
 };
@@ -89,7 +91,8 @@ export async function getGroupYearReview(
   const start = `${year}-01-01T00:00:00Z`;
   const end = `${year + 1}-01-01T00:00:00Z`;
 
-  const [countRows, rankedRows, monthlyRows, memberRows] = await Promise.all([
+  const [countRows, rankedRows, monthlyRows, memberRows, galleryRows] =
+    await Promise.all([
     // Headline counters (same shape as Insights so CounterGrid is reused),
     // each confined to the year window.
     db.execute<{
@@ -199,6 +202,17 @@ export async function getGroupYearReview(
        ORDER BY total DESC
        LIMIT 1
     `),
+
+    // The year's photos for the masonry gallery — cover shots first, then
+    // newest. Capped; the collage only needs a generous handful.
+    db.execute<{ path: string }>(sql`
+      SELECT ph.storage_path AS path
+        FROM photos ph JOIN places p ON p.id = ph.place_id
+       WHERE p.group_id = ${groupId}
+         AND ph.created_at >= ${start}::timestamptz AND ph.created_at < ${end}::timestamptz
+       ORDER BY ph.is_cover DESC, ph.created_at DESC
+       LIMIT 18
+    `),
   ]);
 
   // Cover photos for the top-3 canonicals (cover-first, newest-next),
@@ -222,7 +236,12 @@ export async function getGroupYearReview(
       }
     }
   }
-  const storage = photoBy.size > 0 ? await getStorage() : null;
+  const galleryPaths = galleryRows.map((r) => r.path);
+  const storage =
+    photoBy.size > 0 || galleryPaths.length > 0 ? await getStorage() : null;
+  const gallery = storage
+    ? galleryPaths.map((p) => storage.publicUrl(PHOTO_BUCKET, p))
+    : [];
 
   const toRanked = (r: RankedRow): RankedPlace => {
     const path = photoBy.get(r.id);
@@ -291,6 +310,7 @@ export async function getGroupYearReview(
     categories: buildCategoryBreakdown(rankedForBreakdown),
     topMember,
     monthly,
+    gallery,
     totalEvents,
   };
 }
