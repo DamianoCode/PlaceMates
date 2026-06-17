@@ -1,18 +1,48 @@
+"use client";
+
 import Link from "next/link";
 import { Bookmark, Heart, Star, Users } from "lucide-react";
 import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats";
 import { CardThumb } from "@/components/places/CardThumb";
 
+/**
+ * Arm the shared-element morph: stamp the static `place-hero` name onto the
+ * tapped card's thumbnail right before navigation, so the browser captures
+ * it as the morph source and flies it into the detail hero (same name on
+ * the loading skeleton + the real hero). Only the clicked card carries the
+ * name — the list never collides. Cleared after the transition window in
+ * case navigation is cancelled (modifier-click / new tab bail early).
+ */
+function armMorph(e: React.MouseEvent<HTMLAnchorElement>) {
+  if (
+    e.defaultPrevented ||
+    e.button !== 0 ||
+    e.metaKey ||
+    e.ctrlKey ||
+    e.shiftKey ||
+    e.altKey
+  ) {
+    return;
+  }
+  const thumb = e.currentTarget.querySelector<HTMLElement>("[data-vt-thumb]");
+  if (!thumb) return;
+  thumb.style.viewTransitionName = "place-hero";
+  window.setTimeout(() => {
+    thumb.style.viewTransitionName = "";
+  }, 600);
+}
+
 export function PlaceCard({ place }: { place: PlaceCardData }) {
   return (
     <Link
       href={`/places/${place.id}`}
+      onClick={armMorph}
       className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.985] active:bg-accent/50"
     >
       <CardThumb
         photoUrl={place.photoUrl}
         categorySlug={place.categorySlug}
-        vtName={`place-photo-${place.id}`}
+        morphable
       />
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">

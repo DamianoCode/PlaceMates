@@ -9,9 +9,14 @@ import { ArrowLeft } from "lucide-react";
 export function PageSkeleton({
   rows = 3,
   withHero = false,
+  heroVtName,
 }: {
   rows?: number;
   withHero?: boolean;
+  /** When set, names the hero placeholder so a shared-element morph from a
+   *  list card lands on it (the real hero carries the same name). Lets the
+   *  morph fire on the FIRST painted frame instead of waiting for content. */
+  heroVtName?: string;
 }) {
   return (
     <>
@@ -26,7 +31,10 @@ export function PageSkeleton({
       </header>
       <section className="mx-auto max-w-2xl space-y-4 p-4">
         {withHero && (
-          <div className="aspect-[16/9] max-h-[min(50vh,420px)] w-full animate-pulse rounded-2xl bg-muted" />
+          <div
+            style={heroVtName ? { viewTransitionName: heroVtName } : undefined}
+            className="aspect-[16/9] max-h-[min(50vh,420px)] w-full animate-pulse rounded-2xl bg-muted"
+          />
         )}
         {Array.from({ length: rows }).map((_, i) => (
           <div

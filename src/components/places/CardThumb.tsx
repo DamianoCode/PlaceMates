@@ -16,14 +16,16 @@ export function CardThumb({
   photoUrl,
   categorySlug,
   className,
-  vtName,
+  morphable,
 }: {
   photoUrl: string | null;
   categorySlug: string | null;
   className?: string;
-  /** When set, names this thumbnail for a shared-element morph into the
-   *  detail hero (matching `view-transition-name` on both ends). */
-  vtName?: string;
+  /** Marks this thumbnail as the source of a shared-element morph into the
+   *  detail hero. The `view-transition-name` is set imperatively on click
+   *  (PlaceCard) — not here — so only the tapped card carries it and the
+   *  list never has colliding names. */
+  morphable?: boolean;
 }) {
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
@@ -41,7 +43,7 @@ export function CardThumb({
   return (
     <div
       aria-hidden
-      style={vtName ? { viewTransitionName: vtName } : undefined}
+      data-vt-thumb={morphable ? "" : undefined}
       className={cn(
         "relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted",
         className,
