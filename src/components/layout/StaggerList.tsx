@@ -13,18 +13,17 @@ import type { CSSProperties, ElementType, ReactElement } from "react";
 const CAP = 8;
 
 /**
- * One-shot staggered fade-up entrance for a non-virtualised list (ranking,
- * plans). The cascade plays only when the list mounts at the top of the
- * page — a fresh tab navigation — and never replays on:
+ * One-shot staggered fade-up entrance for a list (ranking, plans, places).
+ * The cascade plays only when the list mounts at the top of the page — a
+ * fresh tab navigation — and never replays on:
  *   - filter changes (search-param navigation re-renders the server
  *     component but doesn't remount this client component, so `phase`
  *     stays "static"), or
  *   - back-navigation to a restored mid-list scroll (the rAF check sees
  *     scrollY > 0 and skips straight to "static").
  *
- * Mirrors the guard in PlacesVirtualList; the difference is this clones a
- * static child list instead of virtualised rows. The decision is deferred
- * one frame so it runs after Next has applied scroll restoration.
+ * Clones each direct child to stamp the entrance style. The decision is
+ * deferred one frame so it runs after Next has applied scroll restoration.
  */
 export function StaggerList({
   as: Tag = "div",

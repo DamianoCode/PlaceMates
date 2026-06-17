@@ -16,7 +16,7 @@ import {
 import type { PlaceCard as PlaceCardData } from "@/domain/places/list-with-stats";
 import { PlaceSearchInput } from "./PlaceSearchInput";
 import { PlacesListShell } from "./PlacesListShell";
-import { PlacesVirtualList } from "./PlacesVirtualList";
+import { PlacesList } from "./PlacesList";
 
 type Category = { id: string; name: string };
 type GroupOption = { id: string; name: string };
@@ -133,7 +133,7 @@ export function PlacesBrowser({
             isFetching && "opacity-50",
           )}
         >
-          <PlacesVirtualList cards={cards} />
+          <PlacesList cards={cards} />
         </div>
       )}
     </>
