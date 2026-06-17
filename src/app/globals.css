@@ -252,15 +252,16 @@
  * <ViewTransition enter="slide-up" default="none"> in the page. The enter
  * is delayed so the exit clears first. Sticky header is excluded (its own
  * site-header group above doesn't animate). */
+/* Single-direction motion reads smoother: the skeleton just fades out in
+ * place (no counter-slide), and the content glides up into it with a long,
+ * soft ease-out. */
 ::view-transition-old(.slide-down) {
-  animation:
-    150ms ease-out both vt-fade reverse,
-    150ms ease-out both vt-rise reverse;
+  animation: 200ms ease both vt-fade reverse;
 }
 ::view-transition-new(.slide-up) {
   animation:
-    240ms ease-out 120ms both vt-fade,
-    360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-rise;
+    320ms ease-out 70ms both vt-fade,
+    460ms cubic-bezier(0.16, 1, 0.3, 1) both vt-rise;
 }
 @keyframes vt-fade {
   from {
@@ -272,7 +273,7 @@
 }
 @keyframes vt-rise {
   from {
-    transform: translateY(14px);
+    transform: translateY(16px);
   }
   to {
     transform: translateY(0);
