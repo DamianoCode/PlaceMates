@@ -34,8 +34,11 @@ export function PageHeader({
     <header
       // Anchored across route cross-fades (see ::view-transition-group in
       // globals.css) so the back button + title stay put instead of flickering.
+      // Solid (no backdrop-blur): View Transitions rasterize this header into
+      // a snapshot during the animation, and backdrop-filter makes that
+      // snapshot's text blurry until the live DOM returns.
       style={{ viewTransitionName: "site-header" }}
-      className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/85 px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] backdrop-blur"
+      className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
     >
       <button
         type="button"
