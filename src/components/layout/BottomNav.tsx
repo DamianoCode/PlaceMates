@@ -28,7 +28,12 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Nawigacja główna"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
+      // Anchored as its own View Transition group (see ::view-transition-group
+      // in globals.css) so the page content's snapshot/slide during a route
+      // or reveal transition never briefly covers it. Solid background (no
+      // backdrop-blur) keeps that snapshot crisp, matching PageHeader.
+      style={{ viewTransitionName: "bottom-nav" }}
+      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background pb-[env(safe-area-inset-bottom)]"
     >
       <ul className="mx-auto flex max-w-xl items-stretch justify-between">
         {ITEMS.map(({ href, label, icon: Icon }) => {
