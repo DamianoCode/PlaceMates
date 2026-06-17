@@ -245,6 +245,20 @@
   animation: none;
 }
 
+/* Bottom nav: anchored the same way so the page content's snapshot/slide
+ * during a transition never briefly covers it. z-index above the content
+ * groups keeps it on top throughout. */
+::view-transition-group(bottom-nav) {
+  animation: none;
+  z-index: 60;
+}
+::view-transition-old(bottom-nav) {
+  display: none;
+}
+::view-transition-new(bottom-nav) {
+  animation: none;
+}
+
 /* Suspense reveal on detail pages: as real content replaces the loading
  * skeleton, the old skeleton slides down + fades out and the new content
  * slides up + fades in — a "content arrives" handoff. Paired via
