@@ -8,7 +8,9 @@ import "./globals.css";
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
+  // 700 dropped — no `font-bold` usage in the app (display weight comes
+  // from the variable Fraunces). Fewer font files to fetch.
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
