@@ -1,5 +1,10 @@
+import { ViewTransition } from "react";
 import { PageSkeleton } from "@/components/layout/PageSkeleton";
 
 export default function Loading() {
-  return <PageSkeleton rows={2} withHero />;
+  return (
+    <ViewTransition exit="slide-down" default="none">
+      <PageSkeleton rows={2} withHero />
+    </ViewTransition>
+  );
 }

@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import { notFound, redirect } from "next/navigation";
 import { Camera, Star, Trash2, UtensilsCrossed, Users } from "lucide-react";
 import { getCurrentUser } from "@/infra/auth";
@@ -52,7 +53,9 @@ export default async function ItemPage({
   const canDelete = item.createdBy === user.id;
 
   return (
-    <>
+    // Suspense reveal: content glides up + fades in over the skeleton
+    // (pairs with the place-detail loading.tsx that covers this route).
+    <ViewTransition enter="slide-up" default="none">
       <PageHeader
         title={item.name}
         subtitle={place.name}
@@ -187,6 +190,6 @@ export default async function ItemPage({
         )}
         </PhotoGallery>
       </section>
-    </>
+    </ViewTransition>
   );
 }

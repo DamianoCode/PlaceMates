@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ExternalLink, MapPin, Star } from "lucide-react";
@@ -34,7 +35,8 @@ export default async function CanonicalPlacePage({
   const userPlace = await findUserPlaceForCanonical(canonicalId, user.id);
 
   return (
-    <>
+    // Suspense reveal: content glides up + fades in over the skeleton.
+    <ViewTransition enter="slide-up" default="none">
       <PageHeader title="Ranking" fallbackHref="/ranking" />
       <section className="mx-auto max-w-2xl space-y-6 p-4">
         {/* Hero: big category icon + name + score. */}
@@ -133,6 +135,6 @@ export default async function CanonicalPlacePage({
           </CardContent>
         </Card>
       </section>
-    </>
+    </ViewTransition>
   );
 }

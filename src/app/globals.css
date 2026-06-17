@@ -220,6 +220,66 @@
   }
 }
 
+/* Native View Transitions (experimental.viewTransition). The browser
+ * snapshots the old + new page and cross-fades the root — smoother than
+ * the old remount fade, with no flash of empty layout. Opacity-only (no
+ * directional slide) so the map's WebGL canvas and the sticky header don't
+ * get shoved around. Query-string updates (map pan, filters via
+ * replaceState) aren't Transitions, so they don't animate. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+}
+
+/* Anchor the sticky header: it carries the back button + title and would
+ * flicker if it cross-faded. Show the new one immediately, hide the old. */
+::view-transition-group(site-header) {
+  animation: none;
+  z-index: 50;
+}
+::view-transition-old(site-header) {
+  display: none;
+}
+::view-transition-new(site-header) {
+  animation: none;
+}
+
+/* Suspense reveal on detail pages: as real content replaces the loading
+ * skeleton, the old skeleton slides down + fades out and the new content
+ * slides up + fades in — a "content arrives" handoff. Paired via
+ * <ViewTransition exit="slide-down"> in loading.tsx and
+ * <ViewTransition enter="slide-up" default="none"> in the page. The enter
+ * is delayed so the exit clears first. Sticky header is excluded (its own
+ * site-header group above doesn't animate). */
+/* Single-direction motion reads smoother: the skeleton just fades out in
+ * place (no counter-slide), and the content glides up into it with a long,
+ * soft ease-out. */
+::view-transition-old(.slide-down) {
+  animation: 200ms ease both vt-fade reverse;
+}
+::view-transition-new(.slide-up) {
+  animation:
+    320ms ease-out 70ms both vt-fade,
+    460ms cubic-bezier(0.16, 1, 0.3, 1) both vt-rise;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vt-rise {
+  from {
+    transform: translateY(16px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 /* Respect a user's reduced-motion preference system-wide. */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -233,6 +293,15 @@
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
+  }
+
+  /* The * rule above can't reach browser-generated VT pseudo-elements —
+   * snap them instead of cross-fading. */
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
 

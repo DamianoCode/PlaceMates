@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
   // edge cases (camera RAW, very tall panoramas) so the user never
   // sees the opaque "Body exceeded limit" Next error.
   experimental: {
+    // Native View Transitions: wraps every <Link> navigation in
+    // document.startViewTransition, so route changes cross-fade via the
+    // browser (snapshots old + new page) instead of the old remount fade.
+    // Graceful no-op on browsers without support.
+    viewTransition: true,
     serverActions: {
       bodySizeLimit: "10mb",
     },
