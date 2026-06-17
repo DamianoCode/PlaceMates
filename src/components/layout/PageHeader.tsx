@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
+import {
+  PAGE_HEADER_CLASS,
+  PAGE_HEADER_VT_STYLE,
+} from "@/components/layout/page-header-style";
 
 /**
  * Sticky top bar with a platform-style back button. Prefers router.back()
@@ -31,15 +35,7 @@ export function PageHeader({
   }
 
   return (
-    <header
-      // Anchored across route cross-fades (see ::view-transition-group in
-      // globals.css) so the back button + title stay put instead of flickering.
-      // Solid (no backdrop-blur): View Transitions rasterize this header into
-      // a snapshot during the animation, and backdrop-filter makes that
-      // snapshot's text blurry until the live DOM returns.
-      style={{ viewTransitionName: "site-header" }}
-      className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background px-3 py-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)]"
-    >
+    <header style={PAGE_HEADER_VT_STYLE} className={PAGE_HEADER_CLASS}>
       <button
         type="button"
         onClick={handleBack}

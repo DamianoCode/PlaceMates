@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import { notFound, redirect } from "next/navigation";
 import { CalendarDays, Check, Users } from "lucide-react";
 import { getAuth } from "@/infra/auth";
@@ -44,7 +45,8 @@ export default async function TripDetailPage({
   const allDone = total > 0 && completedCount === total;
 
   return (
-    <>
+    // Suspense reveal: content glides up + fades in over the skeleton.
+    <ViewTransition enter="slide-up" default="none">
       <PageHeader
         title={trip.name}
         fallbackHref="/plans"
@@ -126,7 +128,7 @@ export default async function TripDetailPage({
           addableCandidates={addableCandidates}
         />
       </section>
-    </>
+    </ViewTransition>
   );
 }
 
