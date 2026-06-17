@@ -245,6 +245,40 @@
   animation: none;
 }
 
+/* Suspense reveal on detail pages: as real content replaces the loading
+ * skeleton, the old skeleton slides down + fades out and the new content
+ * slides up + fades in — a "content arrives" handoff. Paired via
+ * <ViewTransition exit="slide-down"> in loading.tsx and
+ * <ViewTransition enter="slide-up" default="none"> in the page. The enter
+ * is delayed so the exit clears first. Sticky header is excluded (its own
+ * site-header group above doesn't animate). */
+::view-transition-old(.slide-down) {
+  animation:
+    150ms ease-out both vt-fade reverse,
+    150ms ease-out both vt-rise reverse;
+}
+::view-transition-new(.slide-up) {
+  animation:
+    240ms ease-out 120ms both vt-fade,
+    360ms cubic-bezier(0.22, 1, 0.36, 1) both vt-rise;
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vt-rise {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 /* Respect a user's reduced-motion preference system-wide. */
 @media (prefers-reduced-motion: reduce) {
   *,

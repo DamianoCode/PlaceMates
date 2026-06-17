@@ -1,3 +1,4 @@
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -108,7 +109,10 @@ export default async function PlaceDetailPage({
   ).length;
 
   return (
-    <>
+    // Suspense reveal: when this content replaces the loading skeleton, it
+    // slides up + fades in (paired with the skeleton's exit slide-down).
+    // `default="none"` so it only fires on the reveal, not other transitions.
+    <ViewTransition enter="slide-up" default="none">
       <PageHeader
         title={place.name}
         subtitle={category?.name}
@@ -132,7 +136,6 @@ export default async function PlaceDetailPage({
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}
-          vtName="place-hero"
         />
 
         <div className="-mt-2">
@@ -339,6 +342,6 @@ export default async function PlaceDetailPage({
         </Card>
         </PhotoGallery>
       </section>
-    </>
+    </ViewTransition>
   );
 }
