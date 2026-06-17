@@ -13,30 +13,29 @@ import { CardThumb } from "@/components/places/CardThumb";
  * name — the list never collides. Cleared after the transition window in
  * case navigation is cancelled (modifier-click / new tab bail early).
  */
-function armMorph(e: React.MouseEvent<HTMLAnchorElement>) {
-  if (
-    e.defaultPrevented ||
-    e.button !== 0 ||
-    e.metaKey ||
-    e.ctrlKey ||
-    e.shiftKey ||
-    e.altKey
-  ) {
+function armMorph(e: React.PointerEvent<HTMLAnchorElement>) {
+  // Primary button only; let modifier-clicks (new tab / window) fall through
+  // without a name.
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
     return;
   }
   const thumb = e.currentTarget.querySelector<HTMLElement>("[data-vt-thumb]");
   if (!thumb) return;
+  // Set on pointer-down — earlier than click + navigation — so the name is
+  // on the DOM before the browser snapshots the old page for the transition.
   thumb.style.viewTransitionName = "place-hero";
+  // Clear after the transition window: covers a scroll gesture (pointer-down
+  // with no navigation) and a cancelled nav, so no stale name lingers.
   window.setTimeout(() => {
     thumb.style.viewTransitionName = "";
-  }, 600);
+  }, 700);
 }
 
 export function PlaceCard({ place }: { place: PlaceCardData }) {
   return (
     <Link
       href={`/places/${place.id}`}
-      onClick={armMorph}
+      onPointerDown={armMorph}
       className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.985] active:bg-accent/50"
     >
       <CardThumb
