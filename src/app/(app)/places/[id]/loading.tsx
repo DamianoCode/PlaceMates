@@ -7,7 +7,7 @@ import { PageSkeleton } from "@/components/layout/PageSkeleton";
  *  the content visibly arrives when the data resolves. */
 export default function PlaceLoading() {
   return (
-    <ViewTransition exit="slide-down">
+    <ViewTransition exit="slide-down" default="none">
       <PageSkeleton withHero rows={5} />
     </ViewTransition>
   );
