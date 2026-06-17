@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // React Compiler: auto-memoizes components/hooks at build time (via
+  // babel-plugin-react-compiler, applied by Next's SWC only to JSX/hook
+  // files). Removes the need for hand-written useMemo/useCallback/memo and
+  // cuts unnecessary re-renders app-wide — especially on hot interactions
+  // like map pan and filter pill rows.
+  reactCompiler: true,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },
