@@ -9,7 +9,11 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
       href={`/places/${place.id}`}
       className="group flex items-stretch gap-3 overflow-hidden rounded-2xl border bg-card p-3 transition duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.985] active:bg-accent/50"
     >
-      <CardThumb photoUrl={place.photoUrl} categorySlug={place.categorySlug} />
+      <CardThumb
+        photoUrl={place.photoUrl}
+        categorySlug={place.categorySlug}
+        vtName={`place-photo-${place.id}`}
+      />
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div className="min-w-0">

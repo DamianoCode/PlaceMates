@@ -132,6 +132,7 @@ export default async function PlaceDetailPage({
         <PlaceHero
           photos={photos.map((p) => ({ id: p.id, url: p.url }))}
           categorySlug={category?.slug ?? null}
+          vtName={`place-photo-${id}`}
         />
 
         <div className="-mt-2">

@@ -15,13 +15,17 @@ type Photo = { id: string; url: string };
 export function PlaceHero({
   photos,
   categorySlug,
+  vtName,
 }: {
   photos: Photo[];
   categorySlug: string | null;
+  /** Shared-element morph name, forwarded to the cover (see PhotoHero). */
+  vtName?: string;
 }) {
   return (
     <PhotoHero
       photos={photos}
+      vtName={vtName}
       fallback={
         <CategoryIcon
           slug={categorySlug}

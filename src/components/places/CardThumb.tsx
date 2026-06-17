@@ -16,10 +16,14 @@ export function CardThumb({
   photoUrl,
   categorySlug,
   className,
+  vtName,
 }: {
   photoUrl: string | null;
   categorySlug: string | null;
   className?: string;
+  /** When set, names this thumbnail for a shared-element morph into the
+   *  detail hero (matching `view-transition-name` on both ends). */
+  vtName?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
   const ref = useRef<HTMLImageElement>(null);
@@ -37,6 +41,7 @@ export function CardThumb({
   return (
     <div
       aria-hidden
+      style={vtName ? { viewTransitionName: vtName } : undefined}
       className={cn(
         "relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted",
         className,

@@ -19,12 +19,18 @@ type Photo = { id: string; url: string };
 export function PhotoHero({
   photos,
   fallback,
+  vtName,
 }: {
   photos: Photo[];
   /** Rendered centred in the empty-state gradient when photos is empty. */
   fallback: ReactNode;
+  /** When set, names the cover box for a shared-element morph from the
+   *  list card (same `view-transition-name` on both ends → the thumbnail
+   *  flies into the hero on navigation). */
+  vtName?: string;
 }) {
   const { openAt } = usePhotoOpener();
+  const vtStyle = vtName ? { viewTransitionName: vtName } : undefined;
 
   // aspect-[16/9] + max-height prevents the hero from ballooning on
   // wide desktop viewports. On narrow screens the aspect ratio drives;
@@ -39,6 +45,7 @@ export function PhotoHero({
     return (
       <div
         aria-hidden
+        style={vtStyle}
         className="flex aspect-[16/9] max-h-[min(50vh,420px)] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
       >
         {fallback}
@@ -54,6 +61,7 @@ export function PhotoHero({
         type="button"
         onClick={() => openAt(cover.id)}
         aria-label="Otwórz zdjęcie"
+        style={vtStyle}
         className={heroClasses}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
