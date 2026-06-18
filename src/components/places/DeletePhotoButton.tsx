@@ -55,9 +55,9 @@ export function DeletePhotoButton({
           disabled={pending}
           aria-label="Usuń zdjęcie"
           title="Usuń zdjęcie"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-background/70 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-destructive/90 hover:text-destructive-foreground"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-background/70 text-muted-foreground backdrop-blur-sm transition-all hover:bg-destructive/90 hover:text-destructive-foreground active:scale-95"
         >
-          <Trash2 size={14} strokeWidth={2} />
+          <Trash2 size={16} strokeWidth={2} />
         </button>
       </form>
       <ConfirmDialog

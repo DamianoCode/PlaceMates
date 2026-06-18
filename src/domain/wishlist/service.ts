@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/infra/db/client";
 import { groupMembers, places, wishlist } from "@/infra/db/schema";
 import { err, ok, type Result } from "../result";
@@ -50,11 +50,17 @@ export type WishlistItem = {
 };
 
 export async function listWishlistForUser(userId: string): Promise<WishlistItem[]> {
+  // Coordinates come straight out of the same query — PostGIS
+  // ST_Y/ST_X on the geography point, matching how places/service.ts
+  // projects lat/lng. (An earlier version returned 0,0 placeholders,
+  // which dropped every wishlist pin onto Null Island off Africa.)
   const rows = await db
     .select({
       placeId: places.id,
       name: places.name,
       categoryId: places.categoryId,
+      lat: sql<number>`ST_Y(${places.location}::geometry)::float8`,
+      lng: sql<number>`ST_X(${places.location}::geometry)::float8`,
       addedAt: wishlist.addedAt,
     })
     .from(wishlist)
@@ -63,17 +69,7 @@ export async function listWishlistForUser(userId: string): Promise<WishlistItem[
     .where(and(eq(wishlist.userId, userId), eq(groupMembers.userId, userId)))
     .orderBy(desc(wishlist.addedAt));
 
-  // Fetch coords in a separate round-trip via raw SQL for the same ids.
-  // Small list, so correlated lookup is fine.
-  if (rows.length === 0) return [];
-  return rows.map((r) => ({
-    placeId: r.placeId,
-    name: r.name,
-    categoryId: r.categoryId,
-    addedAt: r.addedAt,
-    lat: 0,
-    lng: 0,
-  }));
+  return rows;
 }
 
 /** Place ids the user has wishlisted — cheap lookup for filters/UI. */

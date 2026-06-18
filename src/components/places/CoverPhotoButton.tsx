@@ -56,14 +56,14 @@ export function CoverPhotoButton({
         aria-label={optimistic ? "Zdjęcie główne" : "Ustaw jako wizytówkę"}
         title={optimistic ? "Wizytówka" : "Ustaw jako wizytówkę"}
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-full backdrop-blur-sm transition-all",
+          "flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-all active:scale-95",
           optimistic
             ? "bg-primary text-primary-foreground shadow-md"
             : "bg-background/70 text-muted-foreground hover:bg-background hover:text-foreground",
         )}
       >
         <Star
-          size={14}
+          size={16}
           strokeWidth={2}
           fill={optimistic ? "currentColor" : "none"}
         />

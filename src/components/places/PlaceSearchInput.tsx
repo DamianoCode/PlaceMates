@@ -53,7 +53,7 @@ export function PlaceSearchInput({
           type="button"
           onClick={() => setValue("")}
           aria-label="Wyczyść"
-          className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
         >
           <X size={14} />
         </button>

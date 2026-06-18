@@ -10,6 +10,8 @@
  * Free tier: 3000 req/day shared with the geocoder.
  */
 
+import { fetchWithTimeout } from "./fetch-with-timeout";
+
 const BASE = "https://api.geoapify.com/v2/places";
 
 type GeoapifyPlace = {
@@ -179,10 +181,11 @@ export async function geoapifyPlacesByCategories(
   url.searchParams.set("lang", "pl");
   url.searchParams.set("apiKey", apiKey);
 
-  const res = await fetch(url, {
-    headers: { Accept: "application/json" },
-    cache: "no-store",
-  });
+  const res = await fetchWithTimeout(
+    url,
+    { headers: { Accept: "application/json" }, cache: "no-store" },
+    8000,
+  );
   if (!res.ok) return [];
   const data = (await res.json()) as GeoapifyResponse;
   const out: GeoapifyPoi[] = [];

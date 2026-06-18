@@ -217,6 +217,21 @@ self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "pm-replay-now") {
     event.waitUntil(replayMutations());
   }
+  // Logout: wipe every cache that can hold private content (rendered
+  // pages, RSC payloads, photos). STATIC stays — it's only the app
+  // shell + icons. Without this, a logged-out user on a shared phone
+  // could, while offline, still see the previous account's places
+  // served straight from cache. The SW outlives the page that posted
+  // this, so the wipe completes even as we redirect to /login.
+  if (event.data && event.data.type === "pm-clear-private-caches") {
+    event.waitUntil(
+      Promise.all([
+        caches.delete(PAGES_CACHE),
+        caches.delete(RSC_CACHE),
+        caches.delete(PHOTOS_CACHE),
+      ]),
+    );
+  }
 });
 
 async function replayMutations() {

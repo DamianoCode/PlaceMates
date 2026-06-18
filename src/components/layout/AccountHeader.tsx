@@ -145,6 +145,14 @@ export function AccountHeader({
           size="icon"
           aria-label="Wyloguj"
           title="Wyloguj"
+          onClick={() => {
+            // Tell the service worker to drop caches holding private
+            // content before the session ends — protects the next user
+            // on a shared device from seeing this account offline.
+            navigator.serviceWorker?.controller?.postMessage({
+              type: "pm-clear-private-caches",
+            });
+          }}
         >
           <LogOut size={18} />
         </Button>
