@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   // cuts unnecessary re-renders app-wide — especially on hot interactions
   // like map pan and filter pill rows.
   reactCompiler: true,
+  // Cache-busting version for the service worker, read client-side and
+  // passed to register() as `?v=`. Per-deploy on Vercel (commit SHA);
+  // a stable local fallback otherwise. A changed value rotates the SW
+  // cache names so its activate step purges the previous generation
+  // rather than serving stale /_next/static chunks after a release.
+  env: {
+    NEXT_PUBLIC_SW_VERSION:
+      process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ??
+      `local-${process.env.npm_package_version ?? "0"}`,
+  },
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "*.supabase.co" },

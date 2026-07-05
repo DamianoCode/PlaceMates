@@ -1,4 +1,5 @@
 import type { PoiResult, PoiSearch } from "./provider";
+import { fetchWithTimeout } from "./fetch-with-timeout";
 
 const BASE = "https://nominatim.openstreetmap.org";
 
@@ -62,7 +63,7 @@ export function createNominatim(userAgent: string): PoiSearch {
         // bounded=0 (default) keeps far hits as a tail; bias is a
         // ranking nudge, not a hard restrict.
       }
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return [];
       const data = (await res.json()) as NominatimHit[];
       return data.map(toResult);
@@ -74,7 +75,7 @@ export function createNominatim(userAgent: string): PoiSearch {
       url.searchParams.set("lon", String(lng));
       url.searchParams.set("format", "jsonv2");
       url.searchParams.set("addressdetails", "1");
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return null;
       const data = (await res.json()) as NominatimHit;
       if (!data.osm_id) return null;

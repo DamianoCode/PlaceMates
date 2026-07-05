@@ -56,7 +56,7 @@ export function SpeedDial({
             <li
               key={a.id}
               className="flex items-center gap-2.5"
-              style={{ animation: `speed-dial-in 160ms ${i * 30}ms both ease-out` }}
+              style={{ animation: `pm-speed-dial-in 160ms ${i * 30}ms both ease-out` }}
             >
               <span className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur">
                 {a.label}
@@ -91,19 +91,6 @@ export function SpeedDial({
       >
         <Plus size={26} strokeWidth={2.25} />
       </button>
-
-      <style jsx>{`
-        @keyframes speed-dial-in {
-          from {
-            opacity: 0;
-            transform: translateY(8px) scale(0.85);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-      `}</style>
     </div>
   );
 }

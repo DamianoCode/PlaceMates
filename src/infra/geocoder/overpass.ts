@@ -6,6 +6,8 @@
  * Fair-use: keep timeouts short, avoid huge bboxes, cache server-side.
  */
 
+import { fetchWithTimeout } from "./fetch-with-timeout";
+
 const ENDPOINTS = [
   "https://overpass-api.de/api/interpreter",
   "https://overpass.kumi.systems/api/interpreter",
@@ -137,7 +139,7 @@ function buildQuery(
   // area to a representative point so we can pin it without resolving
   // every member node.
   return (
-    `[out:json][timeout:25];` +
+    `[out:json][timeout:15];` +
     `(${clausesFor("node")});out ${cap};` +
     `(${clausesFor("way")}${clausesFor("relation")});out center ${cap};`
   );
@@ -293,12 +295,19 @@ export async function overpassSearchByCategories(
 
   for (const endpoint of ENDPOINTS) {
     try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: `data=${encodeURIComponent(query)}`,
-        cache: "no-store",
-      });
+      const res = await fetchWithTimeout(
+        endpoint,
+        {
+          method: "POST",
+          headers,
+          body: `data=${encodeURIComponent(query)}`,
+          cache: "no-store",
+        },
+        // Client abort sits just above the server-side [timeout:15] so
+        // we never kill a query the server would still answer; it only
+        // catches a black-holed connection that the directive can't.
+        18000,
+      );
       if (!res.ok) continue;
       const data = (await res.json()) as OverpassResponse;
       const out: OverpassPoi[] = [];

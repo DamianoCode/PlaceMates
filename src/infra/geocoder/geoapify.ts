@@ -1,4 +1,5 @@
 import type { PoiResult, PoiSearch } from "./provider";
+import { fetchWithTimeout } from "./fetch-with-timeout";
 
 /**
  * Geoapify Geocoding API (https://www.geoapify.com/geocoding-api).
@@ -113,7 +114,7 @@ export function createGeoapify(apiKey: string, lang = "pl"): PoiSearch {
           `proximity:${opts.bias.lng},${opts.bias.lat}`,
         );
       }
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return [];
       const data = (await res.json()) as GeoapifyResponse;
       return (data.features ?? [])
@@ -127,7 +128,7 @@ export function createGeoapify(apiKey: string, lang = "pl"): PoiSearch {
       url.searchParams.set("lon", String(lng));
       url.searchParams.set("lang", lang);
       url.searchParams.set("apiKey", apiKey);
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return null;
       const data = (await res.json()) as GeoapifyResponse;
       const first = data.features?.[0];

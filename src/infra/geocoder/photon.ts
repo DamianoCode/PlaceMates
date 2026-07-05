@@ -1,4 +1,5 @@
 import type { PoiResult, PoiSearch } from "./provider";
+import { fetchWithTimeout } from "./fetch-with-timeout";
 
 /**
  * Photon (https://photon.komoot.io) — OSM-backed search with better
@@ -87,7 +88,7 @@ export function createPhoton(userAgent: string, defaultLang = "pl"): PoiSearch {
         // the page but reliably puts the user's neighbourhood first.
         url.searchParams.set("location_bias_scale", "1.6");
       }
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return [];
       const data = (await res.json()) as PhotonResponse;
       return (data.features ?? []).filter((f) => f.properties?.name).map(toResult);
@@ -98,7 +99,7 @@ export function createPhoton(userAgent: string, defaultLang = "pl"): PoiSearch {
       url.searchParams.set("lat", String(lat));
       url.searchParams.set("lon", String(lng));
       url.searchParams.set("lang", defaultLang);
-      const res = await fetch(url, { headers, cache: "no-store" });
+      const res = await fetchWithTimeout(url, { headers, cache: "no-store" });
       if (!res.ok) return null;
       const data = (await res.json()) as PhotonResponse;
       const first = data.features?.[0];

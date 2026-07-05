@@ -741,7 +741,7 @@ export function NearbyImportSheet({
                         type="button"
                         onClick={() => setFilterText("")}
                         aria-label="Wyczyść filtr"
-                        className="absolute top-1/2 right-2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                        className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
                       >
                         <X size={14} />
                       </button>

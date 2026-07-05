@@ -17,7 +17,12 @@
  * future-you will debug at midnight when offline behaves weirdly.
  */
 
-const CACHE_VERSION = "v1";
+// Cache generation is stamped per deploy via the `?v=` query the client
+// registers the SW with (see ServiceWorkerRegistration + next.config env).
+// A changed version means new cache names, so the activate handler below
+// purges the previous generation instead of serving stale /_next/static
+// chunks forever after a release. Falls back to "v1" if no query present.
+const CACHE_VERSION = new URL(self.location.href).searchParams.get("v") || "v1";
 const STATIC_CACHE = `pm-static-${CACHE_VERSION}`;
 const PAGES_CACHE = `pm-pages-${CACHE_VERSION}`;
 const PHOTOS_CACHE = `pm-photos-${CACHE_VERSION}`;
@@ -54,9 +59,12 @@ self.addEventListener("install", (event) => {
       );
     })(),
   );
-  // Activate immediately on first install so the new SW handles
-  // the next page load instead of waiting for tab close.
-  self.skipWaiting();
+  // No skipWaiting() here. On a *first* install (no controller yet) the
+  // SW activates immediately anyway. On an *update* it deliberately stays
+  // in "waiting" so we never swap versioned assets under a page that's
+  // already running the old ones (the cause of mid-session hydration
+  // skew). ServiceWorkerRegistration detects the waiting worker, prompts
+  // the user, and only then sends `pm-skip-waiting` (handled below).
 });
 
 self.addEventListener("activate", (event) => {
@@ -214,8 +222,28 @@ self.addEventListener("sync", (event) => {
 // Periodic Sync isn't reliable either. As a fallback we replay on
 // `online` events from inside the SW.
 self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "pm-skip-waiting") {
+    // User tapped "Odśwież" in the update prompt — promote this waiting
+    // SW to active now instead of waiting until every old tab closes.
+    self.skipWaiting();
+  }
   if (event.data && event.data.type === "pm-replay-now") {
     event.waitUntil(replayMutations());
+  }
+  // Logout: wipe every cache that can hold private content (rendered
+  // pages, RSC payloads, photos). STATIC stays — it's only the app
+  // shell + icons. Without this, a logged-out user on a shared phone
+  // could, while offline, still see the previous account's places
+  // served straight from cache. The SW outlives the page that posted
+  // this, so the wipe completes even as we redirect to /login.
+  if (event.data && event.data.type === "pm-clear-private-caches") {
+    event.waitUntil(
+      Promise.all([
+        caches.delete(PAGES_CACHE),
+        caches.delete(RSC_CACHE),
+        caches.delete(PHOTOS_CACHE),
+      ]),
+    );
   }
 });
 
