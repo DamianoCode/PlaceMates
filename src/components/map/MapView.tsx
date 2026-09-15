@@ -10,9 +10,8 @@ import MapLibreMap, {
   type ViewStateChangeEvent,
 } from "react-map-gl/maplibre";
 import type { Map as MLMap } from "maplibre-gl";
-import { useTheme } from "next-themes";
 import Supercluster from "supercluster";
-import { getMapStyle } from "./map-style";
+import { hideBasemapPois, MAP_STYLE } from "./map-style";
 import { loadCamera, saveCamera } from "./camera-storage";
 import { CategoryIcon } from "./category-icons";
 import { useQuery } from "@tanstack/react-query";
@@ -143,8 +142,6 @@ export function MapView({
   const [pick, setPick] = useState<{ lng: number; lat: number } | null>(
     initialPick ? { lat: initialPick.lat, lng: initialPick.lng } : null,
   );
-  const { resolvedTheme } = useTheme();
-  const style = useMemo(() => getMapStyle(resolvedTheme === "dark"), [resolvedTheme]);
 
   // Hold the underlying maplibre instance so we can attach native touch
   // listeners (long-press) — react-map-gl only forwards a fixed set of
@@ -214,19 +211,7 @@ export function MapView({
       const map = e.target;
       setMapInstance(map);
 
-      // Hide the basemap's own POI / transit pictograms. With our
-      // category markers on top they'd otherwise create visual
-      // clutter — two cafés stacked, a tiny grey OSM cup beside our
-      // big orange one. No-op for raster providers (Carto): they
-      // expose only the single raster layer, none match the prefixes.
-      for (const layer of map.getStyle().layers) {
-        if (
-          layer.id.startsWith("poi") ||
-          layer.id.startsWith("transit-stop")
-        ) {
-          map.setLayoutProperty(layer.id, "visibility", "none");
-        }
-      }
+      hideBasemapPois(map);
 
       const b = map.getBounds();
       const bbox = {
@@ -445,7 +430,7 @@ export function MapView({
         onContextMenu({ lng, lat });
       }}
       style={{ width: "100%", height: "100%" }}
-      mapStyle={style}
+      mapStyle={MAP_STYLE}
       attributionControl={{ compact: true }}
     >
       <NavigationControl position="top-right" />

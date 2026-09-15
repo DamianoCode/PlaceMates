@@ -26,7 +26,7 @@ The UI is in Polish (that's who it was built for), but the code and this README 
 - **[Next.js](https://nextjs.org) 16** (App Router, Server Actions) and **React 19**, in TypeScript
 - **[Supabase](https://supabase.com)** for Postgres, auth (email + optional Google) and file storage
 - **[Drizzle ORM](https://orm.drizzle.team)** over `postgres.js`, with **PostGIS** for geography
-- **[MapLibre GL](https://maplibre.org)** via `react-map-gl`, tiles from Carto / OpenFreeMap / MapTiler, clustering with `supercluster`
+- **[MapLibre GL](https://maplibre.org)** via `react-map-gl`, tiles from OpenFreeMap, clustering with `supercluster`
 - **[TanStack Query](https://tanstack.com/query)** + **Virtual**, **Tailwind CSS v4**, **shadcn**/Base UI, **vaul**, **sonner**
 - **[Zod](https://zod.dev)** for validation everywhere user input crosses a boundary
 - **Web Push** (VAPID) for notifications, **Sentry** for error tracking
@@ -34,7 +34,7 @@ The UI is in Polish (that's who it was built for), but the code and this README 
 
 ## Running it locally
 
-You'll need **Node 20+**, a **Supabase** project, and — optionally — keys for Geoapify, OpenRouteService and MapTiler. The app degrades gracefully without the optional ones (search falls back to keyless providers, the map falls back to free Carto tiles).
+You'll need **Node 20+**, a **Supabase** project, and — optionally — keys for Geoapify and OpenRouteService. The app degrades gracefully without the optional ones (search falls back to keyless providers); map tiles come from OpenFreeMap and need no key.
 
 ```bash
 git clone https://github.com/DamianoCode/PlaceMates.git
@@ -126,7 +126,7 @@ Interfejs jest po polsku — bo dla takich osób powstał.
 - **[Next.js](https://nextjs.org) 16** (App Router, Server Actions) i **React 19**, w TypeScripcie
 - **[Supabase](https://supabase.com)** — Postgres, logowanie (e-mail + opcjonalnie Google) i przechowywanie plików
 - **[Drizzle ORM](https://orm.drizzle.team)** na `postgres.js`, z **PostGIS** do geografii
-- **[MapLibre GL](https://maplibre.org)** przez `react-map-gl`, kafelki Carto / OpenFreeMap / MapTiler, klastrowanie przez `supercluster`
+- **[MapLibre GL](https://maplibre.org)** przez `react-map-gl`, kafelki OpenFreeMap, klastrowanie przez `supercluster`
 - **[TanStack Query](https://tanstack.com/query)** + **Virtual**, **Tailwind CSS v4**, **shadcn**/Base UI, **vaul**, **sonner**
 - **[Zod](https://zod.dev)** do walidacji wszędzie tam, gdzie dane użytkownika przekraczają granicę
 - **Web Push** (VAPID) do powiadomień, **Sentry** do błędów
@@ -134,7 +134,7 @@ Interfejs jest po polsku — bo dla takich osób powstał.
 
 ### Uruchomienie lokalnie
 
-Potrzebujesz **Node 20+**, projektu **Supabase** i — opcjonalnie — kluczy do Geoapify, OpenRouteService i MapTiler. Bez tych opcjonalnych aplikacja działa dalej (wyszukiwarka schodzi na bezkluczowych dostawców, mapa na darmowe kafelki Carto).
+Potrzebujesz **Node 20+**, projektu **Supabase** i — opcjonalnie — kluczy do Geoapify i OpenRouteService. Bez tych opcjonalnych aplikacja działa dalej (wyszukiwarka schodzi na bezkluczowych dostawców); kafelki mapy pochodzą z OpenFreeMap i nie wymagają klucza.
 
 ```bash
 git clone https://github.com/DamianoCode/PlaceMates.git

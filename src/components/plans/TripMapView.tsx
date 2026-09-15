@@ -16,7 +16,6 @@ import MapLibreMap, {
   type ViewState,
 } from "react-map-gl/maplibre";
 import type { Map as MLMap, LngLatBoundsLike } from "maplibre-gl";
-import { useTheme } from "next-themes";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bike,
@@ -31,7 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-json";
 import { formatDistance, formatDuration } from "@/lib/format-route";
-import { getMapStyle } from "@/components/map/map-style";
+import { hideBasemapPois, MAP_STYLE } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
 import type { RoutingProfile } from "@/infra/routing/ors";
 import type { TripStopView } from "@/domain/trips/service";
@@ -69,8 +68,8 @@ const PROFILE_OPTIONS: ReadonlyArray<{
   { value: "cycling-regular", label: "Rower", icon: Bike },
   { value: "foot-walking", label: "Pieszo", icon: Footprints },
   // foot-hiking — ORS profile dla szlaków górskich. Preferuje
-  // unpaved/hiking trails, akceptuje większe nachylenia. Carto
-  // basemap szlaków nie pokazuje (do tego trzeba waymarkedtrails
+  // unpaved/hiking trails, akceptuje większe nachylenia. Basemap
+  // szlaków nie pokazuje (do tego trzeba waymarkedtrails
   // overlay), ale router uwzględnia je przy wyznaczaniu trasy.
   { value: "foot-hiking", label: "Szlak", icon: Mountain },
 ];
@@ -84,11 +83,6 @@ export function TripMapView({
   stops: TripStopView[];
   tripId: string;
 }) {
-  const { resolvedTheme } = useTheme();
-  const style = useMemo(
-    () => getMapStyle(resolvedTheme === "dark"),
-    [resolvedTheme],
-  );
   const [view, setView] = useState<Partial<ViewState>>(() =>
     initialView(stops),
   );
@@ -328,10 +322,13 @@ export function TripMapView({
         <MapLibreMap
           {...view}
           onMove={(e) => setView(e.viewState)}
-          onLoad={(e) => setMapInstance(e.target)}
+          onLoad={(e) => {
+            hideBasemapPois(e.target);
+            setMapInstance(e.target);
+          }}
           onClick={() => setSelectedStopId(null)}
           style={{ width: "100%", height: "100%" }}
-          mapStyle={style}
+          mapStyle={MAP_STYLE}
           attributionControl={{ compact: true }}
         >
           <NavigationControl position="top-right" />
