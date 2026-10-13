@@ -684,7 +684,7 @@ export function NearbyImportSheet({
                           aria-pressed={distanceSource === "gps"}
                           title="Liczone od twojej lokalizacji"
                           className={cn(
-                            "inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            "relative before:absolute before:-inset-y-1.5 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
                             distanceSource === "gps"
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground",
@@ -703,7 +703,7 @@ export function NearbyImportSheet({
                           aria-pressed={distanceSource === "map"}
                           title="Liczone od środka widocznej mapy"
                           className={cn(
-                            "inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            "relative before:absolute before:-inset-y-1.5 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
                             distanceSource === "map"
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground",
@@ -734,14 +734,14 @@ export function NearbyImportSheet({
                       onChange={(e) => setFilterText(e.target.value)}
                       placeholder="Filtruj wyniki po nazwie…"
                       aria-label="Filtruj wyniki"
-                      className="h-9 w-full rounded-full border border-border bg-background pr-9 pl-9 text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                      className="h-9 w-full rounded-full border border-border bg-background pr-9 pl-9 text-base md:text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                     />
                     {filterText && (
                       <button
                         type="button"
                         onClick={() => setFilterText("")}
                         aria-label="Wyczyść filtr"
-                        className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
+                        className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 before:absolute before:-inset-1.5 before:content-[''] items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
                       >
                         <X size={14} />
                       </button>

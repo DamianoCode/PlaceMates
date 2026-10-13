@@ -46,14 +46,14 @@ export function PlaceSearchInput({
         value={value}
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder ?? "Szukaj miejsca…"}
-        className="h-10 w-full rounded-full border border-border bg-card pr-10 pl-9 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+        className="h-10 w-full rounded-full border border-border bg-card pr-10 pl-9 text-base shadow-sm md:text-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
       {value && (
         <button
           type="button"
           onClick={() => setValue("")}
           aria-label="Wyczyść"
-          className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
+          className="absolute top-1/2 right-1 flex h-8 w-8 -translate-y-1/2 before:absolute before:-inset-1.5 before:content-[''] items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95"
         >
           <X size={14} />
         </button>

@@ -312,7 +312,7 @@ function PrefToggle({
         onClick={onChange}
         disabled={disabled}
         className={cn(
-          "relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors",
+          "relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-['']",
           checked ? "bg-primary" : "bg-muted",
           disabled && "cursor-not-allowed",
         )}

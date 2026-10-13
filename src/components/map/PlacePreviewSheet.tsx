@@ -122,7 +122,7 @@ export function PlacePreviewSheet({
                 type="button"
                 onClick={onClose}
                 aria-label="Zamknij"
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="relative before:absolute before:-inset-1 before:content-[''] flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X size={18} />
               </button>
