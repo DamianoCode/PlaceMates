@@ -112,7 +112,7 @@ export function RatingForm({
               variant="ghost"
               size="sm"
               disabled={delPending}
-              className="text-muted-foreground hover:text-destructive"
+              className="relative text-muted-foreground before:absolute before:-inset-y-1 before:inset-x-0 before:content-[''] hover:text-destructive"
             >
               <RotateCcw size={14} className="mr-1.5" />
               {delPending ? "Cofam…" : "Cofnij ocenę"}

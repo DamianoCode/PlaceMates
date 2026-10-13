@@ -40,7 +40,7 @@ export function ThemeToggle() {
             aria-checked={active}
             onClick={() => setTheme(value)}
             className={
-              "flex h-8 w-8 items-center justify-center rounded-full transition-colors " +
+              "relative flex h-8 w-8 items-center justify-center rounded-full transition-colors before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] " +
               (active
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground")
