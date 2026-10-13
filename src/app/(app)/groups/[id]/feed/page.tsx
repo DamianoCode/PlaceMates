@@ -26,7 +26,7 @@ export default async function GroupFeedPage({
 
   return (
     <>
-      <PageHeader title="Aktywność" fallbackHref={`/groups/${id}`} />
+      <PageHeader title="Aktywność" fallbackHref={`/groups/${id}`} titleAs="p" />
       <section className="mx-auto max-w-2xl space-y-6 p-4">
         <EditorialHeader
           eyebrow={group.name}

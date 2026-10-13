@@ -23,6 +23,7 @@ export function StarRating({
 
   return (
     <span
+      role="img"
       className={"inline-flex items-center gap-0.5 " + className}
       aria-label={`${rounded.toFixed(1)} z ${max}`}
     >

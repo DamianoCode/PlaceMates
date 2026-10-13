@@ -66,6 +66,7 @@ export function ItemRateForm({
             max={5}
             step={0.5}
             value={score}
+            aria-valuetext={`${score.toFixed(1)} z 5`}
             onChange={(e) => setScore(Number(e.target.value))}
             className="w-full accent-primary"
           />

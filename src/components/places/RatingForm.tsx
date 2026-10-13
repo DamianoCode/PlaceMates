@@ -74,6 +74,7 @@ export function RatingForm({
               max={dim.max}
               step={0.5}
               value={values[dim.key]}
+              aria-valuetext={`${values[dim.key].toFixed(1)} z ${dim.max}`}
               onChange={(e) =>
                 setValues((prev) => ({ ...prev, [dim.key]: Number(e.target.value) }))
               }

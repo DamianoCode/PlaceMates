@@ -21,6 +21,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
               <Heart
                 size={14}
                 className="flex-shrink-0 fill-rose-500 stroke-rose-500"
+                role="img"
                 aria-label="Ulubione"
               />
             )}
@@ -28,6 +29,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
               <Bookmark
                 size={14}
                 className="flex-shrink-0 fill-primary stroke-primary"
+                role="img"
                 aria-label="Do odwiedzenia"
               />
             )}
@@ -45,6 +47,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
                 <Users
                   size={14}
                   className="fill-primary/20 stroke-primary"
+                  role="img"
                   aria-label={
                     place.groupWishlistedIn.length > 0
                       ? `Grupowo do odwiedzenia: ${place.groupWishlistedIn

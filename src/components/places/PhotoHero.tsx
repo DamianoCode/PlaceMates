@@ -54,7 +54,9 @@ export function PhotoHero({
       <button
         type="button"
         onClick={() => openAt(cover.id)}
-        aria-label="Otwórz zdjęcie"
+        aria-label={
+          photos.length > 1 ? `Otwórz zdjęcie 1 z ${photos.length}` : "Otwórz zdjęcie"
+        }
         className={heroClasses}
       >
         {/* Cover is the likely LCP element: eager + high fetch priority. */}
@@ -70,12 +72,12 @@ export function PhotoHero({
       </button>
       {rest.length > 0 && (
         <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          {rest.map((p) => (
+          {rest.map((p, i) => (
             <button
               key={p.id}
               type="button"
               onClick={() => openAt(p.id)}
-              aria-label="Otwórz zdjęcie"
+              aria-label={`Otwórz zdjęcie ${i + 2} z ${photos.length}`}
               className="h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl"
             >
               <Image

@@ -328,6 +328,13 @@
     transition-delay: 0ms !important;
   }
 
+  /* Loading spinners are the progress signal itself — freezing them
+   * mid-turn reads as "stuck". Keep them turning, just slower. */
+  .animate-spin {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+
   /* The * rule above can't reach browser-generated VT pseudo-elements —
    * snap them instead of cross-fading. */
   ::view-transition-old(*),

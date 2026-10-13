@@ -71,7 +71,7 @@ export default async function RankingPage({
 
   return (
     <>
-      <PageHeader title="Ranking" fallbackHref="/me" />
+      <PageHeader title="Ranking" fallbackHref="/me" titleAs="p" />
       <section className="mx-auto max-w-2xl space-y-5 p-4">
         <EditorialHeader
           eyebrow={

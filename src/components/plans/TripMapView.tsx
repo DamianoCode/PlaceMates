@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-json";
+import { motionDuration } from "@/lib/motion";
 import { formatDistance, formatDuration } from "@/lib/format-route";
 import { hideBasemapPois, MAP_STYLE } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
@@ -157,7 +158,7 @@ export function TripMapView({
         mapInstance.flyTo({
           center: [target.placeLng, target.placeLat],
           zoom: Math.max(mapInstance.getZoom(), 14),
-          duration: 350,
+          duration: motionDuration(350),
           offset: [0, -60],
         });
       }

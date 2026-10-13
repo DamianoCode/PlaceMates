@@ -12,14 +12,19 @@ import {
  * Sticky top bar with a platform-style back button. Prefers router.back()
  * when there's a navigation history entry; otherwise navigates to `fallbackHref`
  * so deep-links land somewhere sensible.
+ *
+ * Pages that open with their own EditorialHeader pass `titleAs="p"` so the
+ * route keeps a single <h1>; the bar title then stays a plain label.
  */
 export function PageHeader({
   title,
   subtitle,
   fallbackHref = "/map",
   trailing,
+  titleAs: TitleTag = "h1",
 }: {
   title: string;
+  titleAs?: "h1" | "p";
   subtitle?: string;
   fallbackHref?: string;
   trailing?: ReactNode;
@@ -45,7 +50,9 @@ export function PageHeader({
         <ArrowLeft size={22} />
       </button>
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-base font-semibold leading-tight">{title}</h1>
+        <TitleTag className="truncate font-display text-base font-semibold leading-tight">
+          {title}
+        </TitleTag>
         {subtitle && (
           <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
         )}
