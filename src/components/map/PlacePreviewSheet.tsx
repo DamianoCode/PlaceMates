@@ -64,18 +64,6 @@ export function PlacePreviewSheet({
     enabled: placeId !== null,
     placeholderData: placeholder,
     queryFn: async () => {
-      // Non-modal sheet: focus stays on the map/pin that opened it, but
-  // Escape dismisses it from anywhere, like tapping blank map does.
-  useEffect(() => {
-    if (!placeId) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [placeId, onClose]);
-
-  if (!placeId) return null;
       try {
         return await fetchJson<Preview>(`/api/places/${placeId}/preview`);
       } catch (err) {
@@ -86,6 +74,17 @@ export function PlacePreviewSheet({
       }
     },
   });
+
+  // Non-modal sheet: focus stays on the map/pin that opened it, but
+  // Escape dismisses it from anywhere, like tapping blank map does.
+  useEffect(() => {
+    if (!placeId) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [placeId, onClose]);
 
   if (!placeId) return null;
 
