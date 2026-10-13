@@ -24,9 +24,9 @@ const THEME_CSS = `
   --o-bg: #fdf8f0;
   --o-ink: #221812;
   --o-muted: #6d6059;
-  --o-accent: #bd592f;
+  --o-accent: #b35025;
   --o-accent-ink: #fdf8f0;
-  --o-halo: rgba(189, 89, 47, 0.16);
+  --o-halo: rgba(179, 80, 37, 0.16);
 }
 .dark .pm-offline {
   --o-bg: #16100c;

@@ -122,7 +122,7 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-white font-display text-lg font-semibold tabular-nums shadow-sm",
             isCompleted
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-600 text-white"
               : "bg-primary text-primary-foreground",
           )}
         >
@@ -185,7 +185,7 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",
             isCompleted
-              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 hover:bg-emerald-600"
+              ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700"
               : "border-border bg-background text-muted-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30",
             pending && "opacity-60",
           )}

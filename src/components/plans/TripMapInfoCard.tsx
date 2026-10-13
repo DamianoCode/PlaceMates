@@ -100,7 +100,7 @@ export function TripMapInfoCard({
                     className={cn(
                       "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white text-[11px] font-semibold tabular-nums shadow-sm",
                       completed
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-emerald-600 text-white"
                         : "bg-primary text-primary-foreground",
                     )}
                   >

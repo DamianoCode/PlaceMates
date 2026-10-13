@@ -681,7 +681,7 @@ function NewOrderList({ proposed }: { proposed: OptimizationPreview["proposedOrd
               className={cn(
                 "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
                 s.isCompleted
-                  ? "bg-emerald-500 text-white"
+                  ? "bg-emerald-600 text-white"
                   : s.isAnchor
                     ? "bg-amber-500 text-white"
                     : "bg-primary text-primary-foreground",

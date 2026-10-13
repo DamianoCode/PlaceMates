@@ -89,9 +89,9 @@ function pinClassesFor(state: PinState, active: boolean): string {
     case "favorite":
       return `${base} ${size} bg-rose-500 text-white${active ? " ring-4 ring-rose-500/30" : ""}`;
     case "wishlist":
-      return `${base} ${size} bg-emerald-500 text-white${active ? " ring-4 ring-emerald-500/30" : ""}`;
+      return `${base} ${size} bg-emerald-600 text-white${active ? " ring-4 ring-emerald-500/30" : ""}`;
     case "group-wishlist":
-      return `${base} ${size} bg-sky-500 text-white${active ? " ring-4 ring-sky-500/30" : ""}`;
+      return `${base} ${size} bg-sky-600 text-white${active ? " ring-4 ring-sky-500/30" : ""}`;
     default:
       return `${base} ${size} bg-primary text-primary-foreground${active ? " ring-4 ring-primary/30" : ""}`;
   }

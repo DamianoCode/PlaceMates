@@ -5,7 +5,7 @@ colors:
   paper: "oklch(0.98 0.012 80)"
   espresso-ink: "oklch(0.22 0.02 50)"
   card-white: "oklch(1 0 0)"
-  terracotta: "oklch(0.58 0.14 42)"
+  terracotta: "oklch(0.55 0.14 42)"
   terracotta-ink-on: "oklch(0.98 0.012 80)"
   sand-wash: "oklch(0.94 0.02 75)"
   linen-muted: "oklch(0.95 0.015 75)"
@@ -19,8 +19,8 @@ colors:
   night-terracotta: "oklch(0.72 0.14 50)"
   night-ink: "oklch(0.94 0.012 80)"
   pin-favorite-rose: "oklch(0.645 0.246 16.439)"
-  pin-wishlist-emerald: "oklch(0.696 0.17 162.48)"
-  pin-group-sky: "oklch(0.685 0.169 237.323)"
+  pin-wishlist-emerald: "oklch(0.596 0.145 163.225)"
+  pin-group-sky: "oklch(0.588 0.158 241.966)"
   star-amber: "oklch(0.828 0.189 84.429)"
 typography:
   display:
@@ -189,6 +189,8 @@ A warm, low-chroma paper-and-ink palette with one earthy pigment; all values are
 - **Night Paper / Night Card / Night Ink** (`night-paper`, `night-card`, `night-ink`): the dark theme keeps the same warm hue family (hue 55–80) instead of switching to neutral grey; borders become 8% white.
 
 ### Named Rules
+**The Readable Pin Rule.** Pin fills carry a white glyph, so they sit at Tailwind 600 for emerald and sky (≥3:1 against white); rose stays at 500. Terracotta is tuned to L 0.55 so it clears 4.5:1 as text on paper and behind paper labels.
+
 **The One Pigment Rule.** Terracotta is the only accent in the chrome. Rose, emerald and sky exist to tell pin states apart on the map and in their matching hearts/toggles — never as decoration elsewhere.
 
 **The Warm Ink Rule.** No pure black and no cool grey. Every neutral sits on hue 50–80 with a trace of chroma; the dark theme stays warm too.

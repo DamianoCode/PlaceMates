@@ -26,7 +26,7 @@ export default function GlobalError({
        *  available. Values mirror the globals.css tokens. */}
       <head>
         <style>{`
-          :root { --e-bg: #fdf8f0; --e-ink: #221812; --e-muted: #6d6059; --e-accent: #bd592f; --e-accent-ink: #fdf8f0; color-scheme: light dark; }
+          :root { --e-bg: #fdf8f0; --e-ink: #221812; --e-muted: #6d6059; --e-accent: #b35025; --e-accent-ink: #fdf8f0; color-scheme: light dark; }
           @media (prefers-color-scheme: dark) {
             :root { --e-bg: #16100c; --e-ink: #efeae2; --e-muted: #9e978f; --e-accent: #e9884d; --e-accent-ink: #16100c; }
           }

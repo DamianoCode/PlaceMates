@@ -337,7 +337,7 @@ export function TripMapView({
               id="trip-line-layer"
               type="line"
               paint={{
-                "line-color": "#b8613a",
+                "line-color": "#b35025",
                 // Routed line is solid 4 px; straight-line
                 // fallback is dashed 3 px so the visual difference
                 // tells the user "this isn't an actual road route".
@@ -373,7 +373,7 @@ export function TripMapView({
                     "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
                     active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
                     completed
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-emerald-600 text-white"
                       : "bg-primary text-primary-foreground",
                     active &&
                       (completed
