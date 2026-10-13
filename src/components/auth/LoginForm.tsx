@@ -16,7 +16,15 @@ export function LoginForm({ next }: { next?: string }) {
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "login-error" : undefined}
+        />
       </div>
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-2">
@@ -29,6 +37,8 @@ export function LoginForm({ next }: { next?: string }) {
           </Link>
         </div>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "login-error" : undefined}
           id="password"
           name="password"
           type="password"
@@ -37,7 +47,7 @@ export function LoginForm({ next }: { next?: string }) {
           minLength={8}
         />
       </div>
-      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+      {error ? <p id="login-error" className="text-sm text-destructive" role="alert">{error}</p> : null}
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Loguję..." : "Zaloguj się"}
       </Button>

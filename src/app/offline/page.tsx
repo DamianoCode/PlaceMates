@@ -9,24 +9,60 @@ import { Compass, RefreshCw } from "lucide-react";
  * Inline styles instead of Tailwind classes — the user might land
  * here mid-loading where Tailwind's CSS isn't yet hot in cache.
  * Keeps the rendering deterministic regardless of cache state.
+ *
+ * Colours come from a tiny inline <style> of custom properties so the
+ * page follows the theme too: the `.dark` class next-themes puts on
+ * <html>, or the OS preference when no explicit `.light` is set.
+ * Values mirror the globals.css tokens (paper / espresso / terracotta).
  */
 export const metadata = {
   title: "Offline — PlaceMates",
 };
 
+const THEME_CSS = `
+.pm-offline {
+  --o-bg: #fdf8f0;
+  --o-ink: #221812;
+  --o-muted: #6d6059;
+  --o-accent: #bd592f;
+  --o-accent-ink: #fdf8f0;
+  --o-halo: rgba(189, 89, 47, 0.16);
+}
+.dark .pm-offline {
+  --o-bg: #16100c;
+  --o-ink: #efeae2;
+  --o-muted: #9e978f;
+  --o-accent: #e9884d;
+  --o-accent-ink: #16100c;
+  --o-halo: rgba(233, 136, 77, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) .pm-offline {
+    --o-bg: #16100c;
+    --o-ink: #efeae2;
+    --o-muted: #9e978f;
+    --o-accent: #e9884d;
+    --o-accent-ink: #16100c;
+    --o-halo: rgba(233, 136, 77, 0.16);
+  }
+}
+`;
+
 export default function OfflinePage() {
   return (
     <main
+      className="pm-offline"
       style={{
         minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#faf5ec",
-        color: "#5b3a24",
+        background: "var(--o-bg)",
+        color: "var(--o-ink)",
         padding: 24,
       }}
     >
+      <style>{THEME_CSS}</style>
       <div
         style={{
           maxWidth: 360,
@@ -47,9 +83,8 @@ export default function OfflinePage() {
             width: 96,
             height: 96,
             borderRadius: "50%",
-            background:
-              "radial-gradient(circle at 30% 30%, rgba(184,97,58,0.18), rgba(184,97,58,0.04) 70%)",
-            color: "#b8613a",
+            background: "var(--o-halo)",
+            color: "var(--o-accent)",
           }}
         >
           <Compass size={44} strokeWidth={1.5} />
@@ -71,7 +106,7 @@ export default function OfflinePage() {
               marginTop: 8,
               fontSize: 14,
               lineHeight: 1.5,
-              color: "#8a6747",
+              color: "var(--o-muted)",
               fontStyle: "italic",
             }}
           >
@@ -89,15 +124,14 @@ export default function OfflinePage() {
             height: 44,
             padding: "0 20px",
             borderRadius: 999,
-            background: "#b8613a",
-            color: "#faf5ec",
-            fontSize: 14,
-            fontWeight: 500,
+            background: "var(--o-accent)",
+            color: "var(--o-accent-ink)",
+            fontSize: 15,
+            fontWeight: 600,
             textDecoration: "none",
-            boxShadow: "0 4px 12px rgba(184,97,58,0.3)",
           }}
         >
-          <RefreshCw size={16} />
+          <RefreshCw size={16} aria-hidden />
           Spróbuj ponownie
         </Link>
       </div>

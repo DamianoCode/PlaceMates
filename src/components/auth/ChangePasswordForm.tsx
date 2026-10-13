@@ -47,6 +47,8 @@ export function ChangePasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Aktualne hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "change-password-error" : undefined}
           id="currentPassword"
           name="currentPassword"
           type="password"
@@ -58,6 +60,8 @@ export function ChangePasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="newPassword">Nowe hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "change-password-error" : undefined}
           id="newPassword"
           name="newPassword"
           type="password"
@@ -70,6 +74,8 @@ export function ChangePasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Powtórz nowe hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "change-password-error" : undefined}
           id="confirmPassword"
           name="confirmPassword"
           type="password"
@@ -80,7 +86,7 @@ export function ChangePasswordForm() {
       </div>
 
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p id="change-password-error" className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}

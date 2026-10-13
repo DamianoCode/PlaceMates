@@ -366,10 +366,12 @@ export function TripMapView({
                   selectStop(s.id);
                 }}
               >
-                <span
+                <button
+                  type="button"
+                  aria-pressed={active}
                   aria-label={`${i + 1}. ${s.placeName}${completed ? " (ukończone)" : ""}`}
                   className={cn(
-                    "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out",
+                    "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
                     active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
                     completed
                       ? "bg-emerald-500 text-white"
@@ -380,8 +382,8 @@ export function TripMapView({
                         : "ring-4 ring-primary/30"),
                   )}
                 >
-                  {completed ? <Check size={active ? 20 : 16} /> : i + 1}
-                </span>
+                  {completed ? <Check size={active ? 20 : 16} aria-hidden /> : i + 1}
+                </button>
               </Marker>
             );
           })}

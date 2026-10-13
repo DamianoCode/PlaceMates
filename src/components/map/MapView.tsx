@@ -52,7 +52,7 @@ type PinState = "favorite" | "wishlist" | "group-wishlist" | "default";
 
 function pinClassesFor(state: PinState, active: boolean): string {
   const base =
-    "flex -translate-y-1 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md transition-[width,height,box-shadow] duration-200 ease-out";
+    "flex -translate-y-1 cursor-pointer items-center justify-center rounded-full border-2 border-white shadow-md transition-[width,height,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground";
   const size = active ? "h-11 w-11" : "h-9 w-9";
   switch (state) {
     case "favorite":
@@ -513,13 +513,18 @@ export function MapView({
               longitude={pin.lng}
               latitude={pin.lat}
               anchor="bottom"
+              // Native click on the marker element — fires for taps and for
+              // Enter/Space on the inner <button>, and stops the event before
+              // it reaches the canvas container (which would clear selection).
               onClick={(e) => {
                 e.originalEvent.stopPropagation();
                 onSelectPlace?.(pin.id);
               }}
             >
-              <span
+              <button
+                type="button"
                 aria-label={pin.name}
+                aria-pressed={active}
                 className={pinClassesFor(state, active)}
                 style={{
                   animation: `pm-marker-in 320ms ${delay}ms cubic-bezier(0.2, 0.9, 0.25, 1.05) both`,
@@ -531,7 +536,7 @@ export function MapView({
                   strokeWidth={2.25}
                   aria-hidden
                 />
-              </span>
+              </button>
             </Marker>
           );
         })}

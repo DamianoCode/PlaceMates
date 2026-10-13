@@ -22,6 +22,16 @@ export default function GlobalError({
 
   return (
     <html lang="pl">
+      {/* Renders outside ThemeProvider, so only the OS preference is
+       *  available. Values mirror the globals.css tokens. */}
+      <head>
+        <style>{`
+          :root { --e-bg: #fdf8f0; --e-ink: #221812; --e-muted: #6d6059; --e-accent: #bd592f; --e-accent-ink: #fdf8f0; color-scheme: light dark; }
+          @media (prefers-color-scheme: dark) {
+            :root { --e-bg: #16100c; --e-ink: #efeae2; --e-muted: #9e978f; --e-accent: #e9884d; --e-accent-ink: #16100c; }
+          }
+        `}</style>
+      </head>
       <body
         style={{
           margin: 0,
@@ -29,8 +39,8 @@ export default function GlobalError({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#faf5ec",
-          color: "#5b3a24",
+          background: "var(--e-bg)",
+          color: "var(--e-ink)",
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif",
           padding: 24,
@@ -42,7 +52,7 @@ export default function GlobalError({
             style={{
               marginTop: 12,
               fontSize: 14,
-              color: "#8a6747",
+              color: "var(--e-muted)",
               fontStyle: "italic",
             }}
           >
@@ -55,8 +65,8 @@ export default function GlobalError({
               height: 44,
               padding: "0 20px",
               borderRadius: 999,
-              background: "#b8613a",
-              color: "#faf5ec",
+              background: "var(--e-accent)",
+              color: "var(--e-accent-ink)",
               fontSize: 14,
               fontWeight: 500,
               border: "none",

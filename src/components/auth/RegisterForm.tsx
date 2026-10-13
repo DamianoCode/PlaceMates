@@ -32,15 +32,34 @@ export function RegisterForm({ next }: { next?: string }) {
       </div>
       <div className="space-y-2">
         <Label htmlFor="displayName">Nazwa wyświetlana</Label>
-        <Input id="displayName" name="displayName" type="text" autoComplete="name" required maxLength={80} />
+        <Input
+          id="displayName"
+          name="displayName"
+          type="text"
+          autoComplete="name"
+          required
+          maxLength={80}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "register-error" : undefined}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          required
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "register-error" : undefined}
+        />
       </div>
       <div className="space-y-2">
         <Label htmlFor="password">Hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "register-error" : undefined}
           id="password"
           name="password"
           type="password"
@@ -49,7 +68,7 @@ export function RegisterForm({ next }: { next?: string }) {
           minLength={8}
         />
       </div>
-      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
+      {error ? <p id="register-error" className="text-sm text-destructive" role="alert">{error}</p> : null}
       <Button type="submit" className="w-full" disabled={pending}>
         {pending ? "Tworzę konto..." : "Załóż konto"}
       </Button>
