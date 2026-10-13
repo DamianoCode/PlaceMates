@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { Crown, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { AvatarImage } from "@/components/ui/avatar-image";
 import {
   removeMemberAction,
   type RemoveMemberState,
@@ -37,18 +38,11 @@ export function MemberRow({
   return (
     <li className="flex items-center gap-3 rounded-xl border bg-card/60 p-3">
       <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 font-medium text-primary">
-        {member.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={member.avatarUrl}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-10 w-10 rounded-full object-cover"
-          />
-        ) : (
-          initials
-        )}
+        <AvatarImage
+          src={member.avatarUrl}
+          fallback={initials}
+          className="h-10 w-10 rounded-full object-cover"
+        />
       </div>
 
       <div className="min-w-0 flex-1">
@@ -112,7 +106,7 @@ function RemoveButton({
           disabled={pending}
           aria-label="Usuń z grupy"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors",
+            "relative flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors before:absolute before:-inset-1 before:content-['']",
             "hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           )}
         >

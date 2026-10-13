@@ -77,7 +77,7 @@ export default async function GroupInsightsPage({
                   <h2 className="font-display text-xl">Najwyżej oceniane</h2>
                   <Link
                     href={`/ranking?group=${id}`}
-                    className="group inline-flex items-center gap-0.5 text-xs font-medium text-primary"
+                    className="group -my-3 inline-flex min-h-11 items-center gap-0.5 text-xs font-medium text-primary"
                   >
                     Pełny ranking
                     <ChevronRight

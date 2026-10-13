@@ -9,6 +9,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { ActivityView } from "@/domain/activity/service";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 /**
  * One line in the group activity feed. Pure presentational — the actor
@@ -126,17 +127,11 @@ export function ActivityItem({ item }: { item: ActivityView }) {
        *  verb text plus the inline icon on the meta line below, so we
        *  avoid the fragile absolutely-positioned corner badge entirely. */}
       <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 text-sm font-semibold text-primary">
-        {item.actorAvatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.actorAvatarUrl}
-            alt=""
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          initials(item.actorName)
-        )}
+        <AvatarImage
+          src={item.actorAvatarUrl}
+          fallback={initials(item.actorName)}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <div className="min-w-0 flex-1">

@@ -68,14 +68,18 @@ export default async function MapPage({
       : null;
 
   return (
-    <MapScreen
-      primaryGroupId={primaryGroupId}
-      categories={cats.map((c) => ({ id: c.id, slug: c.slug, name: c.name }))}
-      places={places}
-      wishlistedIds={Array.from(wishIds)}
-      favoriteIds={Array.from(favIds)}
-      groupWishlistByGroup={groupWishByGroup}
-      focus={focus}
-    />
+    <>
+      {/* The map has no visible title; screen readers still get one. */}
+      <h1 className="sr-only">Mapa</h1>
+      <MapScreen
+        primaryGroupId={primaryGroupId}
+        categories={cats.map((c) => ({ id: c.id, slug: c.slug, name: c.name }))}
+        places={places}
+        wishlistedIds={Array.from(wishIds)}
+        favoriteIds={Array.from(favIds)}
+        groupWishlistByGroup={groupWishByGroup}
+        focus={focus}
+      />
+    </>
   );
 }
