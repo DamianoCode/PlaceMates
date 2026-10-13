@@ -46,7 +46,7 @@ export function TopMemberCard({ member }: { member: YearTopMember }) {
         </span>
       </div>
       <div className="relative min-w-0 flex-1">
-        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-600/80 dark:text-amber-400/80">
+        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-700 dark:text-amber-400">
           Gwiazda roku
         </p>
         <p className="mt-0.5 truncate font-display text-3xl leading-tight">

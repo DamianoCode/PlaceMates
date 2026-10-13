@@ -21,11 +21,14 @@ export function PhotoTile({
   url,
   isCover,
   canDelete,
+  label = "Otwórz zdjęcie",
 }: {
   photoId: string;
   url: string;
   isCover: boolean;
   canDelete: boolean;
+  /** Accessible name; pass the position so tiles are distinguishable. */
+  label?: string;
 }) {
   const { openAt } = usePhotoOpener();
   return (
@@ -33,7 +36,7 @@ export function PhotoTile({
       <button
         type="button"
         onClick={() => openAt(photoId)}
-        aria-label="Otwórz zdjęcie"
+        aria-label={label}
         className="relative block h-full w-full cursor-zoom-in"
       >
         {/* Grid is 3 columns inside the max-w-2xl content column. */}

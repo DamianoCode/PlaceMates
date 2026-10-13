@@ -73,9 +73,11 @@ export function CreateItemForm({ placeId }: { placeId: string }) {
         placeholder="np. Lody waniliowe"
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? "item-name-error" : undefined}
       />
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p id="item-name-error" className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}
