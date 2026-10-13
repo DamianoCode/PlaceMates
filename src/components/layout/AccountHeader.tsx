@@ -53,7 +53,7 @@ export function AccountHeader({
   }, [removeState]);
 
   return (
-    <header className="relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-4">
+    <header className="relative flex items-center gap-4 overflow-hidden rounded-2xl border bg-primary/10 p-4">
       <span
         aria-hidden
         className="pointer-events-none absolute -top-6 -right-6 text-primary/20"

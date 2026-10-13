@@ -46,7 +46,7 @@ export function CategoryBreakdown({
               role="presentation"
             >
               <div
-                className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${pct}%` }}
               />
             </div>

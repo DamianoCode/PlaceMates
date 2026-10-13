@@ -79,7 +79,7 @@ export default async function GroupYearPage({
       <section className="mx-auto max-w-2xl space-y-12 px-4 pb-16 pt-2">
         {/* Hero + year switcher */}
         <header
-          className="relative overflow-hidden rounded-[28px] border border-primary/30 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent px-6 py-8"
+          className="relative overflow-hidden rounded-[28px] border border-primary/30 bg-primary/10 px-6 py-8"
           style={{ animation: "pm-fade-up 600ms ease-out both" }}
         >
           <CompassMark
@@ -161,7 +161,7 @@ function YearArrow({
   const Icon = dir === "prev" ? ChevronLeft : ChevronRight;
   const label = dir === "prev" ? "Poprzedni rok" : "Następny rok";
   const base =
-    "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border backdrop-blur transition-colors";
+    "flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border transition-colors";
   if (!href) {
     return (
       <span

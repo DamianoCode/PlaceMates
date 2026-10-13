@@ -27,7 +27,7 @@ export function ItemCard({
       ) : (
         <div
           aria-hidden
-          className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted text-primary"
+          className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
         >
           <UtensilsCrossed size={22} />
         </div>

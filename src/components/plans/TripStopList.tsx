@@ -124,7 +124,7 @@ export function TripStopList({
       <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed bg-muted/20 px-6 py-10 text-center">
         <span
           aria-hidden
-          className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent text-primary"
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary"
         >
           <Route size={28} strokeWidth={1.5} />
         </span>

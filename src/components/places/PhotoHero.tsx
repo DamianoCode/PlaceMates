@@ -40,7 +40,7 @@ export function PhotoHero({
     return (
       <div
         aria-hidden
-        className="flex aspect-[16/9] max-h-[min(50vh,420px)] w-full items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
+        className="flex aspect-[16/9] max-h-[min(50vh,420px)] w-full items-center justify-center rounded-2xl bg-primary/10"
       >
         {fallback}
       </div>

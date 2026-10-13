@@ -33,7 +33,7 @@ export function YearTopPlaces({ places }: { places: RankedPlace[] }) {
         ) : (
           <div
             aria-hidden
-            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/25 via-primary/10 to-muted"
+            className="absolute inset-0 flex items-center justify-center bg-primary/15"
           >
             <CategoryIcon
               slug={first.categoryHint}

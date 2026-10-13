@@ -82,7 +82,7 @@ function FormCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border bg-card/90 p-7 shadow-[0_30px_80px_-40px_oklch(0_0_0/0.5)] backdrop-blur-md">
+    <div className="relative overflow-hidden rounded-3xl border bg-card p-7 shadow-[0_30px_80px_-40px_oklch(0_0_0/0.5)]">
       <div
         aria-hidden
         className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-primary/20 blur-3xl"

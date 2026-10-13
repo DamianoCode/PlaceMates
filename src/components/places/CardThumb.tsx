@@ -39,7 +39,7 @@ export function CardThumb({
     <div
       aria-hidden
       className={cn(
-        "relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary/15 via-primary/5 to-muted",
+        "relative flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10",
         className,
       )}
     >

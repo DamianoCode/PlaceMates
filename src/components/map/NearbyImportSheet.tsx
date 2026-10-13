@@ -444,7 +444,7 @@ export function NearbyImportSheet({
       }}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
         <Drawer.Content
           className={cn(
             "fixed inset-x-0 bottom-0 z-50 mt-24 flex flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-2xl",

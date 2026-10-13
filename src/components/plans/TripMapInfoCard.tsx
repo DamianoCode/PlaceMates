@@ -80,7 +80,7 @@ export function TripMapInfoCard({
           ) : (
             <div
               aria-hidden
-              className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
+              className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10"
             >
               <CategoryIcon
                 slug={stop.placeCategorySlug}

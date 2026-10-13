@@ -53,7 +53,7 @@ function Sticker({
   return (
     <figure
       className={
-        "relative flex-shrink-0 rounded-[14px] border border-border/60 bg-card/95 px-3 pt-3 pb-2.5 shadow-[0_18px_40px_-12px_oklch(0_0_0/0.25)] backdrop-blur-sm " +
+        "relative flex-shrink-0 rounded-[14px] border border-border/60 bg-card px-3 pt-3 pb-2.5 shadow-[0_18px_40px_-12px_oklch(0_0_0/0.25)] " +
         (compact ? "w-28" : "w-32")
       }
       style={{
