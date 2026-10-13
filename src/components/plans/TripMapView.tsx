@@ -421,7 +421,7 @@ function ProfilePill({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors",
+        "relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-['']",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-background hover:text-foreground",

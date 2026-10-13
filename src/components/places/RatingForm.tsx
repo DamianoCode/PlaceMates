@@ -78,7 +78,7 @@ export function RatingForm({
               onChange={(e) =>
                 setValues((prev) => ({ ...prev, [dim.key]: Number(e.target.value) }))
               }
-              className="w-full accent-primary"
+              className="range-field"
             />
           </div>
         ))}

@@ -105,7 +105,7 @@ export function TripStopRow({
         {...listeners}
         disabled={isCompleted}
         className={cn(
-          "absolute inset-y-0 left-0 flex w-7 touch-none items-center justify-center transition-colors",
+          "absolute inset-y-0 left-0 flex w-9 touch-none items-center justify-center transition-colors",
           isCompleted
             ? "cursor-not-allowed bg-emerald-500/10 text-emerald-600/40 dark:text-emerald-400/40"
             : "cursor-grab bg-primary/10 text-primary hover:bg-primary/15 active:cursor-grabbing",

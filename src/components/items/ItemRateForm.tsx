@@ -68,7 +68,7 @@ export function ItemRateForm({
             value={score}
             aria-valuetext={`${score.toFixed(1)} z 5`}
             onChange={(e) => setScore(Number(e.target.value))}
-            className="w-full accent-primary"
+            className="range-field"
           />
           <div className="flex justify-between text-[11px] tabular-nums text-muted-foreground">
             <span>1.0</span>
