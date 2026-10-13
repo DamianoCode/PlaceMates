@@ -91,7 +91,7 @@ export function ChangePasswordForm() {
         </p>
       ) : null}
       {ok ? (
-        <p className="inline-flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+        <p className="inline-flex items-center gap-1.5 text-sm text-success">
           <Check size={14} aria-hidden />
           Hasło zmienione.
         </p>

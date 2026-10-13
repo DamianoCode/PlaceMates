@@ -69,7 +69,7 @@ export default async function DiscoverPage() {
                       {it.placeName}
                     </span>
                     <span className="flex shrink-0 items-center gap-1 text-sm">
-                      <Star size={14} className="fill-amber-400 stroke-amber-500" />
+                      <Star size={14} className="fill-star stroke-star-edge" />
                       <span className="font-medium tabular-nums">
                         {it.overall.toFixed(1)}
                       </span>

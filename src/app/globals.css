@@ -28,6 +28,13 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-star: var(--star);
+  --color-star-edge: var(--star-edge);
+  --color-star-foreground: var(--star-foreground);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -68,6 +75,17 @@
   --accent: oklch(0.92 0.04 70);
   --accent-foreground: oklch(0.25 0.04 45);
   --destructive: oklch(0.58 0.21 25);
+  /* Status roles. Moss for "done / saved", ochre for "heads-up"; both sit
+   * at L ≈ 0.52 so they clear 4.5:1 as text on paper and as fills behind
+   * paper labels, and both lean warm so they belong to the atlas. */
+  --success: oklch(0.52 0.11 150);
+  --success-foreground: oklch(0.98 0.012 80);
+  --warning: oklch(0.53 0.12 62);
+  --warning-foreground: oklch(0.98 0.012 80);
+  /* Rating stars and "gold" honours (year review #1). Same in both themes. */
+  --star: oklch(0.828 0.189 84.429);
+  --star-edge: oklch(0.769 0.188 70.08);
+  --star-foreground: oklch(0.3 0.07 55);
   --border: oklch(0.88 0.02 70);
   --input: oklch(0.9 0.02 70);
   --ring: oklch(0.55 0.14 42 / 0.5);
@@ -103,6 +121,13 @@
   --accent: oklch(0.28 0.03 50);
   --accent-foreground: oklch(0.94 0.012 80);
   --destructive: oklch(0.7 0.19 22);
+  --success: oklch(0.76 0.12 152);
+  --success-foreground: oklch(0.18 0.012 60);
+  --warning: oklch(0.8 0.12 78);
+  --warning-foreground: oklch(0.18 0.012 60);
+  --star: oklch(0.828 0.189 84.429);
+  --star-edge: oklch(0.769 0.188 70.08);
+  --star-foreground: oklch(0.3 0.07 55);
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 12%);
   --ring: oklch(0.72 0.14 50 / 0.5);

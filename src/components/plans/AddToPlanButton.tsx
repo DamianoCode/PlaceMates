@@ -212,7 +212,7 @@ function ListView({
                   <span className="flex h-14 w-full items-center gap-3 px-5 text-muted-foreground">
                     <span
                       aria-hidden
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
                     >
                       <Check size={16} />
                     </span>

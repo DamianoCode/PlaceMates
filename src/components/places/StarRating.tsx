@@ -31,13 +31,13 @@ export function StarRating({
         <Star
           key={`f${i}`}
           size={size}
-          className="fill-amber-400 stroke-amber-500"
+          className="fill-star stroke-star-edge"
         />
       ))}
       {hasHalf && (
         <StarHalf
           size={size}
-          className="fill-amber-400 stroke-amber-500"
+          className="fill-star stroke-star-edge"
         />
       )}
       {Array.from({ length: empty }).map((_, i) => (

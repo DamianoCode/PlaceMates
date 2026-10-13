@@ -91,7 +91,7 @@ export function TripStopRow({
         "group relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all",
         isDragging && "z-10 opacity-60 shadow-lg ring-2 ring-primary/40",
         isCompleted &&
-          "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/15",
+          "border-success/30 bg-success/5",
       )}
     >
       {/* Drag rail — full-height vertical strip on the left. Bigger
@@ -107,7 +107,7 @@ export function TripStopRow({
         className={cn(
           "absolute inset-y-0 left-0 flex w-9 touch-none items-center justify-center transition-colors",
           isCompleted
-            ? "cursor-not-allowed bg-emerald-500/10 text-emerald-600/40 dark:text-emerald-400/40"
+            ? "cursor-not-allowed bg-success/10 text-success/40"
             : "cursor-grab bg-primary/10 text-primary hover:bg-primary/15 active:cursor-grabbing",
         )}
       >
@@ -122,7 +122,7 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-white font-display text-lg font-semibold tabular-nums shadow-sm",
             isCompleted
-              ? "bg-emerald-600 text-white"
+              ? "bg-success text-success-foreground"
               : "bg-primary text-primary-foreground",
           )}
         >
@@ -167,7 +167,7 @@ export function TripStopRow({
           )}
 
           {isCompleted && stop.completedByDisplayName && (
-            <p className="mt-1.5 text-xs italic text-emerald-700 dark:text-emerald-400">
+            <p className="mt-1.5 text-xs italic text-success">
               Odhaczone — {stop.completedByDisplayName}
             </p>
           )}
@@ -185,8 +185,8 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",
             isCompleted
-              ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700"
-              : "border-border bg-background text-muted-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30",
+              ? "border-success bg-success text-success-foreground hover:bg-success/90"
+              : "border-border bg-background text-muted-foreground hover:border-success hover:bg-success/10 hover:text-success",
             pending && "opacity-60",
           )}
         >

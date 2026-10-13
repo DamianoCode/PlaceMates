@@ -141,7 +141,7 @@ export function PlacePreviewSheet({
 
             <div className="mt-auto flex items-center justify-between pt-2">
               <div className="flex items-center gap-1 text-sm">
-                <Star size={14} className="fill-amber-400 stroke-amber-500" />
+                <Star size={14} className="fill-star stroke-star-edge" />
                 {preview?.overall !== null && preview?.overall !== undefined ? (
                   <>
                     <span className="font-medium tabular-nums">
@@ -181,7 +181,7 @@ export function PlacePreviewSheet({
                 <span className="flex items-center gap-1 tabular-nums">
                   {b.avg !== null ? (
                     <>
-                      <Star size={11} className="fill-amber-400 stroke-amber-500" />
+                      <Star size={11} className="fill-star stroke-star-edge" />
                       <span className="font-medium">{b.avg.toFixed(2)}</span>
                       <span className="text-muted-foreground">({b.count})</span>
                     </>

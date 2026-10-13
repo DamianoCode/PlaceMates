@@ -22,7 +22,7 @@ export function VisitForm({ placeId }: { placeId: string }) {
         className="field-base"
       />
       {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-      <p role="status" className="text-sm text-emerald-700 empty:hidden dark:text-emerald-400">{saved ? "Dodano wizytę." : null}</p>
+      <p role="status" className="text-sm text-success empty:hidden">{saved ? "Dodano wizytę." : null}</p>
       <Button type="submit" disabled={pending} variant="outline">
         {pending ? "Dodaję…" : "Zaznacz wizytę"}
       </Button>

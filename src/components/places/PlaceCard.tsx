@@ -85,7 +85,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
         <div className="flex items-center justify-between pt-1.5">
           {place.overall !== null ? (
             <span className="inline-flex items-center gap-1 text-sm">
-              <Star size={14} className="fill-amber-400 stroke-amber-500" />
+              <Star size={14} className="fill-star stroke-star-edge" />
               <span className="font-medium tabular-nums">
                 {place.overall.toFixed(2)}
               </span>

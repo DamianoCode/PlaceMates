@@ -33,7 +33,7 @@ export function RankedPlaceCard({
           {place.name}
         </p>
         <div className="flex items-center gap-1.5 text-sm">
-          <Star size={14} className="fill-amber-400 stroke-amber-500" />
+          <Star size={14} className="fill-star stroke-star-edge" />
           <span className="font-medium tabular-nums">
             {place.avg.toFixed(2)}
           </span>

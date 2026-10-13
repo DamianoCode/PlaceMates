@@ -15,20 +15,20 @@ function initials(name: string): string {
 
 /**
  * "Gwiazda roku" — the member with the most contributions. Oversized
- * avatar with a crown, warm gradient panel, big name + a contribution
+ * avatar with a crown, gold-washed panel, big name + a contribution
  * tally. Initials fallback when there's no photo.
  */
 export function TopMemberCard({ member }: { member: YearTopMember }) {
   return (
-    <div className="relative flex items-center gap-5 overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-400/15 via-primary/5 to-transparent p-6">
+    <div className="relative flex items-center gap-5 overflow-hidden rounded-3xl border border-star/40 bg-star/10 p-6">
       <Crown
         size={120}
         strokeWidth={1}
         aria-hidden
-        className="pointer-events-none absolute -right-5 -top-5 rotate-12 text-amber-400/10"
+        className="pointer-events-none absolute -right-5 -top-5 rotate-12 text-star/25"
       />
       <div className="relative flex-shrink-0">
-        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary/15 font-display text-3xl font-semibold text-primary ring-2 ring-amber-400/40">
+        <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary/15 font-display text-3xl font-semibold text-primary ring-2 ring-star/60">
           {member.avatarUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -41,12 +41,12 @@ export function TopMemberCard({ member }: { member: YearTopMember }) {
             initials(member.displayName)
           )}
         </div>
-        <span className="absolute -right-1 -top-2 flex h-8 w-8 -rotate-12 items-center justify-center rounded-full bg-amber-400 text-amber-950 shadow-md ring-2 ring-card">
+        <span className="absolute -right-1 -top-2 flex h-8 w-8 -rotate-12 items-center justify-center rounded-full bg-star text-star-foreground shadow-md ring-2 ring-card">
           <Crown size={16} className="fill-current" />
         </span>
       </div>
       <div className="relative min-w-0 flex-1">
-        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-amber-700 dark:text-amber-400">
+        <p className="font-mono text-[10px] uppercase tracking-[0.28em] text-primary">
           Gwiazda roku
         </p>
         <p className="mt-0.5 truncate font-display text-3xl leading-tight">
