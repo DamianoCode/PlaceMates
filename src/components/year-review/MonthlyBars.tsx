@@ -66,7 +66,7 @@ export function MonthlyBars({ months }: { months: YearMonth[] }) {
               "flex-1 text-center text-[11px]",
               i === peak
                 ? "font-semibold text-foreground"
-                : "text-muted-foreground/60",
+                : "text-muted-foreground",
             )}
           >
             {MONTHS_PL[i]}

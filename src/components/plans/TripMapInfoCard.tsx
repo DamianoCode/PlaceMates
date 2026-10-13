@@ -138,7 +138,7 @@ export function TripMapInfoCard({
             </div>
 
             {legFromPrev && (
-              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/80">
+              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                 <ArrowDownRight size={11} aria-hidden />
                 <span>Od poprzedniego:</span>
                 <span className="font-mono tabular-nums">
@@ -168,7 +168,7 @@ export function TripMapInfoCard({
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <span className="min-w-[2.5rem] text-center font-mono text-xs tabular-nums text-muted-foreground/80">
+                <span className="min-w-[2.5rem] text-center font-mono text-xs tabular-nums text-muted-foreground">
                   {idx + 1} / {stops.length}
                 </span>
                 <button

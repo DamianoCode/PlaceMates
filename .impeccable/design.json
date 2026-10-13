@@ -328,7 +328,15 @@
       },
       "eyebrow": {
         "displayName": "Eyebrow",
-        "purpose": "Uppercase mono line with an em-dash prefix above editorial titles, Terracotta at 80%."
+        "purpose": "Uppercase 11px mono line with an em-dash prefix above editorial titles, full Terracotta."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Dense 11px metadata on cards, info cards and plan rows."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "10px uppercase stat and badge captions; the floor of the scale."
       }
     },
     "shadows": [
@@ -468,7 +476,7 @@
       "refersTo": "display",
       "description": "Mono eyebrow, Fraunces title, italic lede; opens every top-level page.",
       "html": "<header class=\"ds-ed\"><p class=\"ds-ed__eyebrow\">— Ranking</p><h1 class=\"ds-ed__title\">Najlepsze miejsca paczki</h1><p class=\"ds-ed__lede\">Średnie z ocen wszystkich grup, w których jesteś.</p></header>",
-      "css": ".ds-ed{max-width:42rem;color:var(--color-foreground,oklch(0.22 0.02 50))}.ds-ed__eyebrow{margin:0 0 8px;font:400 10px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:0.32em;text-transform:uppercase;color:oklch(0.58 0.14 42 / 0.8)}.ds-ed__title{margin:0;font:400 30px/1.05 Fraunces,Georgia,serif;letter-spacing:-0.025em}.ds-ed__lede{margin:8px 0 0;font:italic 400 14px/1.45 Outfit,system-ui,sans-serif;color:oklch(0.5 0.02 50)}"
+      "css": ".ds-ed{max-width:42rem;color:var(--color-foreground,oklch(0.22 0.02 50))}.ds-ed__eyebrow{margin:0 0 8px;font:400 11px/1.5 'Geist Mono',ui-monospace,monospace;letter-spacing:0.32em;text-transform:uppercase;color:var(--color-primary,oklch(0.58 0.14 42))}.ds-ed__title{margin:0;font:400 30px/1.05 Fraunces,Georgia,serif;letter-spacing:-0.025em}.ds-ed__lede{margin:8px 0 0;font:italic 400 14px/1.45 Outfit,system-ui,sans-serif;color:oklch(0.5 0.02 50)}"
     }
   ],
   "narrative": {
@@ -496,6 +504,11 @@
       {
         "name": "The Same Hand Rule",
         "body": "Every top-level page opens with the editorial trio: mono eyebrow → Fraunces title → optional italic lede. Don't invent a different header shape for a new page.",
+        "section": "typography"
+      },
+      {
+        "name": "The Small Print Rule",
+        "body": "Text under 12px is never faded: it uses full Dust Text or full Terracotta, never an alpha like `/70` or `/80`. Hierarchy at that size comes from case, tracking and weight, not transparency. Nothing goes below 10px.",
         "section": "typography"
       },
       {

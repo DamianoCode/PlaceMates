@@ -73,7 +73,7 @@ function Sticker({
         <span className="block font-display text-[13px] italic leading-tight">
           {label}
         </span>
-        <span className="block text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70">
+        <span className="block text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
           {accent}
         </span>
       </figcaption>

@@ -60,7 +60,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
             {place.categoryName}
           </p>
           {place.address && (
-            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground/80">
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
               {place.address}
             </p>
           )}
@@ -69,7 +69,7 @@ export function PlaceCard({ place }: { place: PlaceCardData }) {
            *  signals "this card collapses N places", so the user
            *  knows why ratings/count look richer than a fresh add. */}
           {place.availableInGroups.length >= 2 && (
-            <p className="mt-0.5 line-clamp-1 inline-flex items-center gap-1 text-[11px] text-primary/80">
+            <p className="mt-0.5 line-clamp-1 inline-flex items-center gap-1 text-[11px] text-primary">
               <Users size={11} className="flex-shrink-0" />
               <span className="truncate">
                 W:{" "}

@@ -711,7 +711,7 @@ function NewOrderList({ proposed }: { proposed: OptimizationPreview["proposedOrd
           </li>
         ))}
       </ol>
-      <p className="px-1 text-[11px] italic text-muted-foreground/80">
+      <p className="px-1 text-[11px] italic text-muted-foreground">
         <span className="inline-flex items-center gap-1">
           <RouteIcon size={11} aria-hidden /> Numerujemy od 1 w nowej
           kolejności.

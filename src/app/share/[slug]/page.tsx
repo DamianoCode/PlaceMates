@@ -48,13 +48,13 @@ export default async function PublicSharePage({ params }: { params: Params }) {
             PlaceMates
           </span>
         </Link>
-        <span className="hidden font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/80 md:block">
+        <span className="hidden font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground md:block">
           pocztówka · wspólny atlas
         </span>
       </div>
 
       <main className="relative z-10 mx-auto max-w-2xl px-5 pb-16 md:px-8">
-        <p className="mb-3 font-mono text-[11px] tracking-[0.35em] uppercase text-primary/80">
+        <p className="mb-3 font-mono text-[11px] tracking-[0.35em] uppercase text-primary">
           — {view.categoryName}
         </p>
         <h1 className="font-display text-[clamp(2.25rem,7vw,4.5rem)] leading-[1] tracking-[-0.02em]">
@@ -78,7 +78,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
           </span>
           <div className="mb-1 flex flex-col gap-1">
             <StarRating value={view.overall} size={20} />
-            <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/80">
+            <span className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
               z 5.0
             </span>
           </div>
@@ -90,7 +90,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
             aria-label="Wymiary oceny"
             className="mt-8 rounded-2xl border bg-card/80 p-5 backdrop-blur-sm"
           >
-            <h2 className="mb-3 font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground">
+            <h2 className="mb-3 font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
               — wymiary oceny
             </h2>
             <dl className="divide-y">
@@ -117,7 +117,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
         {view.note && (
           <blockquote className="mt-8 border-l-4 border-primary/60 pl-5 text-lg leading-relaxed italic text-foreground/90">
             “{view.note}”
-            <footer className="mt-2 text-xs font-mono not-italic tracking-[0.25em] uppercase text-muted-foreground/70">
+            <footer className="mt-2 text-xs font-mono not-italic tracking-[0.25em] uppercase text-muted-foreground">
               — {view.authorName}
             </footer>
           </blockquote>
@@ -131,7 +131,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
             />
             <div className="min-w-0 flex-1">
               <p className="break-words">{view.address}</p>
-              <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground/80">
+              <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground">
                 {view.lat.toFixed(5)}°N · {view.lng.toFixed(5)}°E
               </p>
             </div>
@@ -151,7 +151,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
           <p className="font-display italic text-muted-foreground">
             Pocztówka z wspólnego atlasu.
           </p>
-          <p className="mt-2 text-xs text-muted-foreground/80">
+          <p className="mt-2 text-xs text-muted-foreground">
             <Link
               href="/register"
               className="font-medium text-foreground underline-offset-4 hover:underline"

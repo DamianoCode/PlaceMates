@@ -146,7 +146,7 @@ export function ActivityItem({ item }: { item: ActivityView }) {
           {subject ? <> {subject}</> : null}
           {d.tail ? <> {d.tail}</> : null}
         </p>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground/80">
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           <Icon
             size={13}
             strokeWidth={2}

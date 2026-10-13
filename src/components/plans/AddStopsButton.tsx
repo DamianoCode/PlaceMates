@@ -356,7 +356,7 @@ const CandidateRow = memo(function CandidateRow({
           {candidate.categoryName}
         </p>
         {candidate.address && (
-          <p className="truncate text-[11px] text-muted-foreground/80">
+          <p className="truncate text-[11px] text-muted-foreground">
             {candidate.address}
           </p>
         )}

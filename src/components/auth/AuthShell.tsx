@@ -55,7 +55,7 @@ export function AuthShell({
           </span>
         </div>
         <div className="hidden shrink-0 md:block">
-          <span className="block rotate-90 origin-top-right font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/80">
+          <span className="block rotate-90 origin-top-right font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
             50.7°N · 23.2°E · together since 2026
           </span>
         </div>
@@ -66,7 +66,7 @@ export function AuthShell({
       <div className="relative z-10 mx-auto grid min-h-[calc(100dvh-6rem)] max-w-[1400px] grid-cols-1 gap-10 px-5 pb-10 md:px-10 lg:grid-cols-5 lg:gap-16">
         {/* Hero column. */}
         <section className="relative flex flex-col justify-center lg:col-span-3 lg:py-16">
-          <p className="mb-4 font-mono text-[11px] tracking-[0.35em] uppercase text-primary/80 [animation:auth-rise_700ms_40ms_both]">
+          <p className="mb-4 font-mono text-[11px] tracking-[0.35em] uppercase text-primary [animation:auth-rise_700ms_40ms_both]">
             — {eyebrow}
           </p>
           <h1

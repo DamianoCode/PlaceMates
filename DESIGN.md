@@ -56,9 +56,21 @@ typography:
     fontWeight: 500
     lineHeight: 1.33
     letterSpacing: "-0.005em"
+  caption:
+    fontFamily: "Outfit, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "11px"
+    fontWeight: 400
+    lineHeight: 1.35
+    letterSpacing: "-0.005em"
+  micro:
+    fontFamily: "Outfit, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "10px"
+    fontWeight: 500
+    lineHeight: 1.3
+    letterSpacing: "0.05em"
   eyebrow:
     fontFamily: "Geist Mono, ui-monospace, monospace"
-    fontSize: "10px"
+    fontSize: "11px"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "0.32em"
@@ -153,7 +165,7 @@ Confirmed rejections: it must never feel like a utilitarian map tool (cool grey-
 A warm, low-chroma paper-and-ink palette with one earthy pigment; all values are authored in OKLCH in `src/app/globals.css` and that file is canonical.
 
 ### Primary
-- **Terracotta** (`terracotta`): the one voice of the app. Primary buttons, active filter chips, the active bottom-nav tab and its pill (at 12% alpha), default map pins, focus rings (at 50%), the eyebrow text (at 80%), and the PWA theme colour. In dark mode it brightens to **Night Terracotta** (`night-terracotta`) so it keeps contrast on near-black.
+- **Terracotta** (`terracotta`): the one voice of the app. Primary buttons, active filter chips, the active bottom-nav tab and its pill (at 12% alpha), default map pins, focus rings (at 50%), the eyebrow text, and the PWA theme colour. In dark mode it brightens to **Night Terracotta** (`night-terracotta`) so it keeps contrast on near-black.
 - **Paper on Terracotta** (`terracotta-ink-on`): text and icons placed on terracotta — the paper colour itself, not white.
 
 ### Secondary
@@ -194,11 +206,14 @@ A warm, low-chroma paper-and-ink palette with one earthy pigment; all values are
 - **Headline** (Fraunces 400, 1.5rem, 1.15): section headings (`h2`).
 - **Title** (Fraunces 400, 1.125rem, 1.25): place names on cards and sheets, truncated to one line.
 - **Body** (Outfit 400, 0.875rem; inputs 1rem on mobile to avoid iOS zoom): running text. Ledes and empty-state copy are set in *italic* Dust Text, max ~42rem.
-- **Label** (Outfit 500, 0.75rem): buttons, chips, tab labels. Tiny stat captions use 10px uppercase with wide tracking.
-- **Eyebrow** (Geist Mono 10px, 0.32em tracking, uppercase, Terracotta at 80%, prefixed with an em dash "— "): the line above every editorial title.
+- **Label** (Outfit 500, 0.75rem): buttons, chips, tab labels.
+- **Caption** (Outfit 400, 11px): dense metadata on cards, map info cards and plan rows (distances, "dodane przez", month labels). Stat-pill captions go down to 10px uppercase with wide tracking; nothing is smaller.
+- **Eyebrow** (Geist Mono 11px, 0.32em tracking, uppercase, full Terracotta, prefixed with an em dash "— "): the line above every editorial title.
 
 ### Named Rules
 **The Same Hand Rule.** Every top-level page opens with the editorial trio: mono eyebrow → Fraunces title → optional italic lede. Don't invent a different header shape for a new page.
+
+**The Small Print Rule.** Text under 12px is never faded: it uses full Dust Text or full Terracotta, never an alpha like `/70` or `/80`. Hierarchy at that size comes from case, tracking and weight, not transparency. Nothing goes below 10px.
 
 **The Serif Names Places Rule.** Place names and page titles are Fraunces; numbers, controls and metadata are Outfit with `tabular-nums` for scores.
 

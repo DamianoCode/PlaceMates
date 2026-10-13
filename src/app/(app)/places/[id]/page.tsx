@@ -198,7 +198,7 @@ export default async function PlaceDetailPage({
                   Bez adresu
                 </p>
               )}
-              <p className="font-mono text-[11px] tabular-nums text-muted-foreground/80">
+              <p className="font-mono text-[11px] tabular-nums text-muted-foreground">
                 {place.lat.toFixed(5)}°N · {place.lng.toFixed(5)}°E
               </p>
             </div>

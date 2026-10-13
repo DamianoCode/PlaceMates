@@ -303,7 +303,7 @@ export function TripMapView({
             Wyznaczam trasę…
           </span>
         ) : stops.length >= 2 ? (
-          <span className="px-2 text-[11px] italic text-muted-foreground/70">
+          <span className="px-2 text-[11px] italic text-muted-foreground">
             Trasa niedostępna
           </span>
         ) : null}

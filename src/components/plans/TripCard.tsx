@@ -92,7 +92,7 @@ export function TripCard({ trip }: { trip: TripSummary }) {
               aria-hidden
             />
           </div>
-          <span className="font-mono text-[10px] tabular-nums text-muted-foreground/70">
+          <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
             {pct}%
           </span>
         </div>
