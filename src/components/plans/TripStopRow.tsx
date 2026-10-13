@@ -203,7 +203,7 @@ export function TripStopRow({
           type="button"
           onClick={() => setEditing(true)}
           aria-label="Edytuj stop"
-          className="relative before:absolute before:-inset-y-2 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+          className="relative before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
         >
           <Pencil size={12} aria-hidden />
           Edytuj
@@ -213,7 +213,7 @@ export function TripStopRow({
           onClick={deleteStop}
           disabled={pending}
           aria-label="Usuń stop"
-          className="relative before:absolute before:-inset-y-2 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
+          className="relative before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
         >
           <Trash2 size={12} aria-hidden />
           Usuń

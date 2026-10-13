@@ -122,6 +122,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Resized photos via next/image (`/_next/image?url=<supabase>&w=…`).
+  // Same-origin, but immutable per URL like the originals — cache-first
+  // into the photos bucket so thumbnails show instantly on a flaky
+  // connection instead of waiting for network-first to time out.
+  if (url.origin === self.location.origin && url.pathname === "/_next/image") {
+    const source = url.searchParams.get("url") ?? "";
+    if (/^https:\/\/[^/]+\.supabase\.(co|in)\/storage\//.test(source)) {
+      event.respondWith(cacheFirst(request, PHOTOS_CACHE));
+      return;
+    }
+  }
+
   // Same-origin GET — pages + RSC payloads + API GETs. Network-first
   // so fresh data wins when online; cache fallback when offline.
   if (url.origin === self.location.origin) {

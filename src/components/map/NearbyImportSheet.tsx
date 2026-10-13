@@ -684,7 +684,7 @@ export function NearbyImportSheet({
                           aria-pressed={distanceSource === "gps"}
                           title="Liczone od twojej lokalizacji"
                           className={cn(
-                            "relative before:absolute before:-inset-y-1.5 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            "relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
                             distanceSource === "gps"
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground",
@@ -703,7 +703,7 @@ export function NearbyImportSheet({
                           aria-pressed={distanceSource === "map"}
                           title="Liczone od środka widocznej mapy"
                           className={cn(
-                            "relative before:absolute before:-inset-y-1.5 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
+                            "relative before:absolute before:-inset-y-1.5 before:inset-x-0 before:content-[''] inline-flex h-8 items-center gap-1 rounded-full px-3 font-medium uppercase tracking-wider transition-colors",
                             distanceSource === "map"
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground",

@@ -166,7 +166,7 @@ function Section({
       <h2
         className={
           "font-mono text-xs uppercase tracking-[0.2em] " +
-          (muted ? "text-muted-foreground" : "text-muted-foreground")
+          (muted ? "text-muted-foreground" : "text-foreground")
         }
       >
         {title}
