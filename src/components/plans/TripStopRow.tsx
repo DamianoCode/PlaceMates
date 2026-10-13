@@ -88,7 +88,7 @@ export function TripStopRow({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border bg-card shadow-sm transition-all",
+        "group relative overflow-hidden rounded-2xl border bg-card transition-all",
         isDragging && "z-10 opacity-60 shadow-lg ring-2 ring-primary/40",
         isCompleted &&
           "border-success/30 bg-success/5",
