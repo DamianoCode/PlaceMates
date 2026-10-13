@@ -252,18 +252,6 @@
   animation: pm-fade-in 180ms ease-out both;
 }
 
-@keyframes pm-pulse-ring {
-  0% {
-    box-shadow: 0 0 0 0 oklch(from var(--color-primary) l c h / 0.45);
-  }
-  60% {
-    box-shadow: 0 0 0 12px oklch(from var(--color-primary) l c h / 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 oklch(from var(--color-primary) l c h / 0);
-  }
-}
-
 /* Native View Transitions (experimental.viewTransition). The browser
  * snapshots the old + new page and cross-fades the root — smoother than
  * the old remount fade, with no flash of empty layout. Opacity-only (no
