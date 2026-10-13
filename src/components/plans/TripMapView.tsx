@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchJson } from "@/lib/fetch-json";
+import { motionDuration } from "@/lib/motion";
 import { formatDistance, formatDuration } from "@/lib/format-route";
 import { hideBasemapPois, MAP_STYLE } from "@/components/map/map-style";
 import { TripMapInfoCard } from "./TripMapInfoCard";
@@ -157,7 +158,7 @@ export function TripMapView({
         mapInstance.flyTo({
           center: [target.placeLng, target.placeLat],
           zoom: Math.max(mapInstance.getZoom(), 14),
-          duration: 350,
+          duration: motionDuration(350),
           offset: [0, -60],
         });
       }
@@ -337,6 +338,10 @@ export function TripMapView({
               id="trip-line-layer"
               type="line"
               paint={{
+                // Light-theme terracotta (--primary) as hex — MapLibre's
+                // colour parser has no oklch. Dark mode needs no variant:
+                // the line lives on the canvas, which `.dark` inverts and
+                // hue-rotates along with the basemap (globals.css).
                 "line-color": "#b35025",
                 // Routed line is solid 4 px; straight-line
                 // fallback is dashed 3 px so the visual difference
@@ -373,11 +378,11 @@ export function TripMapView({
                     "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
                     active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
                     completed
-                      ? "bg-emerald-600 text-white"
+                      ? "bg-success text-success-foreground"
                       : "bg-primary text-primary-foreground",
                     active &&
                       (completed
-                        ? "ring-4 ring-emerald-500/30"
+                        ? "ring-4 ring-success/30"
                         : "ring-4 ring-primary/30"),
                   )}
                 >
@@ -420,7 +425,7 @@ function ProfilePill({
       aria-selected={active}
       onClick={onClick}
       className={cn(
-        "inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors",
+        "relative inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition-colors before:absolute before:inset-x-0 before:-inset-y-2 before:content-['']",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-background hover:text-foreground",

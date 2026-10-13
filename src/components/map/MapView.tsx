@@ -23,6 +23,7 @@ import {
   MARKER_STAGGER_MS,
 } from "@/lib/constants";
 import { fetchJson } from "@/lib/fetch-json";
+import { motionDuration } from "@/lib/motion";
 import type { PlaceMarker } from "@/domain/places/service";
 
 type PlacePin = PlaceMarker;
@@ -80,6 +81,15 @@ const DEFAULT_VIEW: Partial<ViewState> = {
  * communicates which list lit it up.
  */
 type PinState = "favorite" | "wishlist" | "group-wishlist" | "default";
+
+/** Pin colour is the only visual cue for its list, so the same fact goes
+ *  into the accessible name — worded like the map's filter pills. */
+const PIN_STATE_LABEL: Record<PinState, string> = {
+  favorite: ", ulubione",
+  wishlist: ", do odwiedzenia",
+  "group-wishlist": ", do odwiedzenia z grupą",
+  default: "",
+};
 
 function pinClassesFor(state: PinState, active: boolean): string {
   const base =
@@ -415,7 +425,7 @@ export function MapView({
       mapInstance.flyTo({
         center: [lng, lat],
         zoom: expansionZoom,
-        duration: 400,
+        duration: motionDuration(400),
       });
     },
     [mapInstance, clusterIndex],
@@ -550,7 +560,7 @@ export function MapView({
             >
               <button
                 type="button"
-                aria-label={pin.name}
+                aria-label={pin.name + PIN_STATE_LABEL[state]}
                 aria-pressed={active}
                 className={pinClassesFor(state, active)}
                 style={{

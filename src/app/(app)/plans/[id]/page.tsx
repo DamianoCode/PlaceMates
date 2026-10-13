@@ -95,7 +95,7 @@ export default async function TripDetailPage({
             {allDone && (
               <span
                 aria-label="Wszystkie stopy ukończone"
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
               >
                 <Check size={14} />
               </span>
@@ -113,7 +113,7 @@ export default async function TripDetailPage({
               <div
                 className={
                   "h-full rounded-full transition-all " +
-                  (allDone ? "bg-emerald-500" : "bg-primary")
+                  (allDone ? "bg-success" : "bg-primary")
                 }
                 style={{ width: `${pct}%` }}
                 aria-hidden

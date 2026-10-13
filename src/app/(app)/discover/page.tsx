@@ -19,7 +19,7 @@ export default async function DiscoverPage() {
 
   return (
     <>
-      <PageHeader title="Odkrywaj" fallbackHref="/me" />
+      <PageHeader title="Odkrywaj" fallbackHref="/me" titleAs="p" />
       <section className="mx-auto max-w-2xl space-y-6 p-4">
         <EditorialHeader
           eyebrow="Publicznie udostępnione"
@@ -33,7 +33,7 @@ export default async function DiscoverPage() {
 
         <Link
           href="/ranking"
-          className="group flex items-center gap-3 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 transition-colors hover:border-primary/50"
+          className="group flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary/50 hover:bg-primary/10"
         >
           <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
             <Trophy size={20} />
@@ -69,7 +69,7 @@ export default async function DiscoverPage() {
                       {it.placeName}
                     </span>
                     <span className="flex shrink-0 items-center gap-1 text-sm">
-                      <Star size={14} className="fill-amber-400 stroke-amber-500" />
+                      <Star size={14} className="fill-star stroke-star-edge" />
                       <span className="font-medium tabular-nums">
                         {it.overall.toFixed(1)}
                       </span>

@@ -97,7 +97,7 @@ export function AddToPlanButton({
       </Drawer.Trigger>
 
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
         <Drawer.Content
           className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
           aria-describedby={undefined}
@@ -212,7 +212,7 @@ function ListView({
                   <span className="flex h-14 w-full items-center gap-3 px-5 text-muted-foreground">
                     <span
                       aria-hidden
-                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
                     >
                       <Check size={16} />
                     </span>
@@ -241,7 +241,7 @@ function ListView({
         )}
       </div>
 
-      <div className="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
+      <div className="border-t border-border/60 bg-background p-4">
         <button
           type="button"
           onClick={onCreate}

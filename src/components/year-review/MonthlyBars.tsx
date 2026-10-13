@@ -46,10 +46,8 @@ export function MonthlyBars({ months }: { months: YearMonth[] }) {
               )}
               <div
                 className={cn(
-                  "w-full rounded-md bg-gradient-to-t transition-colors",
-                  isPeak
-                    ? "from-primary to-amber-400 shadow-sm shadow-primary/30"
-                    : "from-primary/30 to-primary/10",
+                  "w-full rounded-md transition-colors",
+                  isPeak ? "bg-primary" : "bg-primary/20",
                 )}
                 style={{ height: `${h}%` }}
               />

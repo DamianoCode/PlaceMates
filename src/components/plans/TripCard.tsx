@@ -23,28 +23,25 @@ export function TripCard({ trip }: { trip: TripSummary }) {
       ? Math.round((trip.completedCount / trip.stopCount) * 100)
       : 0;
   const allDone = trip.stopCount > 0 && trip.completedCount === trip.stopCount;
-  const inProgress = trip.completedCount > 0 && !allDone;
 
   return (
     <Link
       href={`/plans/${trip.id}`}
       className={cn(
-        "group relative block overflow-hidden rounded-2xl border bg-card pl-5 pr-4 py-4 shadow-sm transition-all duration-150 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99]",
-        allDone && "border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/15",
+        "group relative block overflow-hidden rounded-2xl border bg-card pl-5 pr-4 py-4 transition-[background-color,border-color,transform] duration-150 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.99]",
+        allDone && "border-success/30 bg-success/5",
       )}
     >
       {/* Accent stripe — matches the drag-rail aesthetic on
        *  TripStopRow. Primary for plans you're still working through,
-       *  emerald for fully-checked-off ones. */}
+       *  success moss for fully-checked-off ones. */}
       <span
         aria-hidden
         className={cn(
           "absolute inset-y-0 left-0 w-1.5",
           allDone
-            ? "bg-emerald-500/70"
-            : inProgress
-              ? "bg-gradient-to-b from-emerald-500/70 to-primary/70"
-              : "bg-primary/70",
+            ? "bg-success/70"
+            : "bg-primary/70",
         )}
       />
 
@@ -72,8 +69,9 @@ export function TripCard({ trip }: { trip: TripSummary }) {
         </div>
         {allDone && (
           <span
+            role="img"
             aria-label="Wszystkie stopy ukończone"
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-success/15 text-success"
           >
             <Check size={14} />
           </span>
@@ -86,7 +84,7 @@ export function TripCard({ trip }: { trip: TripSummary }) {
             <div
               className={cn(
                 "h-full rounded-full transition-all",
-                allDone ? "bg-emerald-500" : "bg-primary",
+                allDone ? "bg-success" : "bg-primary",
               )}
               style={{ width: `${pct}%` }}
               aria-hidden

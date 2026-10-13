@@ -124,7 +124,7 @@ function EmptyState({
       <div className="relative">
         <div
           aria-hidden
-          className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-primary/15 via-primary/5 to-transparent"
+          className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10"
         >
           <Route size={40} className="text-primary" strokeWidth={1.5} />
         </div>

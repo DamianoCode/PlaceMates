@@ -29,6 +29,18 @@ const PHOTOS_CACHE = `pm-photos-${CACHE_VERSION}`;
 const RSC_CACHE = `pm-rsc-${CACHE_VERSION}`;
 const ALL_CACHES = [STATIC_CACHE, PAGES_CACHE, PHOTOS_CACHE, RSC_CACHE];
 
+// Entry caps for the runtime caches. STATIC is versioned per deploy and
+// bounded by the bundle, so it has none. The others would otherwise grow
+// with every place, photo and page ever viewed until the browser evicts
+// the whole origin — app shell included, which breaks /offline. Sized for
+// "the last few weeks of browsing": enough for the subway, small enough
+// to stay well under typical mobile quotas.
+const CACHE_LIMITS = {
+  [PHOTOS_CACHE]: 200,
+  [PAGES_CACHE]: 60,
+  [RSC_CACHE]: 120,
+};
+
 // Routes pre-cached on install so the app opens cold-offline.
 const SHELL_URLS = [
   "/offline",
@@ -113,10 +125,8 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Supabase storage photos — cross-origin, cache-first with
-  // best-effort eviction. We don't run a strict LRU; the browser's
-  // origin storage cap (typically tens-to-hundreds of MB) is the
-  // safety net. If it bites we'll add a count-based trim here.
+  // Supabase storage photos — cross-origin, cache-first, trimmed to
+  // CACHE_LIMITS by insertion order (see putAndTrim).
   if (url.hostname.endsWith(".supabase.co") && url.pathname.includes("/storage/")) {
     event.respondWith(cacheFirst(request, PHOTOS_CACHE));
     return;
@@ -165,7 +175,7 @@ async function cacheFirst(request, cacheName) {
     const response = await fetch(request);
     if (response.ok || response.type === "opaque") {
       // Don't await put — race-free and faster TTFB.
-      cache.put(request, response.clone()).catch(() => {});
+      putAndTrim(cache, cacheName, request, response.clone());
     }
     return response;
   } catch (err) {
@@ -180,7 +190,7 @@ async function networkFirst(request, cacheName) {
   try {
     const response = await fetch(request);
     if (response.ok) {
-      cache.put(request, response.clone()).catch(() => {});
+      putAndTrim(cache, cacheName, request, response.clone());
     }
     return response;
   } catch (err) {
@@ -195,7 +205,7 @@ async function navigationHandler(request) {
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(PAGES_CACHE);
-      cache.put(request, response.clone()).catch(() => {});
+      putAndTrim(cache, PAGES_CACHE, request, response.clone());
     }
     return response;
   } catch {
@@ -213,6 +223,25 @@ async function navigationHandler(request) {
       { headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
   }
+}
+
+/**
+ * Store a response, then drop the oldest entries past the cache's cap.
+ * `cache.put` replaces an existing entry by appending it, so `keys()`
+ * comes back oldest-first and trimming from the front is a cheap
+ * approximation of LRU. Fire-and-forget: errors never reach the page.
+ */
+function putAndTrim(cache, cacheName, request, response) {
+  cache
+    .put(request, response)
+    .then(async () => {
+      const limit = CACHE_LIMITS[cacheName];
+      if (!limit) return;
+      const keys = await cache.keys();
+      const excess = keys.length - limit;
+      for (let i = 0; i < excess; i++) await cache.delete(keys[i]);
+    })
+    .catch(() => {});
 }
 
 // --- Background Sync — replay queued mutations ---

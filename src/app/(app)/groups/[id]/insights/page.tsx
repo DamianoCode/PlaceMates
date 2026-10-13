@@ -44,7 +44,7 @@ export default async function GroupInsightsPage({
 
   return (
     <>
-      <PageHeader title="Statystyki" fallbackHref={`/groups/${id}`} />
+      <PageHeader title="Statystyki" fallbackHref={`/groups/${id}`} titleAs="p" />
       <section className="mx-auto max-w-2xl space-y-6 p-4">
         <EditorialHeader
           eyebrow={group.name}

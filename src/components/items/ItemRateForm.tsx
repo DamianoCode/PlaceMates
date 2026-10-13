@@ -51,7 +51,7 @@ export function ItemRateForm({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
             <Label htmlFor="item-score" className="flex items-center gap-1.5">
-              <Star size={14} className="fill-amber-400 stroke-amber-500" />
+              <Star size={14} className="fill-star stroke-star-edge" />
               Twoja ocena
             </Label>
             <span className="font-display text-2xl tabular-nums text-primary">
@@ -66,8 +66,9 @@ export function ItemRateForm({
             max={5}
             step={0.5}
             value={score}
+            aria-valuetext={`${score.toFixed(1)} z 5`}
             onChange={(e) => setScore(Number(e.target.value))}
-            className="w-full accent-primary"
+            className="range-field"
           />
           <div className="flex justify-between text-[11px] tabular-nums text-muted-foreground">
             <span>1.0</span>
@@ -92,7 +93,7 @@ export function ItemRateForm({
         </div>
 
         {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-        <p role="status" className="text-sm text-emerald-700 empty:hidden dark:text-emerald-400">{saved ? "Zapisano ocenę." : null}</p>
+        <p role="status" className="text-sm text-success empty:hidden">{saved ? "Zapisano ocenę." : null}</p>
 
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Zapisuję…" : initialScore !== null ? "Zaktualizuj" : "Zapisz"}

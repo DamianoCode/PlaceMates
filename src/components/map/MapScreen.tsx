@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import {
   Bookmark,
@@ -16,8 +17,14 @@ import {
 import { MapViewClient } from "./MapViewClient";
 import { PlacePreviewSheet } from "./PlacePreviewSheet";
 import { SpeedDial, type SpeedDialAction } from "./SpeedDial";
-import { NearbyImportSheet } from "./NearbyImportSheet";
 import type { PlaceMarker } from "@/domain/places/service";
+
+// Bulk import pulls in vaul + the list virtualizer; keep both off the
+// /map first paint and fetch them the first time the sheet is opened.
+const NearbyImportSheet = dynamic(
+  () => import("./NearbyImportSheet").then((m) => m.NearbyImportSheet),
+  { ssr: false },
+);
 
 type Category = { id: string; slug: string; name: string };
 type Bbox = { west: number; south: number; east: number; north: number };
@@ -99,6 +106,9 @@ export function MapScreen({
     focus?.placeId ?? null,
   );
   const [importOpen, setImportOpen] = useState(false);
+  // Stays true after the first open so the sheet can animate closed and
+  // reopen without re-mounting (and without refetching its chunk).
+  const [importMounted, setImportMounted] = useState(false);
   const bboxRef = useRef<Bbox | null>(null);
   const router = useRouter();
 
@@ -161,6 +171,7 @@ export function MapScreen({
           toast.error("Najpierw dołącz do grupy.");
           return;
         }
+        setImportMounted(true);
         setImportOpen(true);
       },
     },
@@ -353,7 +364,7 @@ export function MapScreen({
         <SpeedDial actions={speedDialActions} ariaLabel="Dodaj do mapy" />
       )}
 
-      {primaryGroupId && (
+      {primaryGroupId && importMounted && (
         <NearbyImportSheet
           open={importOpen}
           onClose={() => setImportOpen(false)}

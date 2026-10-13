@@ -74,10 +74,11 @@ export function RatingForm({
               max={dim.max}
               step={0.5}
               value={values[dim.key]}
+              aria-valuetext={`${values[dim.key].toFixed(1)} z ${dim.max}`}
               onChange={(e) =>
                 setValues((prev) => ({ ...prev, [dim.key]: Number(e.target.value) }))
               }
-              className="w-full accent-primary"
+              className="range-field"
             />
           </div>
         ))}
@@ -95,7 +96,7 @@ export function RatingForm({
         </div>
 
         {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-        <p role="status" className="text-sm text-emerald-700 empty:hidden dark:text-emerald-400">{saved ? "Zapisano ocenę." : null}</p>
+        <p role="status" className="text-sm text-success empty:hidden">{saved ? "Zapisano ocenę." : null}</p>
 
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Zapisuję…" : initial ? "Zaktualizuj ocenę" : "Zapisz ocenę"}

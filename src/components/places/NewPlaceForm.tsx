@@ -483,7 +483,7 @@ function PickedLocationSummary({
           type="button"
           onClick={onClear}
           aria-label="Wyczyść wybór lokalizacji"
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground before:absolute before:-inset-2 before:content-[''] hover:bg-muted hover:text-foreground"
         >
           <X size={14} />
         </button>

@@ -80,7 +80,7 @@ export function TripMapInfoCard({
           ) : (
             <div
               aria-hidden
-              className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
+              className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10"
             >
               <CategoryIcon
                 slug={stop.placeCategorySlug}
@@ -100,7 +100,7 @@ export function TripMapInfoCard({
                     className={cn(
                       "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white text-[11px] font-semibold tabular-nums shadow-sm",
                       completed
-                        ? "bg-emerald-600 text-white"
+                        ? "bg-success text-success-foreground"
                         : "bg-primary text-primary-foreground",
                     )}
                   >
@@ -131,7 +131,7 @@ export function TripMapInfoCard({
                 type="button"
                 onClick={onClose}
                 aria-label="Zamknij podgląd"
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground before:absolute before:-inset-1 before:content-[''] hover:bg-muted hover:text-foreground"
               >
                 <X size={18} />
               </button>

@@ -63,12 +63,12 @@ export function WebViewNotice({ kind }: { kind: Exclude<WebViewKind, null> }) {
   return (
     <div
       role="alert"
-      className="mb-5 space-y-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm"
+      className="mb-5 space-y-4 rounded-xl border border-warning/40 bg-warning/10 p-4 text-sm"
     >
       <div className="flex items-start gap-2">
         <AlertTriangle
           size={18}
-          className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400"
+          className="mt-0.5 flex-shrink-0 text-warning"
         />
         <div className="space-y-1">
           <p className="font-semibold">
@@ -86,7 +86,7 @@ export function WebViewNotice({ kind }: { kind: Exclude<WebViewKind, null> }) {
         <button
           type="button"
           onClick={tryAutoOpen}
-          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-amber-600 px-3.5 text-xs font-medium text-white hover:bg-amber-700"
+          className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full bg-warning px-3.5 text-xs font-medium text-warning-foreground hover:bg-warning/90"
         >
           <ExternalLink size={14} />
           Otwórz w przeglądarce
@@ -94,7 +94,7 @@ export function WebViewNotice({ kind }: { kind: Exclude<WebViewKind, null> }) {
         <button
           type="button"
           onClick={copyLink}
-          className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-full border border-amber-500/40 bg-background px-3 text-xs font-medium hover:bg-muted"
+          className="inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-background px-3 text-xs font-medium hover:bg-muted"
           aria-label="Skopiuj link"
         >
           {copied ? <Check size={14} /> : <Copy size={14} />}
@@ -113,7 +113,7 @@ export function WebViewNotice({ kind }: { kind: Exclude<WebViewKind, null> }) {
       )}
 
       {/* PWA install tip — the second legitimate path. */}
-      <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-background/40 p-3 text-xs">
+      <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-background/40 p-3 text-xs">
         <Smartphone
           size={14}
           className="mt-0.5 flex-shrink-0 text-muted-foreground"

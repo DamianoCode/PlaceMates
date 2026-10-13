@@ -42,6 +42,8 @@ export function MemberRow({
           <img
             src={member.avatarUrl}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="h-10 w-10 rounded-full object-cover"
           />
         ) : (

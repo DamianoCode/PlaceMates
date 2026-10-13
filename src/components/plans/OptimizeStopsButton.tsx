@@ -252,7 +252,7 @@ function OptimizeDrawer({
       }}
     >
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
         <Drawer.Content
           className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
           aria-describedby={undefined}
@@ -461,10 +461,10 @@ function PreviewLoading() {
 function PreviewResult({ preview }: { preview: OptimizationPreview }) {
   if (preview.unchanged) {
     return (
-      <div className="flex items-center gap-3 rounded-2xl border bg-emerald-50/40 p-4 dark:bg-emerald-950/20">
+      <div className="flex items-center gap-3 rounded-2xl border bg-success/5 p-4">
         <span
           aria-hidden
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-success/15 text-success"
         >
           <Check size={20} />
         </span>
@@ -632,8 +632,8 @@ function DeltaLine({
       className={cn(
         "flex items-center gap-2 text-sm",
         isSaving
-          ? "text-emerald-700 dark:text-emerald-400"
-          : "text-amber-700 dark:text-amber-400",
+          ? "text-success"
+          : "text-warning",
       )}
     >
       {isSaving ? (
@@ -649,8 +649,8 @@ function DeltaLine({
             className={cn(
               "ml-1",
               isSaving
-                ? "text-emerald-700/80 dark:text-emerald-400/80"
-                : "text-amber-700/80 dark:text-amber-400/80",
+                ? "text-success"
+                : "text-warning",
             )}
           >
             ({pct})
@@ -681,9 +681,9 @@ function NewOrderList({ proposed }: { proposed: OptimizationPreview["proposedOrd
               className={cn(
                 "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-semibold tabular-nums",
                 s.isCompleted
-                  ? "bg-emerald-600 text-white"
+                  ? "bg-success text-success-foreground"
                   : s.isAnchor
-                    ? "bg-amber-500 text-white"
+                    ? "bg-warning text-warning-foreground"
                     : "bg-primary text-primary-foreground",
               )}
             >
@@ -702,7 +702,7 @@ function NewOrderList({ proposed }: { proposed: OptimizationPreview["proposedOrd
             <span className="min-w-0 flex-1 truncate">{s.placeName}</span>
             {s.isAnchor && !s.isCompleted && (
               <span
-                className="flex-shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                className="flex-shrink-0 rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-warning"
                 aria-label="Punkt startowy — bez zmiany pozycji"
               >
                 Start

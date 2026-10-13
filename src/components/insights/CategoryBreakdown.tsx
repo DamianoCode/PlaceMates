@@ -34,7 +34,7 @@ export function CategoryBreakdown({
                 {row.label}
               </span>
               <span className="flex items-center gap-1 text-xs text-muted-foreground tabular-nums">
-                <Star size={12} className="fill-amber-400 stroke-amber-500" />
+                <Star size={12} className="fill-star stroke-star-edge" />
                 {row.avg.toFixed(2)}
               </span>
               <span className="w-16 text-right text-xs text-muted-foreground tabular-nums">
@@ -46,7 +46,7 @@ export function CategoryBreakdown({
               role="presentation"
             >
               <div
-                className="h-full rounded-full bg-gradient-to-r from-primary/70 to-primary"
+                className="h-full rounded-full bg-primary"
                 style={{ width: `${pct}%` }}
               />
             </div>

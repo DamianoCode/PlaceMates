@@ -33,7 +33,7 @@ export function YearTopPlaces({ places }: { places: RankedPlace[] }) {
         ) : (
           <div
             aria-hidden
-            className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/25 via-primary/10 to-muted"
+            className="absolute inset-0 flex items-center justify-center bg-primary/15"
           >
             <CategoryIcon
               slug={first.categoryHint}
@@ -47,7 +47,7 @@ export function YearTopPlaces({ places }: { places: RankedPlace[] }) {
         {/* Scrim so the text stays legible over any photo. */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
-        <div className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-amber-400 font-display text-xl font-semibold text-amber-950 shadow-lg">
+        <div className="absolute left-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-star font-display text-xl font-semibold text-star-foreground shadow-lg">
           1
         </div>
 
@@ -59,7 +59,7 @@ export function YearTopPlaces({ places }: { places: RankedPlace[] }) {
             {first.name}
           </p>
           <div className="mt-1.5 flex items-center gap-1.5 text-sm">
-            <Star size={15} className="fill-amber-400 stroke-amber-400" />
+            <Star size={15} className="fill-star stroke-star" />
             <span className="font-semibold tabular-nums">
               {first.avg.toFixed(2)}
             </span>

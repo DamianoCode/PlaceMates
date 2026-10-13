@@ -154,7 +154,7 @@ export function AddStopsButton({
       </Drawer.Trigger>
 
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40 backdrop-blur-sm" />
+        <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
         <Drawer.Content
           className="fixed inset-x-0 bottom-0 z-50 mt-24 flex max-h-[85dvh] flex-col rounded-t-3xl border-t border-x bg-background outline-none pb-[env(safe-area-inset-bottom)] sm:mx-auto sm:max-w-md"
           aria-describedby={undefined}
@@ -200,7 +200,7 @@ export function AddStopsButton({
           />
 
           {!noCandidates && (
-            <div className="border-t border-border/60 bg-background/95 p-4 backdrop-blur">
+            <div className="border-t border-border/60 bg-background p-4">
               <button
                 type="button"
                 onClick={submit}
@@ -338,7 +338,7 @@ const CandidateRow = memo(function CandidateRow({
       ) : (
         <div
           aria-hidden
-          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/15 via-primary/5 to-muted"
+          className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10"
         >
           <CategoryIcon
             slug={candidate.categorySlug}

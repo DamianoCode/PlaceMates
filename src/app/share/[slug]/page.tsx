@@ -88,7 +88,7 @@ export default async function PublicSharePage({ params }: { params: Params }) {
         {Object.keys(view.dimensions).length > 0 && (
           <section
             aria-label="Wymiary oceny"
-            className="mt-8 rounded-2xl border bg-card/80 p-5 backdrop-blur-sm"
+            className="mt-8 rounded-2xl border bg-card p-5"
           >
             <h2 className="mb-3 font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
               — wymiary oceny

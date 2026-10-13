@@ -52,7 +52,7 @@ function HeroStat({
   forms: Forms;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-5">
+    <div className="relative overflow-hidden rounded-3xl border border-primary/25 bg-primary/10 p-5">
       <Icon
         size={64}
         strokeWidth={1.25}
