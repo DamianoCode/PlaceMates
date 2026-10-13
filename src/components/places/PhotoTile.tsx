@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   setCoverPhotoAction,
   deletePhotoAction,
@@ -33,15 +34,15 @@ export function PhotoTile({
         type="button"
         onClick={() => openAt(photoId)}
         aria-label="Otwórz zdjęcie"
-        className="block h-full w-full cursor-zoom-in"
+        className="relative block h-full w-full cursor-zoom-in"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* Grid is 3 columns inside the max-w-2xl content column. */}
+        <Image
           src={url}
           alt=""
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
+          fill
+          sizes="(max-width: 672px) 33vw, 224px"
+          className="object-cover"
         />
       </button>
       <CoverPhotoButton

@@ -216,7 +216,7 @@ Hybrid. Inside the page the system is flat: surfaces separate by a hairline bord
 
 ### Shadow Vocabulary
 - **Pin lift** (`shadow-md` + 2px paper-white border): every map pin and cluster.
-- **Floating bar** (`shadow-md`, 90% paper with backdrop blur): the filter pill bar over the map.
+- **Floating bar** (`shadow-md`, 95% paper, no backdrop blur): the filter pill bar and cards over the map. Blur over a moving WebGL canvas is recomputed every frame.
 - **Map control** (`box-shadow: 0 2px 10px oklch(0 0 0 / 0.12)`): MapLibre zoom/locate group, re-skinned as a pill.
 - **Active chip glow** (`shadow-sm` tinted `primary/30`): the selected filter chip.
 - **Hero drop** (`box-shadow: 0 30px 80px -40px oklch(0 0 0 / 0.5)`): large photo/place heroes and the share card.
@@ -277,7 +277,7 @@ TopoLines: a few smooth bezier contours at low Terracotta opacity that draw them
 - **Do** keep Terracotta as the single accent for active, selected and primary states.
 - **Do** open every top-level page with the eyebrow → Fraunces title → italic lede trio.
 - **Do** give every tappable thing at least 44px and a physical press response (`active:scale-90` on tabs, 0.97 on chips, 0.985 on cards, 1px nudge on buttons).
-- **Do** keep sticky chrome solid Paper; reserve backdrop blur for bars floating over the map.
+- **Do** keep chrome solid: sticky bars in Paper, floating map UI in 95% Paper. No backdrop blur over the map canvas.
 - **Do** keep motion short and opacity-led (180ms view transitions, 400ms fade-up with 55ms stagger, 460ms `cubic-bezier(0.16, 1, 0.3, 1)` content rise) and leave the global reduced-motion override intact.
 - **Do** use `tabular-nums` for scores, counts and averages.
 

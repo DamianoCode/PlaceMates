@@ -83,7 +83,7 @@ export function TripMapView({
   stops: TripStopView[];
   tripId: string;
 }) {
-  const [view, setView] = useState<Partial<ViewState>>(() =>
+  const [startView] = useState<Partial<ViewState>>(() =>
     initialView(stops),
   );
   const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
@@ -320,8 +320,7 @@ export function TripMapView({
         )}
       >
         <MapLibreMap
-          {...view}
-          onMove={(e) => setView(e.viewState)}
+          initialViewState={startView}
           onLoad={(e) => {
             hideBasemapPois(e.target);
             setMapInstance(e.target);

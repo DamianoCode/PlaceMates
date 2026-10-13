@@ -1,4 +1,5 @@
 import type { YearPhoto } from "@/domain/year-review/service";
+import Image from "next/image";
 
 /**
  * Masonry collage of the year's photos. CSS multi-column layout lets each
@@ -14,20 +15,19 @@ export function YearGallery({ photos }: { photos: YearPhoto[] }) {
       {photos.map((photo, i) => (
         <div
           key={`${photo.url}-${i}`}
-          className="overflow-hidden rounded-2xl border border-border/50 break-inside-avoid bg-muted"
+          className="relative overflow-hidden rounded-2xl border border-border/50 break-inside-avoid bg-muted"
           style={
             photo.width > 0 && photo.height > 0
               ? { aspectRatio: `${photo.width} / ${photo.height}` }
-              : undefined
+              : { aspectRatio: "4 / 3" }
           }
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={photo.url}
             alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out hover:scale-[1.04]"
+            fill
+            sizes="(max-width: 640px) 50vw, 224px"
+            className="object-cover transition-transform duration-500 ease-out hover:scale-[1.04]"
           />
         </div>
       ))}

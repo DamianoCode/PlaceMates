@@ -28,6 +28,37 @@ import type { PlaceMarker } from "@/domain/places/service";
 type PlacePin = PlaceMarker;
 type Bbox = { west: number; south: number; east: number; north: number };
 
+/** Cluster query window: the visible bbox padded by half a viewport on
+ *  each side, plus the integer zoom it was resolved at. */
+type ClusterQuery = { bbox: Bbox; zoom: number };
+
+const CLUSTER_PAD_RATIO = 0.5;
+
+function boundsOf(map: MLMap): Bbox {
+  const b = map.getBounds();
+  return { west: b.getWest(), south: b.getSouth(), east: b.getEast(), north: b.getNorth() };
+}
+
+function padBbox(b: Bbox, ratio: number): Bbox {
+  const dx = (b.east - b.west) * ratio;
+  const dy = (b.north - b.south) * ratio;
+  return {
+    west: b.west - dx,
+    east: b.east + dx,
+    south: Math.max(-90, b.south - dy),
+    north: Math.min(90, b.north + dy),
+  };
+}
+
+function containsBbox(outer: Bbox, inner: Bbox): boolean {
+  return (
+    inner.west >= outer.west &&
+    inner.east <= outer.east &&
+    inner.south >= outer.south &&
+    inner.north <= outer.north
+  );
+}
+
 const DEFAULT_VIEW: Partial<ViewState> = {
   longitude: 21.0122, // Warsaw
   latitude: 52.2297,
@@ -134,7 +165,10 @@ export function MapView({
   // Restore the last camera for both the main map and the pick-mode
   // form map, so /places/new opens where the user left /map. Explicit
   // `initial` (e.g. ?lat=&lng= from "Dodaj tutaj") still wins.
-  const [view, setView] = useState<Partial<ViewState>>(() => ({
+  // Uncontrolled camera: MapLibre owns the view after mount. A controlled
+  // `{...view}` + setView on every onMove re-rendered the whole map (and
+  // every DOM marker) once per animation frame while panning.
+  const [initialView] = useState<Partial<ViewState>>(() => ({
     ...DEFAULT_VIEW,
     ...(loadCamera() ?? {}),
     ...initial,
@@ -149,10 +183,22 @@ export function MapView({
   // ref, so an effect can run when the map finally loads.
   const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
 
-  // Visible bounds — driven by the live map instance (`onMove` / `onLoad`
-  // callbacks below mirror them into state). Initial null until first
-  // render settles; clustering simply skips that frame.
-  const [clusterBounds, setClusterBounds] = useState<Bbox | null>(null);
+  // Cluster query window — a padded bbox around what the user sees, at
+  // the floored zoom. It only changes when the viewport leaves the padded
+  // box or crosses an integer zoom, so a pan within it costs no render.
+  // Initial null until the map loads; clustering simply skips that frame.
+  const [clusterQuery, setClusterQuery] = useState<ClusterQuery | null>(null);
+  const syncRaf = useRef<number | null>(null);
+
+  const syncClusterQuery = useCallback((map: MLMap) => {
+    const visibleBox = boundsOf(map);
+    const zoom = Math.floor(map.getZoom());
+    setClusterQuery((prev) =>
+      prev && prev.zoom === zoom && containsBbox(prev.bbox, visibleBox)
+        ? prev
+        : { bbox: padBbox(visibleBox, CLUSTER_PAD_RATIO), zoom },
+    );
+  }, []);
 
   // After a long-press fires we get a synthetic click on the same spot.
   // Without this flag, that click would clear the selection or, in
@@ -179,26 +225,23 @@ export function MapView({
   useEffect(() => {
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
+      if (syncRaf.current !== null) cancelAnimationFrame(syncRaf.current);
     };
   }, []);
 
   const handleMove = useCallback(
     (e: ViewStateChangeEvent) => {
-      setView(e.viewState);
       schedulePersist(e.viewState);
-      // Mirror bounds into local state so the cluster query stays in
-      // sync with what the user sees mid-pan. setState is cheap (React
-      // batches), supercluster.getClusters is microseconds — re-running
-      // every frame is fine for our scale.
-      const b = e.target.getBounds();
-      setClusterBounds({
-        west: b.getWest(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        north: b.getNorth(),
+      // At most one cluster-window check per frame; most frames bail out
+      // inside syncClusterQuery without a state change.
+      if (syncRaf.current !== null) return;
+      const map = e.target;
+      syncRaf.current = requestAnimationFrame(() => {
+        syncRaf.current = null;
+        syncClusterQuery(map);
       });
     },
-    [schedulePersist],
+    [schedulePersist, syncClusterQuery],
   );
 
   // Intentionally no auto-trigger: the map opens at the last camera
@@ -213,20 +256,13 @@ export function MapView({
 
       hideBasemapPois(map);
 
-      const b = map.getBounds();
-      const bbox = {
-        west: b.getWest(),
-        south: b.getSouth(),
-        east: b.getEast(),
-        north: b.getNorth(),
-      };
-      // Seed cluster bounds so the first cluster query has something to
-      // chew on — without this the map renders empty until the first
+      // Seed the cluster window so the first cluster query has something
+      // to chew on — without this the map renders empty until the first
       // pan even when there are pins in the initial viewport.
-      setClusterBounds(bbox);
-      onBoundsChange?.(bbox);
+      syncClusterQuery(map);
+      onBoundsChange?.(boundsOf(map));
     },
-    [onBoundsChange],
+    [onBoundsChange, syncClusterQuery],
   );
 
   // Mobile long-press → onContextMenu. Maplibre doesn't fire a
@@ -352,23 +388,18 @@ export function MapView({
     return index;
   }, [visible]);
 
-  // Resolved clusters + unclustered points for the current viewport.
-  // Floor the zoom so a smooth zoom-in only re-clusters at integer
+  // Resolved clusters + unclustered points for the cluster window. The
+  // zoom is floored so a smooth zoom-in only re-clusters at integer
   // boundaries — keeps the count steady during fly-to animations
   // instead of flickering between cluster sizes mid-tween.
   const clusters = useMemo(() => {
-    if (!clusterBounds) return [];
-    const z = Math.floor(view.zoom ?? 11);
+    if (!clusterQuery) return [];
+    const { bbox, zoom } = clusterQuery;
     return clusterIndex.getClusters(
-      [
-        clusterBounds.west,
-        clusterBounds.south,
-        clusterBounds.east,
-        clusterBounds.north,
-      ],
-      z,
+      [bbox.west, bbox.south, bbox.east, bbox.north],
+      zoom,
     );
-  }, [clusterBounds, clusterIndex, view.zoom]);
+  }, [clusterQuery, clusterIndex]);
 
   // Tap handler for cluster pills — zoom to the depth where the
   // cluster expands into smaller children (or individual pins if
@@ -392,17 +423,13 @@ export function MapView({
 
   return (
     <MapLibreMap
-      {...view}
+      initialViewState={initialView}
       onMove={handleMove}
       onMoveEnd={(e) => {
-        if (!onBoundsChange) return;
-        const b = e.target.getBounds();
-        onBoundsChange({
-          west: b.getWest(),
-          south: b.getSouth(),
-          east: b.getEast(),
-          north: b.getNorth(),
-        });
+        // Settle on the exact final viewport (the rAF check may have been
+        // skipped on the last frame of a fling).
+        syncClusterQuery(e.target);
+        onBoundsChange?.(boundsOf(e.target));
       }}
       onLoad={handleLoad}
       onClick={(e) => {

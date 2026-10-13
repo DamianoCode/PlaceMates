@@ -10,6 +10,7 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Plus, Search, Sparkles } from "lucide-react";
 import { plural } from "@/lib/plural";
@@ -327,12 +328,11 @@ const CandidateRow = memo(function CandidateRow({
       )}
     >
       {candidate.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={candidate.photoUrl}
           alt=""
-          loading="lazy"
-          decoding="async"
+          width={48}
+          height={48}
           className="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
         />
       ) : (

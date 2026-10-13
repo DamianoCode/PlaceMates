@@ -30,10 +30,15 @@ export default async function MapPage({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const groups = await listUserGroups(user.id);
-  const primaryGroupId = groups[0]?.id ?? null;
-  const [cats, places, wishIds, favIds, groupWishByGroup] = await Promise.all([
-    primaryGroupId ? listCategoriesForGroup(primaryGroupId) : Promise.resolve([]),
+  // Only the categories depend on the primary group, so chain just that
+  // read off the groups query and run everything else alongside it.
+  const groupsAndCats = listUserGroups(user.id).then(async (groups) => {
+    const primaryGroupId = groups[0]?.id ?? null;
+    const cats = primaryGroupId ? await listCategoriesForGroup(primaryGroupId) : [];
+    return { primaryGroupId, cats };
+  });
+  const [{ primaryGroupId, cats }, places, wishIds, favIds, groupWishByGroup] = await Promise.all([
+    groupsAndCats,
     listPlacesForUser(user.id),
     wishlistedIds(user.id),
     favoriteIds(user.id),

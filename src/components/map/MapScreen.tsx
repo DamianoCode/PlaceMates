@@ -212,7 +212,7 @@ export function MapScreen({
        *  so the pills clear the notch + clock area; +0.5rem keeps the
        *  same breathing room as before on devices without an inset. */}
       <div className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-10 flex flex-col gap-1.5 px-2">
-        <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/90 p-1 shadow-md backdrop-blur no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
+        <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/95 p-1 shadow-md no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
           <FilterPill
             active={!categoryFilter && setFilter === "none"}
             onClick={resetFilters}
@@ -287,7 +287,7 @@ export function MapScreen({
          *  active AND there are ≥2 groups with anything wishlisted. Solo-
          *  group users see exactly the same UI as before. */}
         {setFilter === "group-wishlist" && groupWishlistByGroup.length >= 2 && (
-          <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/90 p-1 shadow-md backdrop-blur no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
+          <div className="pointer-events-auto mx-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-full border border-border/50 bg-background/95 p-1 shadow-md no-scrollbar [mask-image:linear-gradient(to_right,transparent,black_8px,black_calc(100%-8px),transparent)]">
             <FilterPill
               active={!groupWishlistGroupId}
               onClick={() => setGroupWishlistGroupId(null)}
