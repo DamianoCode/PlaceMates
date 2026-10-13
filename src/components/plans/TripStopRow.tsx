@@ -180,7 +180,7 @@ export function TripStopRow({
           type="button"
           onClick={toggleCompleted}
           disabled={pending}
-          aria-label={isCompleted ? "Cofnij odhaczenie" : "Odhacz stop"}
+          aria-label="Odhacz stop"
           aria-pressed={isCompleted}
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -8,14 +8,12 @@ import { Button } from "@/components/ui/button";
 
 /**
  * Confirmation modal. Rendered into a portal so nothing in the page can
- * clip it; backdrop-click and Escape both dismiss. The confirm button
- * autofocuses so pressing Enter immediately confirms and keyboard
- * navigation is predictable. Destructive variant tints the confirm
- * button so the consequence is visually obvious.
- *
- * Design note: no focus-trap library — we only have two buttons, so
- * tab-cycling works fine. If we ever add forms inside the dialog we
- * should revisit.
+ * clip it; backdrop-click and Escape both dismiss. Initial focus goes to
+ * the confirm button — except for destructive dialogs, where it lands on
+ * Cancel so a stray Enter never deletes anything. Tab cycles inside the
+ * panel (a tiny hand-rolled trap: there are only two buttons). The
+ * destructive variant tints the confirm button so the consequence is
+ * visually obvious and is announced as an alertdialog.
  */
 export function ConfirmDialog({
   open,
@@ -37,6 +35,10 @@ export function ConfirmDialog({
   onConfirm: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
   const previouslyFocused = useRef<HTMLElement | null>(null);
 
   // Escape + focus management. We capture the previously-focused element
@@ -46,20 +48,44 @@ export function ConfirmDialog({
     if (!open) return;
     previouslyFocused.current = (document.activeElement as HTMLElement) ?? null;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onOpenChange(false);
+      if (e.key === "Escape") {
+        onOpenChange(false);
+        return;
+      }
+      if (e.key !== "Tab" || !panelRef.current) return;
+      // Keep focus inside the panel: wrap from last to first and back.
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex='-1'])",
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || !panelRef.current.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || !panelRef.current.contains(active))) {
+        e.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", onKey);
     // Lock body scroll while the dialog is open.
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    // Autofocus the confirm button once the dialog has mounted.
-    queueMicrotask(() => confirmRef.current?.focus());
+    // Safe default focus once the dialog has mounted (see header note).
+    queueMicrotask(() =>
+      (destructive ? cancelRef : confirmRef).current?.focus(),
+    );
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
-      previouslyFocused.current?.focus?.();
+      // The trigger may be gone (e.g. the deleted row's trash button);
+      // only restore focus to something still in the document.
+      const prev = previouslyFocused.current;
+      if (prev?.isConnected) prev.focus();
     };
-  }, [open, onOpenChange]);
+  }, [open, onOpenChange, destructive]);
 
   if (!open || typeof document === "undefined") return null;
 
@@ -70,13 +96,15 @@ export function ConfirmDialog({
 
   return createPortal(
     <div
-      role="dialog"
+      role={destructive ? "alertdialog" : "dialog"}
       aria-modal="true"
-      aria-label={title}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       className="fixed inset-0 z-[60] flex items-center justify-center bg-foreground/40 p-4 backdrop-blur-sm"
       onClick={() => onOpenChange(false)}
     >
       <div
+        ref={panelRef}
         role="document"
         onClick={(e) => e.stopPropagation()}
         className={cn(
@@ -94,9 +122,14 @@ export function ConfirmDialog({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h2 className="font-display text-xl leading-tight">{title}</h2>
+            <h2 id={titleId} className="font-display text-xl leading-tight">
+              {title}
+            </h2>
             {description && (
-              <div className="mt-1.5 text-sm italic text-muted-foreground">
+              <div
+                id={descriptionId}
+                className="mt-1.5 text-sm italic text-muted-foreground"
+              >
                 {description}
               </div>
             )}
@@ -104,6 +137,7 @@ export function ConfirmDialog({
         </div>
         <div className="flex items-center justify-end gap-2 border-t bg-muted/20 px-5 py-3">
           <Button
+            ref={cancelRef}
             type="button"
             variant="ghost"
             onClick={() => onOpenChange(false)}

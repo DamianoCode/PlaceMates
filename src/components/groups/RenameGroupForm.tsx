@@ -26,8 +26,9 @@ export function RenameGroupForm({
   const [value, setValue] = useState(currentName);
   const error = state && "error" in state ? state.error : null;
 
+  // Not a heading: the page h1 already lives in the sticky PageHeader.
   if (!canEdit) {
-    return <h1 className="font-display text-3xl leading-tight">{currentName}</h1>;
+    return <p className="font-display text-3xl leading-tight">{currentName}</p>;
   }
 
   if (!editing) {
@@ -38,12 +39,14 @@ export function RenameGroupForm({
           setValue(currentName);
           setEditing(true);
         }}
+        aria-label={`Zmień nazwę grupy: ${currentName}`}
         className="group inline-flex items-baseline gap-2 text-left"
       >
-        <h1 className="font-display text-3xl leading-tight">{currentName}</h1>
+        <span className="font-display text-3xl leading-tight">{currentName}</span>
         <PencilLine
           size={16}
-          className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+          aria-hidden
+          className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
         />
       </button>
     );

@@ -95,7 +95,7 @@ export function RatingForm({
         </div>
 
         {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
-        {saved ? <p className="text-sm text-emerald-600">Zapisano ocenę.</p> : null}
+        <p role="status" className="text-sm text-emerald-700 empty:hidden dark:text-emerald-400">{saved ? "Zapisano ocenę." : null}</p>
 
         <Button type="submit" disabled={pending} className="w-full">
           {pending ? "Zapisuję…" : initial ? "Zaktualizuj ocenę" : "Zapisz ocenę"}
