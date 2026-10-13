@@ -37,10 +37,13 @@ export default async function GroupPage({
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const group = await getGroupForUser(id, user.id);
+  // listGroupMembers folds the membership gate into its query, so it is
+  // safe to run alongside the group lookup; notFound() still gates render.
+  const [group, members] = await Promise.all([
+    getGroupForUser(id, user.id),
+    listGroupMembers(id, user.id),
+  ]);
   if (!group) notFound();
-
-  const members = await listGroupMembers(id, user.id);
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const isOwner = group.role === "owner";
 
