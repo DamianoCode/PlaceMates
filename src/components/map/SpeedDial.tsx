@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +15,10 @@ export type SpeedDialAction = {
  * Material-style speed dial: a primary FAB that expands into labelled
  * sub-FABs stacked above it. Clicking the FAB again, choosing an action,
  * pressing Escape, or tapping outside all close the dial.
+ *
+ * Semantically a disclosure (trigger + aria-expanded/aria-controls over a
+ * list of buttons), not an ARIA menu — no arrow-key roving is expected.
+ * Escape hands focus back to the trigger so it never drops to <body>.
  */
 export function SpeedDial({
   actions,
@@ -25,11 +29,16 @@ export function SpeedDial({
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const listId = useId();
 
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key !== "Escape") return;
+      const hadFocus = rootRef.current?.contains(document.activeElement);
+      setOpen(false);
+      if (hadFocus) triggerRef.current?.focus();
     }
     function onPointer(e: PointerEvent) {
       if (!rootRef.current) return;
@@ -51,14 +60,17 @@ export function SpeedDial({
       {/* Staggered sub-FABs. Rendered only when open; each gets a
        *  transform-origin near the main FAB so they spring outward. */}
       {open && (
-        <ul className="mb-3 flex flex-col items-end gap-2.5">
+        <ul id={listId} className="mb-3 flex flex-col items-end gap-2.5">
           {actions.map((a, i) => (
             <li
               key={a.id}
               className="flex items-center gap-2.5"
               style={{ animation: `pm-speed-dial-in 160ms ${i * 30}ms both ease-out` }}
             >
-              <span className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md">
+              <span
+                aria-hidden
+                className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md"
+              >
                 {a.label}
               </span>
               <button
@@ -80,8 +92,9 @@ export function SpeedDial({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        ref={triggerRef}
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-controls={open ? listId : undefined}
         aria-label={ariaLabel}
         className={cn(
           "flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all",
@@ -89,7 +102,7 @@ export function SpeedDial({
           open && "rotate-45",
         )}
       >
-        <Plus size={26} strokeWidth={2.25} />
+        <Plus size={26} strokeWidth={2.25} aria-hidden />
       </button>
     </div>
   );

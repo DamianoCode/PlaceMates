@@ -29,10 +29,13 @@ export default async function CanonicalPlacePage({
   if (!user) redirect("/login");
 
   const { canonicalId } = await params;
-  const canonical = await getCanonicalById(canonicalId);
+  // Independent reads (the user-place lookup is scoped to user.id), so
+  // run them together and gate on the canonical afterwards.
+  const [canonical, userPlace] = await Promise.all([
+    getCanonicalById(canonicalId),
+    findUserPlaceForCanonical(canonicalId, user.id),
+  ]);
   if (!canonical) notFound();
-
-  const userPlace = await findUserPlaceForCanonical(canonicalId, user.id);
 
   return (
     // Suspense reveal: content glides up + fades in over the skeleton.

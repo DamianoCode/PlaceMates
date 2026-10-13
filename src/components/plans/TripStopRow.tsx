@@ -108,7 +108,7 @@ export function TripStopRow({
           "absolute inset-y-0 left-0 flex w-7 touch-none items-center justify-center transition-colors",
           isCompleted
             ? "cursor-not-allowed bg-emerald-500/10 text-emerald-600/40 dark:text-emerald-400/40"
-            : "cursor-grab bg-primary/10 text-primary/60 hover:bg-primary/15 hover:text-primary active:cursor-grabbing",
+            : "cursor-grab bg-primary/10 text-primary hover:bg-primary/15 active:cursor-grabbing",
         )}
       >
         <GripVertical size={14} aria-hidden />
@@ -180,7 +180,7 @@ export function TripStopRow({
           type="button"
           onClick={toggleCompleted}
           disabled={pending}
-          aria-label={isCompleted ? "Cofnij odhaczenie" : "Odhacz stop"}
+          aria-label="Odhacz stop"
           aria-pressed={isCompleted}
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",

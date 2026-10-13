@@ -7,9 +7,10 @@ import {
   useEffect,
   useState,
 } from "react";
-import { X } from "lucide-react";
-import { PhotoSlider } from "react-photo-view";
-import "react-photo-view/dist/react-photo-view.css";
+import dynamic from "next/dynamic";
+
+// Loaded on first open only; see PhotoLightbox.
+const PhotoLightbox = dynamic(() => import("./PhotoLightbox"), { ssr: false });
 
 type Photo = { id: string; url: string };
 
@@ -46,12 +47,16 @@ export function PhotoGallery({
 }) {
   const [visible, setVisible] = useState(false);
   const [index, setIndex] = useState(0);
+  // Flips once on the first open and stays true, so the lightbox chunk is
+  // fetched lazily but stays mounted for its close animation.
+  const [opened, setOpened] = useState(false);
 
   const openAt = useCallback(
     (photoId: string) => {
       const i = photos.findIndex((p) => p.id === photoId);
       if (i < 0) return;
       setIndex(i);
+      setOpened(true);
       setVisible(true);
     },
     [photos],
@@ -78,40 +83,15 @@ export function PhotoGallery({
   return (
     <Ctx.Provider value={{ openAt }}>
       {children}
-      <PhotoSlider
-        images={photos.map((p) => ({ src: p.url, key: p.id }))}
-        visible={visible}
-        onClose={() => setVisible(false)}
-        index={index}
-        onIndexChange={setIndex}
-        maskOpacity={0.92}
-        bannerVisible={false}
-        pullClosable
-        loop={false}
-        speed={() => 240}
-        easing={() => "cubic-bezier(0.4, 0, 0.2, 1)"}
-        overlayRender={({ onClose, index: i, images }) => {
-          const total = images.length;
-          return (
-            <>
-              {total > 1 && (
-                <span className="pointer-events-none absolute top-3 left-3 z-50 rounded-full bg-black/40 px-2.5 py-1 font-mono text-xs tabular-nums text-white/90 backdrop-blur">
-                  {i + 1} / {total}
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Zamknij"
-                title="Zamknij"
-                className="absolute top-3 right-3 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition-colors hover:bg-white/25"
-              >
-                <X size={20} strokeWidth={2} />
-              </button>
-            </>
-          );
-        }}
-      />
+      {opened && (
+        <PhotoLightbox
+          photos={photos}
+          visible={visible}
+          index={index}
+          onClose={() => setVisible(false)}
+          onIndexChange={setIndex}
+        />
+      )}
     </Ctx.Provider>
   );
 }

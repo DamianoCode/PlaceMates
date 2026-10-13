@@ -326,9 +326,10 @@ export default async function PlaceDetailPage({
             <PhotoUploadForm placeId={id} />
             {photos.length > 0 && (
               <ul className="grid grid-cols-3 gap-2">
-                {photos.map((p) => (
+                {photos.map((p, i) => (
                   <li key={p.id}>
                     <PhotoTile
+                      label={`Otwórz zdjęcie ${i + 1} z ${photos.length}`}
                       photoId={p.id}
                       url={p.url}
                       isCover={p.isCover}
