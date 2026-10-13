@@ -464,7 +464,7 @@ function PickedLocationSummary({
           {fromSearch ? <MapPin size={14} /> : <Pin size={14} />}
         </span>
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-primary/80">
+          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-primary">
             {fromSearch ? "Wybrana lokalizacja" : "Pin na mapie"}
           </p>
           {fromSearch && picked.name ? (
@@ -475,7 +475,7 @@ function PickedLocationSummary({
               {picked.address}
             </p>
           ) : null}
-          <p className="font-mono text-[10px] tabular-nums text-muted-foreground/80">
+          <p className="font-mono text-[10px] tabular-nums text-muted-foreground">
             {picked.lat.toFixed(5)}°N · {picked.lng.toFixed(5)}°E
           </p>
         </div>

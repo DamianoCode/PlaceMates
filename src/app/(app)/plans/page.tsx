@@ -59,7 +59,7 @@ export default async function PlansPage() {
              *  Fraunces display numbers. CTA odjechał do nagłówka. */}
             <dl className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-xs text-muted-foreground">
               <div className="flex items-baseline gap-1.5">
-                <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground">
                   Razem
                 </dt>
                 <dd className="font-display text-base text-foreground tabular-nums">
@@ -68,7 +68,7 @@ export default async function PlansPage() {
               </div>
               {inProgress > 0 && (
                 <div className="flex items-baseline gap-1.5">
-                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground">
                     W toku
                   </dt>
                   <dd className="font-display text-base text-primary tabular-nums">
@@ -78,7 +78,7 @@ export default async function PlansPage() {
               )}
               {archived.length > 0 && (
                 <div className="flex items-baseline gap-1.5">
-                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground/70">
+                  <dt className="font-mono uppercase tracking-[0.18em] text-[10px] text-muted-foreground">
                     Archiwum
                   </dt>
                   <dd className="font-display text-base text-foreground tabular-nums">
@@ -166,7 +166,7 @@ function Section({
       <h2
         className={
           "font-mono text-xs uppercase tracking-[0.2em] " +
-          (muted ? "text-muted-foreground/70" : "text-muted-foreground")
+          (muted ? "text-muted-foreground" : "text-foreground")
         }
       >
         {title}

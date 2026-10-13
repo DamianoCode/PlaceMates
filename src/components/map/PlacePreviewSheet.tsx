@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Star, Users, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchJson, HttpError } from "@/lib/fetch-json";
@@ -82,15 +83,15 @@ export function PlacePreviewSheet({
       aria-label="Podgląd miejsca"
       className="pointer-events-auto absolute inset-x-2 bottom-2 z-20 animate-in slide-in-from-bottom-4 duration-200"
     >
-      <div className="overflow-hidden rounded-2xl border bg-background/95 shadow-xl backdrop-blur">
+      <div className="overflow-hidden rounded-2xl border bg-background/95 shadow-xl">
         <div className="flex items-stretch gap-3 p-3">
           {preview?.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={preview.photoUrl}
               alt=""
+              width={80}
+              height={80}
               className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
-              loading="lazy"
             />
           ) : (
             <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
@@ -121,7 +122,7 @@ export function PlacePreviewSheet({
                 type="button"
                 onClick={onClose}
                 aria-label="Zamknij"
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="relative before:absolute before:-inset-1 before:content-[''] flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <X size={18} />
               </button>

@@ -22,7 +22,7 @@ export function EditorialHeader({
     <header className="flex items-start justify-between gap-4 pb-1">
       <div className="min-w-0 flex-1">
         {eyebrow && (
-          <p className="mb-2 font-mono text-[10px] tracking-[0.32em] uppercase text-primary/80">
+          <p className="mb-2 font-mono text-[11px] tracking-[0.32em] uppercase text-primary">
             — {eyebrow}
           </p>
         )}

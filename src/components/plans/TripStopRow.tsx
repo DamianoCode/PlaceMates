@@ -122,7 +122,7 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 border-white font-display text-lg font-semibold tabular-nums shadow-sm",
             isCompleted
-              ? "bg-emerald-500 text-white"
+              ? "bg-emerald-600 text-white"
               : "bg-primary text-primary-foreground",
           )}
         >
@@ -185,7 +185,7 @@ export function TripStopRow({
           className={cn(
             "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all active:scale-[0.94]",
             isCompleted
-              ? "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-500/30 hover:bg-emerald-600"
+              ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 hover:bg-emerald-700"
               : "border-border bg-background text-muted-foreground hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/30",
             pending && "opacity-60",
           )}
@@ -203,9 +203,9 @@ export function TripStopRow({
           type="button"
           onClick={() => setEditing(true)}
           aria-label="Edytuj stop"
-          className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+          className="relative before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
         >
-          <Pencil size={11} aria-hidden />
+          <Pencil size={12} aria-hidden />
           Edytuj
         </button>
         <button
@@ -213,9 +213,9 @@ export function TripStopRow({
           onClick={deleteStop}
           disabled={pending}
           aria-label="Usuń stop"
-          className="inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-[11px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
+          className="relative before:absolute before:-inset-y-2 before:inset-x-0 before:content-[''] inline-flex h-7 items-center gap-1 rounded-full px-2.5 text-xs text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
         >
-          <Trash2 size={11} aria-hidden />
+          <Trash2 size={12} aria-hidden />
           Usuń
         </button>
       </div>

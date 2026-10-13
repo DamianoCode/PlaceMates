@@ -24,7 +24,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     <div className="flex min-h-dvh flex-col pb-[calc(60px+env(safe-area-inset-bottom))]">
       {/* Route cross-fade is handled natively by the browser's View
        *  Transitions (experimental.viewTransition) — no wrapper needed. */}
-      <div className="flex-1">{children}</div>
+      <main className="flex-1">{children}</main>
       <BottomNav />
       <InstallPrompt />
       <NetworkStatusBanner />

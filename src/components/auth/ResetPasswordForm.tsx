@@ -27,6 +27,8 @@ export function ResetPasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="password">Nowe hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "reset-password-error" : undefined}
           id="password"
           name="password"
           type="password"
@@ -39,6 +41,8 @@ export function ResetPasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Powtórz nowe hasło</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "reset-password-error" : undefined}
           id="confirmPassword"
           name="confirmPassword"
           type="password"
@@ -48,7 +52,7 @@ export function ResetPasswordForm() {
         />
       </div>
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p id="reset-password-error" className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}

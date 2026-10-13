@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowDownRight,
   Check,
@@ -25,7 +26,7 @@ type RouteSegment = { distanceM: number; durationS: number };
  *
  * The card is dismissible — `[X]` clears the selection so the map
  * re-shows the whole route uncluttered. Reusing the visual language
- * of `PlacePreviewSheet` (rounded-2xl, backdrop-blur, photo-left
+ * of `PlacePreviewSheet` (rounded-2xl, solid surface, photo-left
  * layout) keeps the trip map feeling cohesive with the main map.
  */
 export function TripMapInfoCard({
@@ -63,17 +64,17 @@ export function TripMapInfoCard({
       aria-label="Podgląd stopu"
       className="pointer-events-none absolute inset-x-2 bottom-2 z-20 animate-in slide-in-from-bottom-4 duration-200"
     >
-      <div className="pointer-events-auto overflow-hidden rounded-2xl border bg-background/95 shadow-xl backdrop-blur">
+      <div className="pointer-events-auto overflow-hidden rounded-2xl border bg-background/95 shadow-xl">
         <div className="flex items-stretch gap-3 p-3">
           {/* Photo / category fallback — same shape as
            *  PlacePreviewSheet so the visual rhyme carries across
            *  map contexts. */}
           {stop.placePhotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={stop.placePhotoUrl}
               alt=""
-              loading="lazy"
+              width={80}
+              height={80}
               className="h-20 w-20 flex-shrink-0 rounded-lg object-cover"
             />
           ) : (
@@ -99,7 +100,7 @@ export function TripMapInfoCard({
                     className={cn(
                       "flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white text-[11px] font-semibold tabular-nums shadow-sm",
                       completed
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-emerald-600 text-white"
                         : "bg-primary text-primary-foreground",
                     )}
                   >
@@ -137,7 +138,7 @@ export function TripMapInfoCard({
             </div>
 
             {legFromPrev && (
-              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground/80">
+              <p className="mt-1 inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                 <ArrowDownRight size={11} aria-hidden />
                 <span>Od poprzedniego:</span>
                 <span className="font-mono tabular-nums">
@@ -167,7 +168,7 @@ export function TripMapInfoCard({
                 >
                   <ChevronLeft size={20} />
                 </button>
-                <span className="min-w-[2.5rem] text-center font-mono text-xs tabular-nums text-muted-foreground/80">
+                <span className="min-w-[2.5rem] text-center font-mono text-xs tabular-nums text-muted-foreground">
                   {idx + 1} / {stops.length}
                 </span>
                 <button

@@ -83,7 +83,7 @@ export function TripMapView({
   stops: TripStopView[];
   tripId: string;
 }) {
-  const [view, setView] = useState<Partial<ViewState>>(() =>
+  const [startView] = useState<Partial<ViewState>>(() =>
     initialView(stops),
   );
   const [mapInstance, setMapInstance] = useState<MLMap | null>(null);
@@ -303,7 +303,7 @@ export function TripMapView({
             Wyznaczam trasę…
           </span>
         ) : stops.length >= 2 ? (
-          <span className="px-2 text-[11px] italic text-muted-foreground/70">
+          <span className="px-2 text-[11px] italic text-muted-foreground">
             Trasa niedostępna
           </span>
         ) : null}
@@ -320,8 +320,7 @@ export function TripMapView({
         )}
       >
         <MapLibreMap
-          {...view}
-          onMove={(e) => setView(e.viewState)}
+          initialViewState={startView}
           onLoad={(e) => {
             hideBasemapPois(e.target);
             setMapInstance(e.target);
@@ -338,7 +337,7 @@ export function TripMapView({
               id="trip-line-layer"
               type="line"
               paint={{
-                "line-color": "#b8613a",
+                "line-color": "#b35025",
                 // Routed line is solid 4 px; straight-line
                 // fallback is dashed 3 px so the visual difference
                 // tells the user "this isn't an actual road route".
@@ -366,13 +365,15 @@ export function TripMapView({
                   selectStop(s.id);
                 }}
               >
-                <span
+                <button
+                  type="button"
+                  aria-pressed={active}
                   aria-label={`${i + 1}. ${s.placeName}${completed ? " (ukończone)" : ""}`}
                   className={cn(
-                    "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out",
+                    "flex cursor-pointer items-center justify-center rounded-full border-2 border-white font-semibold shadow-md transition-[width,height,box-shadow] duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground",
                     active ? "h-11 w-11 text-base" : "h-9 w-9 text-sm",
                     completed
-                      ? "bg-emerald-500 text-white"
+                      ? "bg-emerald-600 text-white"
                       : "bg-primary text-primary-foreground",
                     active &&
                       (completed
@@ -380,8 +381,8 @@ export function TripMapView({
                         : "ring-4 ring-primary/30"),
                   )}
                 >
-                  {completed ? <Check size={active ? 20 : 16} /> : i + 1}
-                </span>
+                  {completed ? <Check size={active ? 20 : 16} aria-hidden /> : i + 1}
+                </button>
               </Marker>
             );
           })}

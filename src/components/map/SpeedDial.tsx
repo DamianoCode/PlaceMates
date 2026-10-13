@@ -58,7 +58,7 @@ export function SpeedDial({
               className="flex items-center gap-2.5"
               style={{ animation: `pm-speed-dial-in 160ms ${i * 30}ms both ease-out` }}
             >
-              <span className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md backdrop-blur">
+              <span className="rounded-full bg-background/95 px-3 py-1.5 text-xs font-medium shadow-md">
                 {a.label}
               </span>
               <button

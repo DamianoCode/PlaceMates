@@ -86,7 +86,7 @@ export default async function GroupYearPage({
             size={220}
             className="pointer-events-none absolute -right-12 -top-12 text-primary/10"
           />
-          <p className="relative font-mono text-[11px] uppercase tracking-[0.32em] text-primary/80">
+          <p className="relative font-mono text-[11px] uppercase tracking-[0.32em] text-primary">
             — {group.name}
           </p>
           <div className="relative mt-3 flex items-center justify-between gap-3">
@@ -135,7 +135,7 @@ export default async function GroupYearPage({
               }}
             >
               <div className="flex items-baseline gap-3">
-                <span className="font-mono text-xs tabular-nums text-primary/60">
+                <span className="font-mono text-xs tabular-nums text-primary">
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <h2 className="font-display text-2xl leading-tight">

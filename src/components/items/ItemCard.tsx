@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight, UtensilsCrossed } from "lucide-react";
 import { StarRating } from "@/components/places/StarRating";
 import type { ItemCard as ItemCardData } from "@/domain/items/service";
@@ -16,11 +17,11 @@ export function ItemCard({
       className="group flex items-stretch gap-3 rounded-2xl border bg-card p-3 transition-colors hover:bg-accent/40"
     >
       {item.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={item.photoUrl}
           alt=""
-          loading="lazy"
+          width={64}
+          height={64}
           className="h-16 w-16 flex-shrink-0 rounded-xl object-cover"
         />
       ) : (

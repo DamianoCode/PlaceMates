@@ -65,7 +65,7 @@ export function VisitRow({
               disabled={pending}
               aria-label="Usuń wizytę"
               title="Usuń wizytę"
-              className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="relative before:absolute before:-inset-1.5 before:content-[''] flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <Trash2 size={14} />
             </button>

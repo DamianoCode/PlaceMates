@@ -53,7 +53,7 @@ export default async function CanonicalPlacePage({
             />
           </div>
           <div>
-            <p className="mb-1 font-mono text-[10px] tracking-[0.3em] uppercase text-primary/80">
+            <p className="mb-1 font-mono text-[11px] tracking-[0.3em] uppercase text-primary">
               — w rankingu PlaceMates
             </p>
             <h2 className="font-display text-3xl leading-tight tracking-tight">
@@ -78,7 +78,7 @@ export default async function CanonicalPlacePage({
                 </span>
                 <div className="mb-1 flex flex-col gap-1">
                   <StarRating value={canonical.avg} size={18} />
-                  <span className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground/80">
+                  <span className="font-mono text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
                     {canonical.count}{" "}
                     {plural(canonical.count, ["ocena", "oceny", "ocen"])}
                   </span>

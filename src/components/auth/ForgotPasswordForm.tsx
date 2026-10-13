@@ -53,6 +53,8 @@ export function ForgotPasswordForm() {
       <div className="space-y-2">
         <Label htmlFor="email">E-mail</Label>
         <Input
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "forgot-password-error" : undefined}
           id="email"
           name="email"
           type="email"
@@ -62,7 +64,7 @@ export function ForgotPasswordForm() {
         />
       </div>
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <p id="forgot-password-error" className="text-sm text-destructive" role="alert">
           {error}
         </p>
       ) : null}

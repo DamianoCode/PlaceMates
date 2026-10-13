@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   deleteItemPhotoAction,
   setCoverItemPhotoAction,
@@ -29,13 +30,13 @@ export function ItemPhotoTile({
   const { openAt } = usePhotoOpener();
   return (
     <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={url}
         alt=""
-        loading="lazy"
+        fill
+        sizes="(max-width: 672px) 33vw, 224px"
         onClick={() => openAt(photoId)}
-        className="h-full w-full cursor-zoom-in object-cover"
+        className="cursor-zoom-in object-cover"
       />
       <CoverPhotoButton
         photoId={photoId}

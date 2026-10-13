@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { usePhotoOpener } from "./PhotoGallery";
 
 type Photo = { id: string; url: string };
@@ -33,7 +34,7 @@ export function PhotoHero({
   // Applied to the <button> wrapping the cover so it's keyboard-focusable;
   // object-cover lives on the inner <img>.
   const heroClasses =
-    "block aspect-[16/9] max-h-[min(50vh,420px)] w-full cursor-zoom-in overflow-hidden rounded-2xl";
+    "relative block aspect-[16/9] max-h-[min(50vh,420px)] w-full cursor-zoom-in overflow-hidden rounded-2xl";
 
   if (photos.length === 0) {
     return (
@@ -56,13 +57,15 @@ export function PhotoHero({
         aria-label="Otwórz zdjęcie"
         className={heroClasses}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* Cover is the likely LCP element: eager + high fetch priority. */}
+        <Image
           src={cover.url}
           alt=""
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover"
+          fill
+          sizes="(max-width: 672px) 100vw, 672px"
+          loading="eager"
+          fetchPriority="high"
+          className="object-cover"
         />
       </button>
       {rest.length > 0 && (
@@ -75,12 +78,11 @@ export function PhotoHero({
               aria-label="Otwórz zdjęcie"
               className="h-20 w-20 flex-shrink-0 cursor-zoom-in overflow-hidden rounded-xl"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src={p.url}
                 alt=""
-                loading="lazy"
-                decoding="async"
+                width={80}
+                height={80}
                 className="h-full w-full object-cover"
               />
             </button>

@@ -97,7 +97,7 @@ export function PhotoPicker({
             type="button"
             onClick={clearSelection}
             aria-label="Usuń wybór"
-            className="absolute top-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 text-foreground shadow-md hover:bg-background"
+            className="absolute top-2 right-2 flex h-9 w-9 items-center justify-center rounded-full before:absolute before:-inset-1 before:content-[''] bg-background/90 text-foreground shadow-md hover:bg-background"
           >
             <X size={16} />
           </button>

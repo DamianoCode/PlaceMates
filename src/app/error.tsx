@@ -35,7 +35,7 @@ export default function GlobalError({
         do mapy i daj znać.
       </p>
       {error.digest ? (
-        <p className="font-mono text-[10px] tracking-widest text-muted-foreground/70">
+        <p className="font-mono text-[10px] tracking-widest text-muted-foreground">
           ref: {error.digest}
         </p>
       ) : null}

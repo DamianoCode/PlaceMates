@@ -58,7 +58,7 @@ function Sticker({
       }
       style={{
         transform: `rotate(${rot}deg) translateY(${offset}px)`,
-        animation: `sticker-in 900ms ${delayMs}ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both`,
+        animation: `sticker-in 900ms ${delayMs}ms cubic-bezier(0.16, 1, 0.3, 1) both`,
       }}
     >
       {/* Paper clip / pin — a tiny primary-tinted dot at the top. */}
@@ -73,7 +73,7 @@ function Sticker({
         <span className="block font-display text-[13px] italic leading-tight">
           {label}
         </span>
-        <span className="block text-[9px] tracking-[0.25em] uppercase text-muted-foreground/70">
+        <span className="block text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
           {accent}
         </span>
       </figcaption>

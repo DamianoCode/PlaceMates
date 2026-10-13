@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Star } from "lucide-react";
 import type { RankedPlace } from "@/domain/ranking/service";
 import { plural } from "@/lib/plural";
@@ -22,11 +23,12 @@ export function YearTopPlaces({ places }: { places: RankedPlace[] }) {
         className="group relative block aspect-[5/4] overflow-hidden rounded-3xl border sm:aspect-[16/10]"
       >
         {first.photoUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={first.photoUrl}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            fill
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
           />
         ) : (
           <div

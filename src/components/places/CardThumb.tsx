@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { CategoryIcon } from "@/components/map/category-icons";
 
@@ -49,16 +50,15 @@ export function CardThumb({
         className="text-primary/70"
       />
       {photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           ref={ref}
           src={photoUrl}
           alt=""
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="80px"
           onLoad={() => setLoaded(true)}
           className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ease-out",
+            "object-cover transition-opacity duration-300 ease-out",
             loaded ? "opacity-100" : "opacity-0",
           )}
         />
