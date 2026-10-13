@@ -389,7 +389,7 @@ function FilterPill({
   children: React.ReactNode;
 }) {
   const base =
-    "inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.97]";
+    "relative inline-flex h-9 flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] text-xs font-medium transition-[background-color,color,box-shadow,transform] duration-200 ease-out active:scale-[0.97]";
   return (
     <button
       type="button"

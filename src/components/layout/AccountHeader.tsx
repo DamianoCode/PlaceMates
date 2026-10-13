@@ -12,6 +12,7 @@ import {
   type AvatarState,
 } from "@/app/(app)/me/avatar-actions";
 import { compressImage } from "@/lib/compress-image";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 export function AccountHeader({
   displayName,
@@ -102,16 +103,12 @@ export function AccountHeader({
           aria-label="Zmień zdjęcie profilowe"
           className="group relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-primary/20 font-display text-2xl font-semibold text-primary transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         >
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatarUrl}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <span aria-hidden>{initials}</span>
-          )}
+          <AvatarImage
+            src={avatarUrl}
+            loading="eager"
+            fallback={<span aria-hidden>{initials}</span>}
+            className="h-full w-full object-cover"
+          />
           <span
             className="absolute inset-0 flex items-center justify-center bg-foreground/40 text-background opacity-0 transition-opacity group-hover:opacity-100"
             aria-hidden

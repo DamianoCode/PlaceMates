@@ -38,7 +38,7 @@ export function NewTripButton({
           disabled={disabled}
           aria-label="Nowy plan"
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent",
+            "flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent",
           )}
         >
           <Plus size={18} />

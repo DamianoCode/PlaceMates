@@ -1,6 +1,7 @@
 import { Crown } from "lucide-react";
 import { plural } from "@/lib/plural";
 import type { YearTopMember } from "@/domain/year-review/service";
+import { AvatarImage } from "@/components/ui/avatar-image";
 
 function initials(name: string): string {
   return name
@@ -25,21 +26,15 @@ export function TopMemberCard({ member }: { member: YearTopMember }) {
         size={120}
         strokeWidth={1}
         aria-hidden
-        className="pointer-events-none absolute -right-5 -top-5 rotate-12 text-star/25"
+        className="pointer-events-none absolute -right-5 -top-5 rotate-12 text-star/15"
       />
       <div className="relative flex-shrink-0">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-primary/15 font-display text-3xl font-semibold text-primary ring-2 ring-star/60">
-          {member.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={member.avatarUrl}
-              alt=""
-              loading="lazy"
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            initials(member.displayName)
-          )}
+          <AvatarImage
+            src={member.avatarUrl}
+            fallback={initials(member.displayName)}
+            className="h-full w-full object-cover"
+          />
         </div>
         <span className="absolute -right-1 -top-2 flex h-8 w-8 -rotate-12 items-center justify-center rounded-full bg-star text-star-foreground shadow-md ring-2 ring-card">
           <Crown size={16} className="fill-current" />

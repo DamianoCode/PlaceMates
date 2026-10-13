@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Download, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 /**
  * One-line "Zainstaluj na ekranie głównym" banner that surfaces
@@ -71,13 +73,24 @@ export function InstallPrompt() {
     writeDismissedAt(Date.now());
   }, []);
 
+  const pathname = usePathname();
+  // On the map the add-place FAB sits bottom-right (56px, 16px above the
+  // nav); stacking the banner over it hid the app's main action until
+  // the banner was dismissed. Lift the banner clear of it there.
+  const onMap = pathname === "/map";
+
   if (!show || !evt) return null;
 
   return (
     <div
       role="dialog"
       aria-label="Zainstaluj aplikację"
-      className="fixed inset-x-3 bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)] z-30 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg"
+      className={cn(
+        "fixed inset-x-3 z-30 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border/60 bg-background/95 p-3 shadow-lg",
+        onMap
+          ? "bottom-[calc(60px+env(safe-area-inset-bottom)+5.25rem)]"
+          : "bottom-[calc(60px+env(safe-area-inset-bottom)+0.5rem)]",
+      )}
     >
       <span
         aria-hidden
@@ -96,7 +109,7 @@ export function InstallPrompt() {
       <button
         type="button"
         onClick={accept}
-        className="inline-flex h-9 flex-shrink-0 items-center rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground shadow-sm hover:bg-primary/90"
+        className="relative inline-flex h-9 flex-shrink-0 items-center rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground before:absolute before:inset-x-0 before:-inset-y-1 before:content-[''] hover:bg-primary/90"
       >
         Zainstaluj
       </button>
