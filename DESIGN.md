@@ -22,6 +22,12 @@ colors:
   pin-wishlist-emerald: "oklch(0.596 0.145 163.225)"
   pin-group-sky: "oklch(0.588 0.158 241.966)"
   star-amber: "oklch(0.828 0.189 84.429)"
+  star-edge: "oklch(0.769 0.188 70.08)"
+  star-ink: "oklch(0.3 0.07 55)"
+  success-moss: "oklch(0.52 0.11 150)"
+  warning-ochre: "oklch(0.53 0.12 62)"
+  night-success-moss: "oklch(0.76 0.12 152)"
+  night-warning-ochre: "oklch(0.8 0.12 78)"
 typography:
   display:
     fontFamily: "Fraunces, ui-serif, Georgia, serif"
@@ -176,7 +182,12 @@ A warm, low-chroma paper-and-ink palette with one earthy pigment; all values are
 - **Favourite Rose** (`pin-favorite-rose`): personal favourites on the map and the favourite heart.
 - **Wishlist Emerald** (`pin-wishlist-emerald`): personal "I want to go".
 - **Group Sky** (`pin-group-sky`): group "we should go".
-- **Star Amber** (`star-amber`): rating stars only.
+- **Star Amber** (`star-amber`, token `--star`): rating stars (stroked in **Star Edge** `star-edge`) and the year review's gold honours (#1 badge, crown), whose glyphs sit in **Star Ink** (`star-ink`). Never hard-code `amber-*`.
+
+### Status
+- **Success Moss** (`success-moss`, token `--success`; **Night Success Moss** in dark): done and saved — checked-off trip stops and completed plans, "Zapisano" confirmations, the optimiser's "shorter route" result. Text at full strength, surfaces at 5–15% tint, solid fills carry paper text.
+- **Warning Ochre** (`warning-ochre`, token `--warning`; **Night Warning Ochre** in dark): heads-up — the in-app-browser notice, the offline banner icon, "longer route" results.
+- Both sit at L ≈ 0.52 in light so they clear 4.5:1 as text on paper and behind paper labels, and both lean warm so they stay in the atlas. They mark state, never decoration: a section is not "green" because it is pleasant.
 
 ### Neutral
 - **Paper** (`paper`): page background and sticky chrome (header, bottom nav — solid, never blurred).
@@ -237,7 +248,6 @@ Hybrid. Inside the page the system is flat: surfaces separate by a hairline bord
 - **Map control** (`box-shadow: 0 2px 10px oklch(0 0 0 / 0.12)`): MapLibre zoom/locate group, re-skinned as a pill.
 - **Active chip glow** (`shadow-sm` tinted `primary/30`): the selected filter chip.
 - **Hero drop** (`box-shadow: 0 30px 80px -40px oklch(0 0 0 / 0.5)`): large photo/place heroes and the share card.
-- **Pulse ring** (keyframe `pm-pulse-ring`, terracotta 45% → 0, 12px spread): live "you are here"/attention beacons.
 
 ### Named Rules
 **The Float Rule.** Only things that sit above the map or above the page get a shadow. A card in a list never does.
@@ -272,6 +282,7 @@ Warm and tactile: they press down rather than glow.
 - **Style:** 44px, transparent fill on paper, Field Edge stroke, `rounded.lg`, 14px horizontal padding, 16px text on mobile.
 - **Focus:** border shifts to Terracotta ring colour plus a 3px soft ring (25–40%).
 - **Error / Disabled:** Brick border with a 20% Brick ring; disabled at 50% with a muted fill. Native `select`/`textarea` share the same look through the `field-base` utility.
+- **Rating slider** (`range-field` utility): native range input, 44px tall hit area, 6px Linen track with a hairline, 26px Terracotta thumb with a 3px Card White edge, a 4px 35% Terracotta focus halo, and a 1.1 press scale. The value is mirrored in `aria-valuetext` ("4.5 z 5").
 
 ### Navigation
 - **Bottom nav:** five equal tabs, 60px tall, solid Paper with a top hairline (no blur, so view-transition snapshots stay crisp). Icon 22px over label 12px. Inactive in Dust Text; active in Terracotta with a 2.25 stroke, medium label weight and a 48×28 pill at 12% Terracotta behind the icon. Tabs press-scale to 0.9.
@@ -294,14 +305,14 @@ TopoLines: a few smooth bezier contours at low Terracotta opacity that draw them
 - **Do** keep Terracotta as the single accent for active, selected and primary states.
 - **Do** open every top-level page with the eyebrow → Fraunces title → italic lede trio.
 - **Do** give every tappable thing at least 44px and a physical press response (`active:scale-90` on tabs, 0.97 on chips, 0.985 on cards, 1px nudge on buttons).
-- **Do** keep chrome solid: sticky bars in Paper, floating map UI in 95% Paper. No backdrop blur over the map canvas.
-- **Do** keep motion short and opacity-led (180ms view transitions, 400ms fade-up with 55ms stagger, 460ms `cubic-bezier(0.16, 1, 0.3, 1)` content rise) and leave the global reduced-motion override intact.
+- **Do** keep chrome solid: sticky bars in Paper, floating map UI in 95% Paper. No backdrop blur over the map canvas, and none on sheet/dialog scrims (a flat 40% Espresso scrim) or auth/share cards. Blur is reserved for small controls sitting on photos.
+- **Do** keep motion short and opacity-led (180ms view transitions, 400ms fade-up with 55ms stagger, 460ms `cubic-bezier(0.16, 1, 0.3, 1)` content rise) and leave the global reduced-motion override intact. Under reduced motion, spinners keep turning (slower) and JS camera moves pass their duration through `motionDuration()` so `flyTo` snaps instead of gliding.
 - **Do** use `tabular-nums` for scores, counts and averages.
 
 ### Don't:
 - **Don't** make it look like a utilitarian map tool: no cool grey-blue neutrals, no default basemap chrome, no unstyled MapLibre controls.
 - **Don't** drift into generic SaaS: no purple or multi-stop gradients, no glassmorphism panels, no cards inside cards, no dashboard-grey surfaces.
-- **Don't** use rose, emerald or sky outside pin states and their matching toggles.
+- **Don't** use rose, emerald or sky outside pin states and their matching toggles; status green and amber come from `--success` / `--warning`, stars from `--star`.
 - **Don't** add shadows to in-page cards or list rows.
 - **Don't** use pure black, pure white text on terracotta, or `font-bold`; weight tops out at 600 in Outfit, and Fraunces carries emphasis through size.
 - **Don't** apply `transform` to route-level wrappers; it breaks the map's fixed overlays and the sticky header.

@@ -395,7 +395,7 @@
     border-radius: 9999px;
     background: var(--color-primary);
     border: 3px solid var(--color-card);
-    box-shadow: 0 1px 4px oklch(0 0 0 / 0.25);
+    box-shadow: 0 1px 4px oklch(from var(--color-foreground) l c h / 0.25);
     transition: transform 120ms ease;
   }
   &::-moz-range-thumb {
@@ -405,7 +405,7 @@
     border-radius: 9999px;
     background: var(--color-primary);
     border: 3px solid var(--color-card);
-    box-shadow: 0 1px 4px oklch(0 0 0 / 0.25);
+    box-shadow: 0 1px 4px oklch(from var(--color-foreground) l c h / 0.25);
     transition: transform 120ms ease;
   }
   &:active::-webkit-slider-thumb {
